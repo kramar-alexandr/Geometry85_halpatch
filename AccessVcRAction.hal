@@ -1,0 +1,183 @@
+//<halrule>server-only</halrule>
+
+updating procedure CreateAccessHistRec(var record AccessVc Accsr,record AccessVc Accs2r,string type)
+begin
+	boolean changef,addf,remf,chf;
+	integer i,k,mtrw,mtrw2;
+	record AccessRecHistoryVc ACHr;
+	row AccessRecHistoryVc ACHrw;
+	row AccessVc Accsrw,Accs2rw;
+	
+	
+	changef = false;
+	mtrw = matrowcnt(Accsr);
+	mtrw2 = matrowcnt(Accs2r);
+
+	if(mtrw!=mtrw2)then begin changef = true; end;
+	
+	if(Accsr.BlockAccs!=Accs2r.BlockAccs)then begin
+		ACHr.NewBlockAccs = Accsr.BlockAccs;
+		ACHr.OldBlockAccs = Accs2r.BlockAccs;
+		changef = true; 
+	end;
+	if(Accsr.AccessGroup!=Accs2r.AccessGroup)then begin 
+		ACHr.NewAccessGroup = Accsr.AccessGroup;
+		ACHr.OldAccessGroup = Accs2r.AccessGroup;
+		changef = true; 
+	end;
+	if(Accsr.Comment!=Accs2r.Comment)then begin 
+		ACHr.NewComment = Accsr.Comment;
+		ACHr.OldComment = Accs2r.Comment;
+		changef = true; 
+	end;
+	
+	if(type=="UPDATE")then begin
+		For(i=0;i<mtrw;i=i+1) begin
+			matrowget(Accsr,i,Accsrw);
+			addf = true;
+			chf = false;
+			For(k=0;k<mtrw2;k=k+1) begin
+				matrowget(Accs2r,k,Accs2rw);
+				if(Accsrw.AccType==Accs2rw.AccType and Accsrw.AccName==Accs2rw.AccName and Accsrw.AccType>0 and Accs2rw.AccType>0)then begin
+					addf = false;
+					if(Accsrw.AccLevel!=Accs2rw.AccLevel or Accsrw.OpenType!=Accs2rw.OpenType)then begin
+						chf = true;
+						changef = true;
+						ACHrw.Addflag = 0;//row changed
+						ACHrw.NewAccType = Accsrw.AccType;
+						ACHrw.NewAccName = Accsrw.AccName;
+						ACHrw.NewAccLevel = Accsrw.AccLevel;
+						ACHrw.NewOpenType = Accsrw.OpenType;
+					
+						ACHrw.OldAccType = Accs2rw.AccType;
+						ACHrw.OldAccName = Accs2rw.AccName;
+						ACHrw.OldAccLevel = Accs2rw.AccLevel;
+						ACHrw.OldOpenType = Accs2rw.OpenType;
+						matrowput(ACHr,matrowcnt(ACHr),ACHrw);
+						clearrow(ACHr,ACHrw,1);
+					end;
+				end;
+			end; 
+		
+			if(addf)then begin
+				if(Accsrw.AccType>0)then begin
+					ACHrw.Addflag = 1;//rowadd
+					ACHrw.NewAccType = Accsrw.AccType;
+					ACHrw.NewAccName = Accsrw.AccName;
+					ACHrw.NewAccLevel = Accsrw.AccLevel;
+					ACHrw.NewOpenType = Accsrw.OpenType;
+					matrowput(ACHr,matrowcnt(ACHr),ACHrw);
+					clearrow(ACHr,ACHrw,1);
+					changef = true;
+				end;
+			end;
+		end;
+	
+	
+		For(i=0;i<mtrw2;i=i+1) begin
+			matrowget(Accs2r,i,Accs2rw);
+			remf = true;
+			For(k=0;k<mtrw;k=k+1) begin
+				matrowget(Accsr,k,Accsrw);
+				if(Accsrw.AccType==Accs2rw.AccType and Accsrw.AccName==Accs2rw.AccName and Accsrw.AccType>0 and Accs2rw.AccType>0)then begin
+					remf = false;
+				end;
+			end; 
+		
+			if(remf)then begin
+				if(Accs2rw.AccType>0)then begin
+					ACHrw.Addflag = 2;//row removed
+					ACHrw.OldAccType = Accs2rw.AccType;
+					ACHrw.OldAccName = Accs2rw.AccName;
+					ACHrw.OldAccLevel = Accs2rw.AccLevel;
+					ACHrw.OldOpenType = Accs2rw.OpenType;
+					matrowput(ACHr,matrowcnt(ACHr),ACHrw);
+					clearrow(ACHr,ACHrw,1);
+					changef = true;
+				end;
+			end;
+		end; 
+	end;
+	
+	if(type=="DELETE")then begin
+		For(i=0;i<mtrw;i=i+1) begin
+			matrowget(Accsr,i,Accsrw);
+			if(Accsrw.AccType>0)then begin
+				ACHrw.Addflag = 2;//row removed
+				ACHrw.OldAccType = Accsrw.AccType;
+				ACHrw.OldAccName = Accsrw.AccName;
+				ACHrw.OldAccLevel = Accsrw.AccLevel;
+				ACHrw.OldOpenType = Accsrw.OpenType;
+				matrowput(ACHr,matrowcnt(ACHr),ACHrw);
+				clearrow(ACHr,ACHrw,1);
+				changef = true;
+			end;
+		end; 
+	end;
+	
+	if(type=="CREATE")then begin
+		For(i=0;i<mtrw;i=i+1) begin
+			matrowget(Accsr,i,Accsrw);
+			if(Accsrw.AccType>0)then begin
+				ACHrw.Addflag = 1;//row removed
+				ACHrw.NewAccType = Accsrw.AccType;
+				ACHrw.NewAccName = Accsrw.AccName;
+				ACHrw.NewAccLevel = Accsrw.AccLevel;
+				ACHrw.NewOpenType = Accsrw.OpenType;
+				matrowput(ACHr,matrowcnt(ACHr),ACHrw);
+				clearrow(ACHr,ACHrw,1);
+				changef = true;
+			end;
+		end; 
+	end;
+	
+	if(changef==true)then begin
+		ACHr.SerNr = NextSerNr("AccessRecHistoryVc",currentdate,-1,false,"");  
+		ACHr.TransDate = CurrentDate;
+		ACHr.TransTime = CurrentTime;
+		ACHr.User = CurrentUser;
+		ACHr.Code = Accsr.Code;
+		ACHr.Type = type;
+		recordstore(ACHr,true);
+	end;
+	
+return;
+end;
+
+global
+updating function LongInt AccessVcRecordSaveAfter(var record AccessVc Accsr,record AccessVc Accs2r,LongInt stat,LongInt long4)
+begin
+  LongInt res;
+  record AccessVc blankAccs2r;
+  
+  CreateAccessHistRec(Accsr,blankAccs2r,"CREATE");
+	
+  AccessVcRecordSaveAfter = res;
+  RETURN;
+END;
+
+
+global
+updating function LongInt AccessVcRecordUpdateAfter(var record AccessVc Accsr,record AccessVc Accs2r,LongInt stat,LongInt long4)
+begin
+  LongInt res;
+  
+  CreateAccessHistRec(Accsr,Accs2r,"UPDATE");
+	
+  AccessVcRecordUpdateAfter = res;
+  RETURN;
+END;
+
+
+global
+updating function LongInt AccessVcRecordRemoveTest(var record AccessVc Accsr,record AccessVc Accs2r,LongInt long3,LongInt globalf)
+BEGIN
+  LongInt res;
+	record AccessVc blankAccs2r;
+	
+	CreateAccessHistRec(Accsr,blankAccs2r,"DELETE");
+	
+  res = 1;
+  AccessVcRecordRemoveTest = res; 
+  RETURN;
+END;

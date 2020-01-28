@@ -1,0 +1,902 @@
+//Перенес как есть - нет аналогов
+external function roundmode GetVATRoundModeRB();
+external function roundmode GetVATRoundMode(record RoundBlock);
+external function roundmode GetTotalRoundMode(record RoundBlock);
+external function roundmode SetRoundModeD(Integer);
+external function roundmode DefaultRoundMode();
+external procedure OutAddress(string,string,string,string,string,string,string);
+external function Boolean FindFormcode(Integer,Integer);
+external procedure ValToText(val,Integer,string,string,var string);
+external procedure AddVATBase(var record SMVc,string,val,val,Integer,Integer,Integer);
+external procedure SetupVATBase(var record SMVc,var Integer);
+external procedure GetVATproc(string,Integer,var val);
+external procedure Val2ToText(string,val,Integer,string,string,var string);
+external procedure PrintValToTextBaseCur(val,Integer,string,Integer,var string);
+external function val MulRateToBase2(var string,val,val,val,val,val,val,roundmode);
+external function val MulRateToBase1(var string,val,val,val,val,val,val,roundmode);
+external procedure IntToText(string,Integer,var string);
+external procedure MulVATIV(string,val,var val,var val,Integer,Integer);
+external function Boolean GetItemNameStr(Integer,var string,string,string,string);
+external procedure ItemBC39(string,var string);
+external procedure ItemBCEAN(string,var string);
+external procedure ItemBCEAN13(string,var string);
+external procedure GetFieldArgument(record DocVc,Integer,var string);
+external procedure SelectUnitText(string,string,var string);
+external procedure PrintValue(string,val,Integer,record LangNrVc,record SysFormatBlock,Boolean);
+external procedure InvVat(Integer,Integer,Integer,Integer,string,val,var val,var val,var val,var val,var val);
+external procedure GetFullCurncyRateText(Boolean,var string,val,val,val,val,val);
+external procedure GetUserName(string,var string);
+external procedure GetObjectText(string,var string);
+external procedure GetPayDealText(string,string,var string);
+external function Integer SetDateOrder(string);
+external procedure LongDateToStr(Date,Integer,var string);
+external procedure GetCountryName(string,string,var string);
+external procedure GetLangNr(string,var record LangNrVc);
+external function Integer NumberofDocumentPages(string,Integer);
+external procedure CommonDocumentFields(record RcVc);
+external function Boolean Getformcode(Integer,Integer,string,string,string,LongInt,LongInt,string,string,Integer,string,var string);
+external function Integer ITType(string);
+
+procedure CalcFEIVTotals(record FEIVVc FEIVr,record DocVc Docr,record RoundBlock RoundRec,record LangNrVc LangNrr,record SysFormatBlock SysFormatRec)
+BEGIN
+  row FEIVVc FEIVrw;
+  Integer i,rwcnt,vatcnt;
+  record SMVc VATr;
+  row SMVc VATrw;
+  val vatv,t1,t,v;
+  val vatval,vatbase,vattot;
+  val totreb,totdisc;
+  val totcost,totsubtotwdisc,totvatval,totvatbase,totrowtot;
+  string 255 tstr;
+  Integer valtyp;
+  val totgoods,tottrans,totpack,totdiscnopack;
+  
+  RecordNew(VATr);
+  SetupVATBase(VATr,vatcnt);          
+  rwcnt = MatRowCnt(FEIVr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(FEIVr,i,FEIVrw);
+    if ((FEIVrw.stp==1) or (FEIVrw.stp==4)) then begin      
+      switch (ITType(FEIVrw.ArtCode)) begin
+        case 0: 
+          totgoods = totgoods + FEIVrw.Quant*FEIVrw.Price;
+          totdiscnopack = totdiscnopack + (FEIVrw.Quant*FEIVrw.Price - FEIVrw.Sum);
+        case 1: 
+          tottrans = tottrans + FEIVrw.Sum;
+          totdiscnopack = totdiscnopack + (FEIVrw.Quant*FEIVrw.Price - FEIVrw.Sum);
+        case 2: totpack = totpack + FEIVrw.Sum;
+      end;
+      totsubtotwdisc = totsubtotwdisc + FEIVrw.Quant*FEIVrw.Price;
+      totcost = totcost + FEIVrw.Quant*FEIVrw.BasePrice;
+      totreb = totreb + (FEIVrw.Quant*FEIVrw.Price - FEIVrw.Sum);
+      AddVATBase(VATr,FEIVrw.VATCode,FEIVrw.Sum,blankval,vatcnt,FEIVr.InclVAT,FEIVr.NoTAXonVAT);      
+      if (FEIVrw.vRebate!=0) then begin
+        totdisc = totdisc + (FEIVrw.Quant*FEIVrw.Price - FEIVrw.Sum);        
+      end;
+    end;      
+    if (FEIVrw.stp==11) then begin
+      totsubtotwdisc = totsubtotwdisc - FEIVrw.Quant*FEIVrw.Price;
+      totcost = totcost - FEIVrw.Quant*FEIVrw.BasePrice;
+      AddVATBase(VATr,FEIVrw.VATCode,-FEIVrw.Sum,blankval,vatcnt,FEIVr.InclVAT,FEIVr.NoTAXonVAT);
+    end;
+  end;    
+  for (i=0;i<vatcnt;i=i+1) begin
+    MatRowGet(VATr,i,VATrw);    
+    MulVATIV(VATrw.VATCode,VATrw.DebVal,vatv,t1,FEIVr.InclVAT,FEIVr.NoTAXonVAT);
+    if (vatv!=0) or (VATrw.DebVal!=0) then begin
+    vatval = Round(vatv,GetVATRoundModeRB);    
+    totvatval = totvatval + vatval;
+    totvatbase = totvatbase + VATrw.DebVal;
+    totrowtot = totrowtot + VATrw.DebVal;    
+    if (FEIVr.InclVAT>0) then begin
+      totvatbase = totvatbase - vatval;
+      vatbase = VATrw.DebVal - vatval;
+      vattot = VATrw.DebVal;
+    end else begin
+      totrowtot = totrowtot + vatval;
+      vatbase = VATrw.DebVal;
+      vattot = VATrw.DebVal + vatval;
+    end;
+    if (FIELDINFORM("F_VATBASE")) then begin
+      valtyp = M4Val;
+      GetFieldArgument(Docr,F_VATBASE,tstr);
+      if (tstr=="-") then begin
+        valtyp = M4NegVal;
+      end;
+      PrintValue("F_VATBASE",vatbase,valtyp,LangNrr,SysFormatRec,false);
+    end;
+    if (FIELDINFORM("F_VATVAL")) then begin
+      valtyp = M4Val;
+      GetFieldArgument(Docr,F_VATVAL,tstr);
+      if (tstr=="-") then begin
+        valtyp = M4NegVal;
+      end;
+      PrintValue("F_VATVAL",vatval,valtyp,LangNrr,SysFormatRec,false);
+    end;
+    if (FIELDINFORM("F_VATTOT")) then begin
+      valtyp = M4Val;
+      GetFieldArgument(Docr,F_VATTOT,tstr);
+      if (tstr=="-") then begin
+        valtyp = M4NegVal;
+      end;
+      PrintValue("F_VATTOT",vattot,valtyp,LangNrr,SysFormatRec,false);
+    end;
+    if (FIELDINFORM("F_BASE1VATVAL")) then begin
+      t = MulRateToBase1(FEIVr.CurncyCode,vatval,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+      valtyp = M4Val;
+      GetFieldArgument(Docr,F_BASE1VATVAL,tstr);
+      if (tstr=="-") then begin
+        valtyp = M4NegVal;
+      end;
+      PrintValue("F_BASE1VATVAL",Round(t,GetVATRoundMode(RoundRec)),valtyp,LangNrr,SysFormatRec,false);
+    end;
+    if (FIELDINFORM("F_BASE2VATVAL")) then begin
+      t = MulRateToBase2(FEIVr.CurncyCode,vatval,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+      valtyp = M4Val;
+      GetFieldArgument(Docr,F_BASE2VATVAL,tstr);
+      if (tstr=="-") then begin
+        valtyp = M4NegVal;
+      end;
+      PrintValue("F_BASE2VATVAL",Round(t,GetVATRoundMode(RoundRec)),valtyp,LangNrr,SysFormatRec,false);
+    end;
+    if (FIELDINFORM("F_BASE1VATBASE")) then begin
+      t = MulRateToBase1(FEIVr.CurncyCode,vatbase,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+      valtyp = M4Val;
+      GetFieldArgument(Docr,F_BASE1VATBASE,tstr);
+      if (tstr=="-") then begin
+        valtyp = M4NegVal;
+      end;
+      PrintValue("F_BASE1VATBASE",Round(t,GetVATRoundMode(RoundRec)),valtyp,LangNrr,SysFormatRec,false);
+    end;
+    if (FIELDINFORM("F_BASE2VATBASE")) then begin
+      t = MulRateToBase2(FEIVr.CurncyCode,vatbase,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+      valtyp = M4Val;
+      GetFieldArgument(Docr,F_BASE2VATBASE,tstr);
+      if (tstr=="-") then begin
+        valtyp = M4NegVal;
+      end;
+      PrintValue("F_BASE2VATBASE",Round(t,GetVATRoundMode(RoundRec)),valtyp,LangNrr,SysFormatRec,false);
+    end;
+    if (FIELDINFORM("F_BASE1VATTOT")) then begin
+      t = MulRateToBase1(FEIVr.CurncyCode,vattot,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+      valtyp = M4Val;
+      GetFieldArgument(Docr,F_BASE1VATTOT,tstr);
+      if (tstr=="-") then begin
+        valtyp = M4NegVal;
+      end;
+      PrintValue("F_BASE1VATTOT",Round(t,GetVATRoundMode(RoundRec)),valtyp,LangNrr,SysFormatRec,false);
+    end;
+    if (FIELDINFORM("F_BASE2VATTOT")) then begin
+      t = MulRateToBase2(FEIVr.CurncyCode,vattot,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+      valtyp = M4Val;
+      GetFieldArgument(Docr,F_BASE2VATTOT,tstr);
+      if (tstr=="-") then begin
+        valtyp = M4NegVal;
+      end;
+      PrintValue("F_BASE2VATTOT",Round(t,GetVATRoundMode(RoundRec)),M4Val,LangNrr,SysFormatRec,false);
+    end;    
+    GetVATproc(VATrw.VATCode,0,t);
+    PrintValue("F_VATEXCLPRC",t,M4Val,LangNrr,SysFormatRec,false);
+    tstr = ValToString(t,M4Val,SysFormatRec.thousSep,SysFormatRec.decimalPt,LangNrr.CutDecimals);
+    if (blank(tstr)) then begin
+      tstr = USetStr(1244);
+    end;
+    OutFormField("F_VATPRC",tstr);
+    end;
+  end;
+  totvatval = Round(totvatval,GetVATRoundMode(RoundRec));
+  totvatbase = Round(totvatbase,GetTotalRoundMode(RoundRec));
+  totrowtot = Round(totrowtot,GetTotalRoundMode(RoundRec));
+  PrintValue("F_TOTVATVAL",totvatval,M4Val,LangNrr,SysFormatRec,false);
+  PrintValue("F_TOTVATBASE",totvatbase,M4Val,LangNrr,SysFormatRec,false);
+  PrintValue("F_TOTROWTOT",totrowtot,M4Val,LangNrr,SysFormatRec,false);
+  if (FIELDINFORM("F_REBTEXT")) then begin
+    if (totreb!=0) then begin
+      GetFieldArgument(Docr,F_REBTEXT,tstr);
+      OutFormField("F_REBTEXT",tstr);
+    end;
+  end;
+  PrintValue("F_TOTALDISCOUNT",totdisc,M4Val,LangNrr,SysFormatRec,false);
+  t = MulRateToBase2(FEIVr.CurncyCode,totdisc,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+  PrintValue("F_TOTALDISCOUNTINBASE2",t,M4Val,LangNrr,SysFormatRec,false);
+  if (FIELDINFORM("F_TOTALGOODS")) then begin
+    PrintValue("F_TOTALGOODS",totgoods,M4Val,LangNrr,SysFormatRec,false);
+  end;        
+  if (FIELDINFORM("F_TOTTRANSPORT")) then begin
+    PrintValue("F_TOTTRANSPORT",tottrans,M4Val,LangNrr,SysFormatRec,false);
+  end;        
+  if (FIELDINFORM("F_TOTPACKAGES")) then begin
+    PrintValue("F_TOTPACKAGES",totpack,M4Val,LangNrr,SysFormatRec,false);
+  end;        
+  if (FIELDINFORM("F_SUBTOTALWITHOUTPACKAGES")) then begin
+    PrintValue("F_SUBTOTALWITHOUTPACKAGES",totgoods + tottrans,M4Val,LangNrr,SysFormatRec,false);
+  end;        
+  if (FIELDINFORM("F_TOTALDISCOUNTNOPACK")) then begin
+    PrintValue("F_TOTALDISCOUNTNOPACK",totdiscnopack,M4Val,LangNrr,SysFormatRec,false);
+  end;        
+  if ((FIELDINFORM("F_SUBTOTALWITHOUTDISCOUNT")) or (FIELDINFORM("F_TOTALCOST"))) then begin
+    PrintValue("F_SUBTOTALWITHOUTDISCOUNT",totsubtotwdisc,M4Val,LangNrr,SysFormatRec,false);
+    PrintValue("F_TOTALCOST",totcost,M4Val,LangNrr,SysFormatRec,false);
+  end;        
+  RETURN;        
+END;
+
+
+procedure PrintFEIV(record RcVc RepSpec,record FEIVVc FEIVr,string formcode)
+BEGIN
+  record LangNrVc LangNrr;
+  record DocVc Docr;
+  record CUVc CUr;
+  record INVc INr;
+  record ORVc ORr;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 15:36:20
+	  record IVVc IVr; // 62
+  record CYBlock CYr; // 62
+
+	// Edit End ---------------------------------------------- Edit End
+	  string 255 tstr;
+  row FEIVVc FEIVrw;
+  Integer i,rwcnt,rownr,valtyp;
+  val vatprc,vatval,vatexclprc,vatinclprc,rowtax,t,t2,v;
+  record SysFormatBlock SysFormatRec;
+  record RoundBlock RoundRec;
+
+  BlockLoad(RoundRec);
+  BlockLoad(SysFormatRec);
+  BlockLoad(CYr); // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 15:36:24
+  GetLangNr(FEIVr.LangCode,LangNrr);
+  Docr.Code = formcode;
+  if (ReadFirstMain(Docr,1,true)) then begin
+  end;
+  CommonDocumentFields(RepSpec);    
+  NumberofDocumentPages(formcode,MatRowCnt(FEIVr));
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 15:36:27
+	  
+  IVr.SerNr=  FEIVr.IVNr; // 62
+   if (ReadFirstMain(IVr,1,true)) then begin end;// 62
+  OUTFORMFIELD("F_SHIPTERM",IVr.ShipDeal);   // 62      
+  
+
+	// Edit End ---------------------------------------------- Edit End
+	//CUVc
+  CUr.Code = FEIVr.CustCode;
+  
+  
+  if (ReadFirstMain(CUr,1,true)) then begin
+  end;
+  OUTFORMFIELD("F_FROMADRESS",CUr.Name);        
+  OUTFORMFIELD("F_FROMADRESS",CUr.InvAddr0);
+  OUTFORMFIELD("F_FROMADRESS",CUr.InvAddr1);
+  OUTFORMFIELD("F_FROMADRESS",CUr.InvAddr2);  
+  OUTFORMFIELD("F_FROMADRESS",CUr.InvAddr3);  
+  OUTFORMFIELD("F_FROMADRESS",CUr.InvAddr4);  
+  OUTFORMFIELD("F_BANKACC",CUr.BankAccount);
+  OUTFORMFIELD("F_ACCOUNTOPERATOR",CUr.AccOperator);
+  OUTFORMFIELD("F_FROMADRESS",CUr.CountryCode);  
+  if (FIELDINFORM("F_COUNTRYNAME")) then begin
+    GetCountryName(CUr.CountryCode,FEIVr.LangCode,tstr);
+    OUTFORMFIELD("F_COUNTRYNAME",tstr);
+  end;
+  OUTFORMFIELD("F_REGNUMBER1",CUr.RegNr1);  
+  OUTFORMFIELD("F_REGNUMBER2",CUr.RegNr2);  
+  OUTFORMFIELD("F_CUSTCOMMENT",CUr.Comment);
+  OUTFORMFIELD("F_DEPARTMENT",CUr.Department);
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 15:36:32
+	  //OUTFORMFIELD("F_FAKTURATILL",CUr.Name); // 62
+  //OUTFORMFIELD("F_FAKTURATILL",CUr.InvAddr0); // 62
+  tstr=CUr.InvAddr0 & " " & CUr.InvAddr1;  // 62
+  OUTFORMFIELD("F_FAKTURATILL",tstr); // 62
+//  OUTFORMFIELD("F_FAKTURATILL",CUr.InvAddr1); // 62
+  //OUTFORMFIELD("F_FAKTURATILL",CUr.InvAddr3); // 62
+  //OUTFORMFIELD("F_FAKTURATILL",CUr.InvAddr4); // 62
+  tstr=CUr.InvAddr1 & " " & CUr.InvAddr2; // 62
+  OUTFORMFIELD("F_CUSTADDRESSX",tstr); // 62
+
+	// Edit End ---------------------------------------------- Edit End
+	  if (blank(FEIVr.Phone)) then begin
+    OUTFORMFIELD("F_KUNDTEL",CUr.Phone);      
+  end else begin
+    OUTFORMFIELD("F_KUNDTEL",FEIVr.Phone);      
+  end;      
+  if (blank(FEIVr.Fax)) then begin
+    OUTFORMFIELD("F_KUNDFAX",CUr.Fax);      
+  end else begin
+    OUTFORMFIELD("F_KUNDFAX",FEIVr.Fax);      
+  end;      
+  if (blank(FEIVr.VATNr)) then begin
+    OUTFORMFIELD("F_KUNDMOMSNR",CUr.VATNr);      
+  end else begin
+    OUTFORMFIELD("F_KUNDMOMSNR",FEIVr.VATNr);      
+  end;      
+//ORVc
+  ORr.SerNr = FEIVr.OrderNr;
+  if (ReadFirstMain(ORr,1,true)) then begin
+  end;
+  OUTFORMFIELD("F_POSTADRESS",ORr.Addr0);
+  OUTFORMFIELD("F_POSTADRESS",ORr.Addr1);
+  OUTFORMFIELD("F_POSTADRESS",ORr.Addr2);
+  OUTFORMFIELD("F_POSTADRESS",ORr.Addr3);
+  OUTFORMFIELD("F_POSTADRESS",ORr.InvAddr3);
+  OUTFORMFIELD("F_POSTADRESS",ORr.InvAddr4);
+  
+//FEIVVc  
+
+  OUTFORMFIELD("F_KOMMENTAR",FEIVr.PMComment);        
+  OUTFORMFIELD("F_ADRESSATT",FEIVr.Addr0);  
+  OUTFORMFIELD("F_ADRESSATT",FEIVr.ClientContact);  
+  OUTFORMFIELD("F_ADRESSATT",FEIVr.Addr1);  
+  OUTFORMFIELD("F_ADRESSATT",FEIVr.Addr2);  
+  OUTFORMFIELD("F_ADRESSATT",FEIVr.Addr3);  
+  OUTFORMFIELD("F_ADRESSATT",FEIVr.InvAddr3);  
+  OUTFORMFIELD("F_ADRESSATT",FEIVr.InvAddr4);
+  OUTFORMFIELD("F_INVCOMMENT",FEIVr.InvComment);  
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 15:36:39
+	  LongDateToStr(FEIVr.IVTransDate,SetDateOrder(FEIVr.LangCode),tstr); // 62
+  OUTFORMFIELD("F_INVDATE",tstr); // 62
+
+	// Edit End ---------------------------------------------- Edit End
+	  LongDateToStr(FEIVr.IVInvDate,SetDateOrder(FEIVr.LangCode),tstr);
+  OUTFORMFIELD("F_FAKTURADATUM",tstr);
+  LongDateToStr(FEIVr.TransDate,SetDateOrder(FEIVr.LangCode),tstr);
+  OUTFORMFIELD("F_TRANSDATE",tstr);
+  OUTFORMFIELD("F_FAKTURANUMMER",FEIVr.SerNr);  
+  if (FEIVr.OrderNr==-1) then begin
+    tstr = "";
+  end else begin
+    tstr = FEIVr.OrderNr;
+  end;
+  OUTFORMFIELD("F_ORDERNUMMER",tstr);  
+  OUTFORMFIELD("F_KUNDNR",FEIVr.CustCode);
+  OUTFORMFIELD("F_KUNDNAMN",FEIVr.Addr0);
+  OutAddress("F_ADRESS",FEIVr.Addr0,FEIVr.Addr1,FEIVr.Addr2,FEIVr.Addr3,FEIVr.InvAddr3,FEIVr.InvAddr4);
+  OUTFORMFIELD("F_ADDR2",FEIVr.Addr1);
+  OUTFORMFIELD("F_ADDR3",FEIVr.Addr2);
+  OUTFORMFIELD("F_ADDR4",FEIVr.Addr3);
+  OUTFORMFIELD("F_INVADDR3",FEIVr.InvAddr3);
+  OUTFORMFIELD("F_INVADDR4",FEIVr.InvAddr4);
+  if (FIELDINFORM("F_VILLKOR")) then begin
+    GetPayDealText(FEIVr.PayDeal,FEIVr.LangCode,tstr);
+    OUTFORMFIELD("F_VILLKOR",tstr);
+  end;
+  OUTFORMFIELD("F_VARREFERENS",FEIVr.OurContact);
+  OUTFORMFIELD("F_ERREFERENS",FEIVr.ClientContact);
+  OUTFORMFIELD("F_OBJECT",FEIVr.Objects);
+  if (FIELDINFORM("F_OBJEKTTEXT")) then begin
+    GetObjectText(FEIVr.Objects,tstr);
+    OUTFORMFIELD("F_OBJEKTTEXT",tstr);
+  end;
+  OUTFORMFIELD("F_VALUTA",FEIVr.CurncyCode);
+  OUTFORMFIELD("F_SALJARE",FEIVr.SalesMan);
+  if (FIELDINFORM("F_SALJARNAMN")) then begin
+    GetUserName(FEIVr.SalesMan,tstr);
+    OUTFORMFIELD("F_SALJARNAMN",tstr);
+  end;  
+  GetFullCurncyRateText(true,tstr,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2);
+  OUTFORMFIELD("F_RATE",tstr);
+  GetFullCurncyRateText(false,tstr,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2);
+  OUTFORMFIELD("F_BASERATE",tstr);
+  tstr=CYr.Addr0 & " " & CYr.Addr1; // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 15:36:50
+  OUTFORMFIELD("F_ADDR1",tstr); // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 15:36:50
+  rwcnt = MatRowCnt(FEIVr); 
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(FEIVr,i,FEIVrw);
+    INr.Code = FEIVrw.ArtCode;
+    if (ReadFirstMain(INr,1,true)) then begin
+    end;
+    InvVat(1,FEIVr.InclVAT,FEIVr.NoTAXonVAT,FEIVr.ExportFlag,FEIVrw.VATCode,FEIVrw.Sum,vatprc,vatval,vatexclprc,vatinclprc,rowtax);
+    GetObjectText(FEIVrw.Objects,tstr);
+    OUTFORMFIELD("F_SUMMAFORSENAT",FEIVrw.Sum);     // 62   // Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 15:36:54
+    OUTFORMFIELD("F_ROWOBJEKTTEXT",tstr);
+    OUTFORMFIELD("F_ROWOBJECT",FEIVrw.Objects);
+    OUTFORMFIELD("F_ALTERNATIVECODE",INr.AlternativeCode);
+    PrintValue("F_ROWWIDTH",FEIVrw.UnitXval,M4Qty,LangNrr,SysFormatRec,false);
+    PrintValue("F_ROWHEIGHT",FEIVrw.UnitYval,M4Qty,LangNrr,SysFormatRec,false);
+    PrintValue("F_ROWDEPTH",FEIVrw.UnitZval,M4Qty,LangNrr,SysFormatRec,false);
+    OUTFORMFIELD("F_WARRANTY",INr.WarrantyLength);
+    if (FIELDINFORM("F_UNITCOMMENT")) then begin
+      SelectUnitText(FEIVr.LangCode,FEIVrw.UnitCode,tstr);
+      OUTFORMFIELD("F_UNITCOMMENT",tstr);
+    end;  
+    PrintValue("F_UNITFACTQUANT",FEIVrw.UnitFactQuant,M4UVal,LangNrr,SysFormatRec,false);
+    OUTFORMFIELD("F_UNITCODE",FEIVrw.UnitCode);
+    PrintValue("F_UNITFACTPRICE",FEIVrw.UnitFactPrice,M423Val,LangNrr,SysFormatRec,false);
+    if (FIELDINFORM("F_ARTNRBC39")) then begin
+      ItemBC39(FEIVrw.ArtCode,tstr);
+      OUTFORMFIELD("F_ARTNRBC39",tstr);
+    end;  
+    if (FIELDINFORM("F_ARTNRBCEAN")) then begin
+      ItemBCEAN(FEIVrw.ArtCode,tstr);
+      OUTFORMFIELD("F_ARTNRBCEAN",tstr);
+    end;  
+    if (FIELDINFORM("F_ARTNRBCEAN13")) then begin
+      ItemBCEAN13(FEIVrw.ArtCode,tstr);        
+      OUTFORMFIELD("F_ARTNRBCEAN13",tstr);
+    end;  
+    tstr = FEIVrw.Spec;
+    if (tstr==INr.Name) then begin
+      if (GetItemNameStr(1,tstr,FEIVr.LangCode,INr.Name,INr.Code)) then begin end;
+    end;
+    OUTFORMFIELD("F_SPECIFIKATION",tstr);
+    PrintValue("F_BELOPP",FEIVrw.Sum,M4Val,LangNrr,SysFormatRec,false);
+    PrintValue("F_ANTAL",FEIVrw.Quant,M4UVal,LangNrr,SysFormatRec,false);
+    PrintValue("F_ANTALLEV",FEIVrw.QuantFract,M4UVal,LangNrr,SysFormatRec,false);
+    PrintValue("F_KOSTPRIS",FEIVrw.BasePrice,M4Val,LangNrr,SysFormatRec,false);
+    PrintValue("F_UNITPRICEINCDISC",Round(FEIVrw.Sum/FEIVrw.Quant,DefaultRoundMode),M4Val,LangNrr,SysFormatRec,false);
+    if (FIELDINFORM("F_APRIS")) then begin
+      GetFieldArgument(Docr,F_APRIS,tstr);
+      if (nonblank(tstr)) then begin
+        t = Round(FEIVrw.Price,SetRoundModeD(StringToInt(tstr)));
+        PrintValue("F_APRIS",t,M45Val,LangNrr,SysFormatRec,false);
+      end else begin
+        if (RoundRec.Discount==0) then begin
+          t = Round(FEIVrw.Price,SetRoundModeD(3));
+        end else begin
+          t = Round(FEIVrw.Price,DefaultRoundMode);
+        end;
+        PrintValue("F_APRIS",t,M423Val,LangNrr,SysFormatRec,false);
+      end;  
+    end;
+    if (FIELDINFORM("F_BASPRIS")) then begin
+      if (FEIVr.InclVAT==0) then begin
+        MulVATIV(FEIVrw.VATCode,FEIVrw.Price,t,t2,0,0);
+        t = t + FEIVrw.Price;
+      end else begin
+        t = FEIVrw.Price*FEIVrw.vRebate;
+        t = t/100;
+        v = FEIVrw.Price - t;
+        t = vatval/FEIVrw.Quant;
+        t = v - t;
+      end;
+      GetFieldArgument(Docr,F_BASPRIS,tstr);
+      if (nonblank(tstr)) then begin
+        PrintValue("F_BASPRIS",Round(t,SetRoundModeD(StringToInt(tstr))),M423Val,LangNrr,SysFormatRec,false);
+      end else begin
+        GetFieldArgument(Docr,F_BASPRIS,tstr);
+        if (nonblank(tstr)) then begin
+          PrintValue("F_BASPRIS",Round(t,SetRoundModeD(StringToInt(tstr))),M423Val,LangNrr,SysFormatRec,false);
+        end else begin
+          PrintValue("F_BASPRIS",t,M423Val,LangNrr,SysFormatRec,false);
+        end;    
+      end;    
+    end;
+    OUTFORMFIELD("F_ARTNR",FEIVrw.ArtCode);
+    OUTFORMFIELD("F_ARTNR2",FEIVrw.ArtCode);
+    OUTFORMFIELD("F_ARTGRUPP",INr.Group);
+    PrintValue("F_RABATT",FEIVrw.vRebate,M4Val,LangNrr,SysFormatRec,false);
+    OUTFORMFIELD("F_MOMSKOD",FEIVrw.VATCode);
+    OUTFORMFIELD("F_SALESACC",FEIVrw.SalesAcc);
+    SelectUnitText(FEIVr.LangCode,INr.Unittext,tstr);
+    OUTFORMFIELD("F_ENHET",tstr);
+    PrintValue("F_PRICEFACTOR",FEIVrw.PriceFactor,M4UVal,LangNrr,SysFormatRec,false);
+    t = FEIVrw.Price;
+    if (FEIVrw.PriceFactor!=0) then begin
+      t = t/FEIVrw.PriceFactor;
+    end;
+    PrintValue("F_UNITPRICE",t,M45Val,LangNrr,SysFormatRec,false);
+    t = MulRateToBase1(FEIVr.CurncyCode,FEIVrw.Price,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValue("F_PRICEBASECURNCY1",t,M4Val,LangNrr,SysFormatRec,false);
+    t = MulRateToBase2(FEIVr.CurncyCode,FEIVrw.Price,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValue("F_PRICEBASECURNCY2",t,M4Val,LangNrr,SysFormatRec,false);
+    t = MulRateToBase1(FEIVr.CurncyCode,FEIVrw.Sum,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValue("F_ROWPRICEBASECURNCY1",t,M4Val,LangNrr,SysFormatRec,false);
+    t = MulRateToBase2(FEIVr.CurncyCode,FEIVrw.Sum,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValue("F_ROWPRICEBASECURNCY2",t,M4Val,LangNrr,SysFormatRec,false);
+    t = MulRateToBase1(FEIVr.CurncyCode,vatval,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValue("F_BASE1ROWVATVAL",t,M4Val,LangNrr,SysFormatRec,false);
+    t = MulRateToBase2(FEIVr.CurncyCode,vatval,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValue("F_BASE2ROWVATVAL",t,M4Val,LangNrr,SysFormatRec,false);
+    if (nonblank(FEIVrw.ArtCode)) then begin
+      rownr = rownr + 1;
+      OUTFORMFIELD("F_ROWNR",rownr);
+      IntToText(FEIVr.LangCode,rownr,tstr);
+      OUTFORMFIELD("F_ROWNRINTEXT",tstr);
+    end;
+    PrintValue("F_ROWVATPRC",vatprc,M4Val,LangNrr,SysFormatRec,false);
+    if (FIELDINFORM("F_ROWVATVAL")) then begin
+      GetFieldArgument(Docr,F_ROWVATVAL,tstr);
+      if (nonblank(tstr)) then begin
+        PrintValue("F_ROWVATVAL",Round(vatval,SetRoundModeD(StringToInt(tstr))),M45Val,LangNrr,SysFormatRec,false);
+      end else begin
+        PrintValue("F_ROWVATVAL",vatval,M4Val,LangNrr,SysFormatRec,false);
+      end;
+    end;
+    t = FEIVrw.Sum + vatval + rowtax;
+    if (FEIVr.InclVAT==1) then begin
+      t = FEIVrw.Sum;
+    end;
+    if (FEIVr.InclVAT==2) then begin
+      t = FEIVrw.Sum + rowtax;
+    end;
+    PrintValue("F_ROWSUMTOTAL",t,M4Val,LangNrr,SysFormatRec,false);
+    PrintValue("F_ROWSUMWITHVAT",vatval,M4Val,LangNrr,SysFormatRec,false);
+    t = MulRateToBase1(FEIVr.CurncyCode,v,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValue("F_BASE1ROWTOT",t,M4Val,LangNrr,SysFormatRec,false);
+    t = MulRateToBase2(FEIVr.CurncyCode,v,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValue("F_BASE2ROWTOT",t,M4Val,LangNrr,SysFormatRec,false);
+    EndFormRow;
+  end;
+  if (FIELDINFORM("F_VATINTEXT")) then begin
+    Val2ToText("",FEIVr.Sum3,M4Val,FEIVr.CurncyCode,FEIVr.LangCode,tstr);
+    OUTFORMFIELD("F_VATINTEXT",tstr);
+  end;
+  if (FIELDINFORM("F_BASE1SUMMA")) then begin
+    t = MulRateToBase1(FEIVr.CurncyCode,FEIVr.Sum1,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    valtyp = M4Val;
+    GetFieldArgument(Docr,F_BASE1SUMMA,tstr);
+    if (tstr=="-") then begin
+      valtyp = M4NegVal;
+    end;
+    PrintValue("F_BASE1SUMMA",t,valtyp,LangNrr,SysFormatRec,false);
+  end;
+  if (FIELDINFORM("F_BASE1MOMS")) then begin
+    t = MulRateToBase1(FEIVr.CurncyCode,FEIVr.Sum3,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    valtyp = M4Val;
+    GetFieldArgument(Docr,F_BASE1MOMS,tstr);
+    if (tstr=="-") then begin
+      valtyp = M4NegVal;
+    end;
+    PrintValue("F_BASE1MOMS",t,valtyp,LangNrr,SysFormatRec,false);
+  end;
+  if (FIELDINFORM("F_BASE1BETALA")) then begin
+    t = MulRateToBase1(FEIVr.CurncyCode,FEIVr.Sum4,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    valtyp = M4Val;
+    GetFieldArgument(Docr,F_BASE1BETALA,tstr);
+    if (tstr=="-") then begin
+      valtyp = M4NegVal;
+    end;
+    PrintValue("F_BASE1BETALA",t,valtyp,LangNrr,SysFormatRec,false);
+  end;
+  if (FIELDINFORM("F_BASE2SUMMA")) then begin
+    t = MulRateToBase2(FEIVr.CurncyCode,FEIVr.Sum1,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    valtyp = M4Val;
+    GetFieldArgument(Docr,F_BASE2SUMMA,tstr);
+    if (tstr=="-") then begin
+      valtyp = M4NegVal;
+    end;
+    PrintValue("F_BASE2SUMMA",t,valtyp,LangNrr,SysFormatRec,false);
+  end;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 15:36:58
+	  // 62 s
+  if (FIELDINFORM("F_AMOUNT")) then begin
+    t = FEIVr.Sum1+FEIVr.Sum3;
+    valtyp = M4Val;
+    GetFieldArgument(Docr,F_BASE2SUMMA,tstr);
+    if (tstr=="-") then begin
+      valtyp = M4NegVal;
+    end;
+    PrintValue("F_AMOUNT",t,valtyp,LangNrr,SysFormatRec,false);
+  end;  
+  if (FIELDINFORM("F_TAX1")) then begin
+    t = FEIVr.Sum4-FEIVr.Sum3-FEIVr.Sum1;
+    valtyp = M4Val;
+    GetFieldArgument(Docr,F_BASE2SUMMA,tstr);
+    if (tstr=="-") then begin
+      valtyp = M4NegVal;
+    end;
+    PrintValue("F_TAX1",t,valtyp,LangNrr,SysFormatRec,false);
+  end;  
+  // 62 e
+
+	// Edit End ---------------------------------------------- Edit End
+	  if (FIELDINFORM("F_BASE2MOMS")) then begin
+    t = MulRateToBase2(FEIVr.CurncyCode,FEIVr.Sum3,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    valtyp = M4Val;
+    GetFieldArgument(Docr,F_BASE2MOMS,tstr);
+    if (tstr=="-") then begin
+      valtyp = M4NegVal;
+    end;
+    PrintValue("F_BASE2MOMS",Round(t,GetVATRoundMode(RoundRec)),valtyp,LangNrr,SysFormatRec,false);
+  end;
+  if (FIELDINFORM("F_BASE2BETALA")) then begin
+    t = MulRateToBase2(FEIVr.CurncyCode,FEIVr.Sum4,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    valtyp = M4Val;
+    GetFieldArgument(Docr,F_BASE2BETALA,tstr);
+    if (tstr=="-") then begin
+      valtyp = M4NegVal;
+    end;
+    PrintValue("F_BASE2BETALA",t,valtyp,LangNrr,SysFormatRec,false);
+  end;
+  PrintValue("F_SUMMAMOMS",FEIVr.Sum4-FEIVr.Sum3,M4Val,LangNrr,SysFormatRec,false);
+  if (FIELDINFORM("F_ATTBETALATEXT")) then begin
+    ValToText(FEIVr.Sum4,M4Val,FEIVr.CurncyCode,FEIVr.LangCode,tstr);
+    OUTFORMFIELD("F_ATTBETALATEXT",tstr);  
+  end;
+  if (FIELDINFORM("F_AMOUNTINTEXT")) then begin
+    GetFieldArgument(Docr,F_AMOUNTINTEXT,tstr);
+    Val2ToText(tstr,FEIVr.Sum4,M4Val,FEIVr.CurncyCode,FEIVr.LangCode,tstr);
+    OUTFORMFIELD("F_AMOUNTINTEXT",tstr);
+  end;
+  if (FIELDINFORM("F_AMOUNTINTEXTBASECUR1")) then begin
+    t = MulRateToBase1(FEIVr.CurncyCode,FEIVr.Sum4,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValToTextBaseCur(t,M4Val,FEIVr.LangCode,1,tstr);
+    OUTFORMFIELD("F_AMOUNTINTEXTBASECUR1",tstr);  
+  end;  
+  if (FIELDINFORM("F_AMOUNTINTEXTBASECUR2")) then begin
+    t = MulRateToBase2(FEIVr.CurncyCode,FEIVr.Sum4,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
+    PrintValToTextBaseCur(t,M4Val,FEIVr.LangCode,2,tstr);
+    OUTFORMFIELD("F_AMOUNTINTEXTBASECUR2",tstr);  
+  end;  
+  if (FIELDINFORM("F_MOMS")) then begin
+    GetFieldArgument(Docr,F_MOMS,tstr);
+    if (nonblank(tstr)) then begin
+      t = Round(FEIVr.Sum3,SetRoundModeD(StringToInt(tstr)));
+      tstr = ValToString(t,M45Val,SysFormatRec.thousSep,SysFormatRec.decimalPt,LangNrr.CutDecimals);
+    end else begin
+      tstr = ValToString(FEIVr.Sum3,M4Val,SysFormatRec.thousSep,SysFormatRec.decimalPt,LangNrr.CutDecimals);
+    end;
+    OUTFORMFIELD("F_MOMS",tstr);      
+  end;  
+  if (FIELDINFORM("F_ATTBETALA")) then begin
+    GetFieldArgument(Docr,F_ATTBETALA,tstr);
+    if (nonblank(tstr)) then begin
+      t = Round(FEIVr.Sum4,SetRoundModeD(StringToInt(tstr)));
+      tstr = ValToString(t,M45Val,SysFormatRec.thousSep,SysFormatRec.decimalPt,LangNrr.CutDecimals);
+    end else begin
+      tstr = ValToString(FEIVr.Sum4,M4Val,SysFormatRec.thousSep,SysFormatRec.decimalPt,LangNrr.CutDecimals);
+    end;
+    OUTFORMFIELD("F_ATTBETALA",tstr);      
+  end;  
+  if (FIELDINFORM("F_TOPAY")) then begin
+    t = FEIVr.Sum4;
+    PrintValue("F_TOPAY",t,M4Val,LangNrr,SysFormatRec,false);
+  end;  
+  CalcFEIVTotals(FEIVr,Docr,RoundRec,LangNrr,SysFormatRec);
+  RETURN;
+END;
+
+function val GetVATprc(string vatcode)
+BEGIN
+  record VATCodeBlock VATRec;
+  row VATCodeBlock VATrw;
+  Integer i,rwcnt;
+  val res;
+  
+  BlockLoad(VATRec);
+  rwcnt = MatRowCnt(VATRec);
+  for (i=i;i<rwcnt;i=i+1) begin
+    MatRowGet(VATRec,i,VATrw);
+    if (vatcode==VATrw.VATCode) then begin
+      res = VATrw.ExVatpr;
+      if (blank(res))  then begin
+        res = VATrw.ExVatpr;
+      end;  
+      i = rwcnt;
+    end;
+  end;
+  GetVATprc = res;
+  RETURN;
+END;
+
+procedure PrintFEIVCorrection(record RcVc RepSpec,record FEIVVc FEIVr,record FEIVVc CorFEIVr,string formcode)
+BEGIN
+  Integer cori,corrwcnt,rwcnt;
+  row FEIVVc orgFEIVrw;
+  row FEIVVc CorFEIVrw;
+  record SysFormatBlock SysFormatRec;
+  record LangNrVc LangNrr;
+  record RoundBlock RoundRec;
+  record DocVc Docr;
+  string 255 tstr;
+  val t,v,vatv,t1;
+
+  Docr.Code = formcode;
+  if (ReadFirstMain(Docr,1,true)) then begin
+  end;
+  CommonDocumentFields(RepSpec);    
+  NumberofDocumentPages(formcode,MatRowCnt(CorFEIVr));
+  BlockLoad(SysFormatRec);
+  BlockLoad(RoundRec);
+  OUTFORMFIELD("F_KOMMENTAR",FEIVr.PMComment);        
+  GetLangNr(CorFEIVr.LangCode,LangNrr);
+  rwcnt = MatRowCnt(FEIVr);
+  corrwcnt = MatRowCnt(CorFEIVr);
+  for (cori=0;cori<corrwcnt;cori=cori+1) begin
+    MatRowGet(CorFEIVr,cori,CorFEIVrw);
+    ClearRow(FEIVr,orgFEIVrw,1);
+    if (CorFEIVrw.OrdRow>=0) then begin
+      MatRowGet(FEIVr,CorFEIVrw.OrdRow,orgFEIVrw);//orig row
+    end;
+    OUTFORMFIELD("F_ARTNR",CorFEIVrw.ArtCode);
+    OUTFORMFIELD("F_SPECIFIKATION",CorFEIVrw.Spec);
+    if (CorFEIVrw.Quant!=0) then begin//qty change
+      PrintValue("F_INQTY",CorFEIVrw.Quant,M4UVal,LangNrr,SysFormatRec,false);
+      if (FIELDINFORM("F_APRIS")) then begin
+        GetFieldArgument(Docr,F_APRIS,tstr);
+        if (nonblank(tstr)) then begin
+          t = Round(orgFEIVrw.Price,SetRoundModeD(StringToInt(tstr)));
+          PrintValue("F_APRIS",t,M45Val,LangNrr,SysFormatRec,false);
+        end else begin
+          if (RoundRec.Discount==0) then begin
+            t = Round(orgFEIVrw.Price,SetRoundModeD(3));
+          end else begin
+            t = Round(orgFEIVrw.Price,DefaultRoundMode);
+          end;
+          PrintValue("F_APRIS",t,M423Val,LangNrr,SysFormatRec,false);
+        end;  
+      end; 
+      t = GetVATprc(CorFEIVrw.VATCode);
+      if (t==20) then begin
+        v = orgFEIVrw.Price*CorFEIVrw.Quant;
+        PrintValue("F_VAT20",v,M423Val,LangNrr,SysFormatRec,false);
+        MulVATIV(CorFEIVrw.VATCode,v,vatv,t1,CorFEIVr.InclVAT,CorFEIVr.NoTAXonVAT);    
+        vatv = Round(vatv,GetVATRoundModeRB);
+        if (v<0) then begin
+          PrintValue("F_NEGDIFF1",vatv,M423Val,LangNrr,SysFormatRec,false);
+          PrintValue("F_NEGDIFF2",vatv,M423Val,LangNrr,SysFormatRec,false);
+        end else begin
+          PrintValue("F_POSDIFF1",vatv,M423Val,LangNrr,SysFormatRec,false);
+          PrintValue("F_POSDIFF2",vatv,M423Val,LangNrr,SysFormatRec,false);
+        end;
+      end;       
+      if (t==0) and (nonblank(t)) then begin
+        PrintValue("F_VAT0",orgFEIVrw.Price*CorFEIVrw.Quant,M423Val,LangNrr,SysFormatRec,false);
+      end;
+      if (blank(t)) then begin
+        PrintValue("F_VATBLANK",orgFEIVrw.Price*CorFEIVrw.Quant,M423Val,LangNrr,SysFormatRec,false);
+      end;
+      goto LSKIPROW;     
+    end;
+    if (CorFEIVrw.Price!=0) then begin//price change
+      PrintValue("F_OUTQTY",orgFEIVrw.Quant,M4UVal,LangNrr,SysFormatRec,false);
+      if (FIELDINFORM("F_AGREEDPRICE")) then begin
+        GetFieldArgument(Docr,F_APRIS,tstr);
+        if (nonblank(tstr)) then begin
+          t = Round(CorFEIVrw.Price,SetRoundModeD(StringToInt(tstr)));
+          PrintValue("F_AGREEDPRICE",t,M45Val,LangNrr,SysFormatRec,false);
+        end else begin
+          if (RoundRec.Discount==0) then begin
+            t = Round(CorFEIVrw.Price,SetRoundModeD(3));
+          end else begin
+            t = Round(CorFEIVrw.Price,DefaultRoundMode);
+          end;
+          PrintValue("F_AGREEDPRICE",t,M423Val,LangNrr,SysFormatRec,false);
+        end;  
+      end;      
+      t = GetVATprc(CorFEIVrw.VATCode);
+      if (t==20) then begin
+        v = orgFEIVrw.Quant*CorFEIVrw.Price;
+        PrintValue("F_VAT20",v,M423Val,LangNrr,SysFormatRec,false);
+        MulVATIV(CorFEIVrw.VATCode,v,vatv,t1,CorFEIVr.InclVAT,CorFEIVr.NoTAXonVAT);    
+        vatv = Round(vatv,GetVATRoundModeRB);
+        if (v<0) then begin
+          PrintValue("F_NEGDIFF1",vatv,M423Val,LangNrr,SysFormatRec,false);
+          PrintValue("F_NEGDIFF2",vatv,M423Val,LangNrr,SysFormatRec,false);
+        end else begin
+          PrintValue("F_POSDIFF1",vatv,M423Val,LangNrr,SysFormatRec,false);
+          PrintValue("F_POSDIFF2",vatv,M423Val,LangNrr,SysFormatRec,false);
+        end;
+      end;      
+      if (t==0) and (nonblank(t)) then begin
+        PrintValue("F_VAT0",orgFEIVrw.Quant*CorFEIVrw.Price,M423Val,LangNrr,SysFormatRec,false);
+      end;
+      if (blank(t)) then begin
+        PrintValue("F_VATBLANK",orgFEIVrw.Quant*CorFEIVrw.Price,M423Val,LangNrr,SysFormatRec,false);
+      end;      
+      goto LSKIPROW;     
+    end;
+LSKIPROW:;
+    EndFormRow;
+  end;
+  RETURN;
+END;
+
+procedure FEIVCorrection(record RcVc RepSpec,record FEIVVc FEIVr,string formcode)
+BEGIN
+  record FEIVVc CorFEIVr;
+  row FEIVVc CorFEIVrw;
+  row FEIVVc FEIVrw;
+  Integer i,rwcnt,cori,corrwcnt;
+  
+  RecordCopy(CorFEIVr,FEIVr);
+  rwcnt = MatRowCnt(CorFEIVr);
+  rwcnt = MatRowCnt(FEIVr);
+  corrwcnt = MatRowCnt(CorFEIVr);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(FEIVr,i,FEIVrw);
+    if (FEIVrw.stp!=11) then begin
+      for (cori=0;cori<corrwcnt;cori=cori+1) begin
+        MatRowGet(CorFEIVr,cori,CorFEIVrw);
+        if (CorFEIVrw.stp==11) then begin
+          if (FEIVrw.ArtCode==CorFEIVrw.ArtCode) then begin
+            CorFEIVrw.Quant = CorFEIVrw.Quant - FEIVrw.Quant;
+            CorFEIVrw.Price = CorFEIVrw.Price - FEIVrw.Price;
+            CorFEIVrw.OrdRow = i;//original row no
+            MatRowPut(CorFEIVr,cori,CorFEIVrw);
+          end;
+        end;
+      end;
+    end;
+  end;  
+  corrwcnt = MatRowCnt(CorFEIVr);
+  for (cori=0;cori<corrwcnt;cori=cori+1) begin
+    MatRowGet(CorFEIVr,cori,CorFEIVrw);
+    if (CorFEIVrw.stp!=11) then begin
+      MatRowDelete(CorFEIVr,cori);
+      cori = cori - 1;
+      corrwcnt = MatRowCnt(CorFEIVr);
+    end;
+  end;  
+  PrintFEIVCorrection(RepSpec,FEIVr,CorFEIVr,formcode);
+  RETURN;
+END;
+
+global
+procedure DoFEIVForm(record RcVc RepSpec,record FEIVVc FEIVr)
+BEGIN
+
+
+  record FormDefVc FDr;
+  row FormDefVc FDrw;
+  Boolean printf,langf;
+  Integer intdocnr;
+  string 30 formcode,langcode,langcod2;
+  Integer i,rwcnt;
+
+  langcode = FEIVr.LangCode;
+//  langcod2 = FEIVr.ShipMode;
+
+  FDr.repname = RepSpec.repname;
+  FDr.shortname = RepSpec.shortname;
+  if (ReadFirstMain(FDr,1,true)==false) then begin
+    MessageBox(1624, " " & USetStr(1623));
+    goto LDoFEIVForm;
+  end;
+  rwcnt = MatRowCnt(FDr);
+  for (i=rwcnt-1;i>=0;i=i-1) begin
+    MatRowGet(FDr,i,FDrw);
+    if (FDrw.LangCode==langcode) then begin
+      i = -1;
+      langf = true;
+    end;
+  end;
+  if (langf==false) then begin langcode = ""; end;
+  intdocnr = 1;
+  printf = true;
+  while (printf) begin  
+LFINDFORMCOCEFEIV:;
+    formcode = "";
+    for (i=rwcnt-1;i>=0;i=i-1) begin
+      MatRowGet(FDr,i,FDrw);
+      if (FindFormcode(FEIVr.OKFlag,FDrw.Typ)) then begin 
+        if (Getformcode(i,FDrw.intdocnr,FDrw.FPCode,FDrw.UserGroup,FDrw.LangCode,FDrw.SerNr,FEIVr.SerNr,FDrw.PrintGroupCode,
+                        langcode,intdocnr,"FEIVVc",formcode)) then
+        begin
+          goto LFEFEIVBREAK;
+        end;
+      end;
+    end;
+    if (nonblank(langcod2)) then begin
+      langcode = langcod2;
+      langcod2 = "";
+      goto LFINDFORMCOCEFEIV;
+    end;  
+LFEFEIVBREAK:;
+    if (nonblank(formcode)) then begin
+      if (OpenForm(formcode)) then begin
+        if (FEIVr.InvType!=3) then begin
+          PrintFEIV(RepSpec,FEIVr,formcode);
+        end else begin
+          FEIVCorrection(RepSpec,FEIVr,formcode);
+        end;
+        CloseForm;
+      end else begin
+        printf = false;
+        MessageBox(1546,formcode);
+      end;
+    end else begin
+      printf = false;
+      if (intdocnr==1) then begin
+        MessageBox(1624, " " & USetStr(1623));
+      end;
+    end;
+    intdocnr = intdocnr + 1;
+  end;
+LDoFEIVForm:;  
+  RETURN;
+END;
+

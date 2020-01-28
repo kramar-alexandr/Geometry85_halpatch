@@ -1,0 +1,178 @@
+//custom file
+
+remote procedure ExtractObj(string,var Integer,var string);
+remote function Boolean TSVc_PasteArtCode(var record TSVc,Integer,var string);
+remote procedure TSVc_PastePRCode(var record TSVc,Integer);
+
+procedure TSSumUp(record TSVc TSp)
+BEGIN
+  row TSVc TSrw;
+  Integer rwcnt,i;
+  
+  rwcnt = MatRowCnt(TSp);
+  TSp.Sum = blankval;
+  TSp.SumOther = blankval;
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(TSp,i,TSrw);
+    if ((TSrw.stp==1) and (TSrw.ovst==0)) then begin
+      if (TSrw.ItemType==3) then begin
+        TSp.Sum = TSp.Sum + TSrw.Qty;
+      end else begin
+        TSp.SumOther = TSp.SumOther + TSrw.Qty;
+      end;
+    end;
+  end;
+  RETURN;
+END;
+
+
+webpublic global procedure WebLoginTimeSheet()
+begin
+	string 255 arg,login,password;
+	record UserVc User;
+	
+	arg = webgetarg("login");
+	login = firstinrange(arg,10);
+	password = lastinrange(arg,10);
+	
+	User.Code = login;
+	//logtext(0,login);
+	//logtext(0,password);
+	if(readfirstmain(User,1,true))then begin
+		//logtext(0,password & " ___ " & User.TSControlPassword);
+		if(password==User.TSControlPassword)then begin
+			//logtext(0,User.TSControlPassword);
+			weboutstring("YES");
+		end else begin
+			weboutstring("NO");
+		end;
+	end else begin
+		weboutstring("NO");
+	end;
+	//logtext(0,arg);
+return;
+end;
+
+
+
+
+webpublic global updating procedure WebSendTimeSheet()
+begin
+string 200 arg;
+string 50 tstr,project,login,timerec;
+val rectime;
+integer pos;
+record PRVc PRr;
+record TSVc TSr;
+row TSVc TSrw;
+boolean findf,TrHs,testf,rowfind;
+record UserVc User;
+date firstmonth;
+integer mtrw,i;
+string 255 inwarn;
+
+	arg = webgetarg("req");
+	pos = 0;
+  ExtractObj(arg,pos,project);
+  ExtractObj(arg,pos,login);
+	ExtractObj(arg,pos,timerec);
+	if(nonblank(timerec))then begin
+		rectime = evaltoval(timerec);
+		if(rectime>0)then begin
+			rectime = round(rectime/60,DefaultValRoundOff);
+		end;
+	end;
+	//logtext(0,project & "_" & login & "_" & timerec & "_" & rectime);
+	if(nonblank(project) and rectime>0)then begin
+		PRr.Code = project;
+		if(readfirstmain(PRr,1,true))then begin
+			User.Code = login;
+			if(nonblank(login) and readfirstmain(User,1,true))then begin
+				//logtext(0,User.Code);
+				findf = false;
+				TSr.RegDate = currentdate;
+				TSr.UserCode = User.Code;
+				TrHs = true;
+				firstmonth = addday(currentdate,-(getday(currentdate)+1));
+				while(loopbackkey("DateUser",TSr,2,TrHs))begin
+					testf = true;
+					if(TSr.UserCode!=User.Code)then begin TrHs=false; testf=false; end;
+					//logtext(0,firstmonth);
+					if(TSr.RegDate<firstmonth)then begin TrHs=false; testf=false; end;
+					if(TSr.RegDate>currentdate)then begin testf=false; end;
+					if(TSr.OKFlag>0)then begin testf=false; end;
+					//logtext(0,TSr.SerNr);
+					if(testf)then begin
+						//logtext(0,testf);
+						findf = true;
+						TrHs=false;
+						testf=false;
+						mtrw = matrowcnt(TSr);
+						rowfind = false;
+						if(mtrw>0)then begin
+							For(i=mtrw-1;i>-1;i=i-1) begin
+								matrowget(TSr,i,TSrw);
+								if(TSrw.PRCode==project and TSrw.EMCode==User.Code and TSrw.date==currentdate and rowfind==false)then begin
+									rowfind = true;
+									TSrw.Qty = TSrw.Qty + rectime;
+									matrowput(TSr,i,TSrw);
+								end;
+							end; 
+						end;
+						if(rowfind==false)then begin
+							TSrw.stp=1;
+							TSrw.PRCode=project;
+							matrowput(TSr,mtrw,TSrw);
+							TSVc_PastePRCode(TSr,mtrw);
+							matrowget(TSr,mtrw,TSrw);
+							TSrw.ArtCode = "GENERAL";
+							matrowput(TSr,mtrw,TSrw);
+							TSVc_PasteArtCode(TSr,mtrw,inwarn);
+							matrowget(TSr,mtrw,TSrw);
+							TSSumUp(TSr);
+							TSrw.PRCode=project;
+							TSrw.date = currentdate;
+							TSrw.EMCode = User.Code;
+							TSrw.Qty = TSrw.Qty + rectime;
+							matrowput(TSr,mtrw,TSrw);
+							rowfind = true;
+						end;
+						if(rowfind)then begin
+							TSSumUp(TSr);
+							recordstore(TSr,true);
+						end;
+					end;
+				end;
+				if(rowfind==false)then begin
+					recordnew(TSr);
+					TSr.UserCode = USer.Code;
+					TSr.RegDate = currentdate;
+					TSr.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");
+					TSr.Comment = "Create from PlugIn";
+					TSrw.stp=1;
+					TSrw.PRCode=project;
+					matrowput(TSr,0,TSrw);
+					TSVc_PastePRCode(TSr,0);
+					matrowget(TSr,0,TSrw);
+					TSrw.ArtCode = "GENERAL";
+					matrowput(TSr,0,TSrw);
+					TSVc_PasteArtCode(TSr,0,inwarn);
+					matrowget(TSr,0,TSrw);
+					TSrw.date = currentdate;
+					//TSrw.EMCode = User.Code;
+					TSrw.Qty = rectime;
+					matrowput(TSr,0,TSrw);
+					rowfind = true;
+					
+					TSSumUp(TSr);
+					recordstore(TSr,true);
+				end;
+				if(rowfind)then begin
+					weboutstring("YES");
+				end;
+			end;
+		end;
+	end;
+
+return;
+end;

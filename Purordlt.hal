@@ -1,0 +1,434 @@
+external procedure BeginCurncyTotals(var Integer);
+external procedure AddCurncyTotals(var array string,var array val,var Integer,string,val);
+external procedure PrintCurncyTotals(array string,array val,array val,array val,Integer,Integer,Integer,Integer,Integer,Boolean,Integer);
+external procedure HTDetailLevel(Integer, var string);
+external procedure HTSupplier(string, var string);
+external procedure HTNr(Integer,Integer,LongInt,LongInt,var string);
+external procedure HTCustClass(string,var string);
+external procedure HTCustClassType(string,var string);
+external function Boolean SetInSet2(string,string);
+external procedure ClassTypef(string,string,var Boolean);
+
+
+
+procedure RepPO( record POVc POp)
+begin
+  Integer i,rwcnt;
+  row POVc POrw;
+
+  StartFormat(15);
+  OutLongInt(0,"DblPOVc",POp.SerNr,false);
+  OutDate(130,0,POp.TransDate,false);
+  OutString(220,0,POp.PayDeal,false);
+  OutString(300,"dblPRVc",POp.PRCode,false);// SAV 2011_08_18// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:21
+  EndFormat;
+  StartFormat(15);
+  OutString(50,0,POp.VECode,false);
+  OutString(200,0,POp.Addr0,false);
+  EndFormat;
+  StartFormat(15);
+  OutString(200,0,POp.Addr1,false);
+  StartFormat(15);
+  EndFormat;
+  StartFormat(15);
+  OutString(50,0,POp.OurContact,false);     
+  OutString(200,0,POp.Addr2,false);
+  EndFormat;
+  if nonblank(POp.Addr3) then begin
+    StartFormat(15);
+    OutString(200,0,POp.Addr3,false);
+    EndFormat;
+  end;
+  if nonblank(POp.VEContact) then begin
+    StartFormat(15);
+    OutString(200,0,POp.VEContact,false);     
+    EndFormat;
+  end;
+  if nonblank(POp.CurncyCode) then begin
+    StartFormat(15);
+    OutString(460,0,POp.CurncyCode,false);
+    EndFormat;
+  end;
+  rwcnt = MatRowCnt(POp);
+  for (i = 0 ; i<rwcnt ;i=i+1) begin
+    MatRowGet(POp,i,POrw);
+    if (POrw.stp==1) then  begin
+      StartFormat(15);
+      OutString(20,0,POrw.ArtCode,false);
+      OutVal(124,0,POrw.Quant,M4UVal,true);
+      OutString(130,0,POrw.Spec,false);
+      OutVal(340,0,POrw.Price,M423Val,true);
+      OutVal(370,0,POrw.vRebate,M41Val,true);
+      OutVal(460,0,POrw.Sum,M4Val,true);
+      OutString(480,0,POrw.VATCode,true);
+      EndFormat;
+
+    end;
+  end;
+  Black_Divider(380,460);
+  StartFormat(15);
+  if (POp.ExportFlag!=0) then begin
+    OutString(20,0,USetStr(4948),false);
+  end;
+  OutVal(260,0,POp.Sum1,M4Val,true);
+  OutVal(360,0,POp.Sum3,M4Val,true);
+  OutVal(460,0,POp.Sum4,M4Val,true);
+  EndFormat;
+return;
+end;
+
+
+global
+procedure PurOrdJRn(record RcVc RepSpec)
+begin
+  record POVc POr;
+  record CUVc VEr;
+  Boolean TrHs;
+  val iv;
+  val TotSum;
+  Boolean testf;
+  LongInt afr,ato;
+  string 255 tstr;
+  Integer rw;
+  array val av1;
+  array val av2;
+  array val av3;
+  array string 20 acur;
+  Integer curcnt;
+
+  rw = 1;
+  afr = FirstInRange(RepSpec.f1,30);
+  ato = LastInRange(RepSpec.f1,30);
+
+  TotSum = 0;
+  BeginCurncyTotals(curcnt);
+  StartReportJob(USetStr(4941));
+  if nonblank(RepSpec.f1) then begin
+    HTNr(1823,1822,afr,ato,tstr);
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end;
+  HTDetailLevel(RepSpec.ArtMode,tstr);
+  Header(rw,tstr,1);
+  rw = rw + 1;
+  HTSupplier(RepSpec.f2,tstr);
+  if nonblank(tstr) then begin
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end;
+  if (nonblank(RepSpec.f3)) then begin
+      tstr = USetStr(2768);
+      tstr = tstr & ": " & RepSpec.f3;
+      Header(rw,tstr,1);
+      rw = rw + 1;
+  end; 
+  HTCustClass(RepSpec.f4,tstr);
+  if (nonblank(tstr)) then begin
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end; 
+  HTCustClassType(RepSpec.f5,tstr);
+  if (nonblank(tstr)) then begin
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end; 
+  EndHeader;
+  if ((RepSpec.ArtMode==2) or (RepSpec.ArtMode==0)) then  begin
+    StartFormat(15);
+    OutString(0,0,USetStr(4942),false);
+    OutString(60,0,USetStr(4943),false);
+	 OutString(100,0,USetStr(4862),false);// SAV 2011_08_18// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
+    OutString(180,0,USetStr(4944),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
+    OutString(1,0,USetStr(4947),true);
+    EndFormat;
+  end;
+  if (RepSpec.ArtMode==1)  then  begin
+    StartFormat(15);
+    OutString(0,0,USetStr(4942),false);
+    OutString(130,0,USetStr(4943),false);
+	 OutString(300,0,USetStr(4862),false);// SAV 2011_08_18// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:31
+    EndFormat;
+  end;
+  POr.SerNr = afr;
+  if (RepSpec.ArtMode==0) then begin
+    Gray_Divider(0,1);
+  end;
+  TrHs = true;
+  while LoopMain(POr,1,TrHs) begin
+    if (ato<>-1) then begin
+      if (POr.SerNr>ato) then begin
+        TrHs = false;
+      end;
+    end;
+    if (TrHs) then begin
+      testf = true;
+      if (nonblank(RepSpec.f2) and (RepSpec.f2<>POr.VECode)) then begin
+         testf = false;
+      end;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:02:36
+			if (nonblank(RepSpec.f6) and (RepSpec.f6<>POr.PRCode)) then begin
+         testf = false;
+      end;
+
+	// Edit End ---------------------------------------------- Edit End
+	      if (nonblank(RepSpec.FirstAcc) and (RepSpec.FirstAcc<>POr.POClass)) then begin
+         testf = false;
+      end;
+      if ((nonblank(RepSpec.f3)) and (RepSpec.f3<>POr.Location)) then begin 
+        testf = false; 
+      end;
+      if (DateInRange(POr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin testf = false; end;
+      if (testf) then begin
+        VEr.Code = POr.VECode;
+        if ReadFirstMain(VEr,1,true) then begin
+          if (nonblank(RepSpec.f4)) then begin
+            if (SetInSet2(RepSpec.f4,VEr.Classification)==false) then begin
+              testf = false;
+            end;
+          end;
+          if (nonblank(RepSpec.f5)) then begin
+            if (testf) then begin
+              testf = false;
+              ClassTypef(RepSpec.f5,VEr.Classification,testf);
+            end;
+          end;
+        end;  
+      end; 
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:02:41
+			if (VEr.blockedFlag==0) and (RepSpec.flags[16]==1) then begin testf = false; end; // SAV 2011_08_08
+		if (VEr.blockedFlag==1) and (RepSpec.flags[16]==0) then begin testf = false; end;
+		if (POr.Closed==0) and (RepSpec.flags[17]==1) then begin testf = false; end; // SAV 2011_08_08
+		if (POr.Closed==1) and (RepSpec.flags[17]==0) then begin testf = false; end;
+		if (POr.OKFlag==0) and (RepSpec.flags[18]==0) then begin testf = false; end; // SAV 2011_09_07
+
+	// Edit End ---------------------------------------------- Edit End
+	      if (testf) then begin
+        if ((RepSpec.ArtMode==0) or (RepSpec.ArtMode==1)) then begin
+          iv = POr.Sum4;
+        end;
+        if (RepSpec.ArtMode==2) then begin
+          iv = POr.Sum1;
+        end;
+        TotSum = TotSum + iv;
+        AddCurncyTotals(acur,av1,curcnt,POr.CurncyCode,iv);
+        if  (RepSpec.ArtMode==1) then begin
+          Gray_Divider(0,1);
+          RepPO(POr);
+        end;
+        if ((RepSpec.ArtMode==0) or (RepSpec.ArtMode==2)) then begin
+          StartFormat(15);
+          OutLongInt(0,"DblPOVc",POr.SerNr,false);
+          OutDate(60,0,POr.TransDate,false);
+			 OutString(100,"dblPRVc",POr.PRCode,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:52
+          OutString(180,0,POr.Addr0,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:53
+          OutVal(440,0,iv,M4Val,true);
+          OutString(445,0,POr.CurncyCode,false);
+          EndFormat;
+         end;
+      end;
+    end;
+  end;
+  Gray_Divider(0,1);
+  if (RepSpec.ArtMode==1) then begin
+    PrintCurncyTotals(acur,av1,av2,av3,curcnt,460,-1,-1,140,true,RepSpec.PocketPC);
+  end else begin
+    PrintCurncyTotals(acur,av1,av2,av3,curcnt,440,-1,-1,140,true,RepSpec.PocketPC);
+  end; 
+  EndJob;
+  return;
+end;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:03:05
+	
+
+global
+procedure NewPurOrdJRn(record RcVc RepSpec) //  Gray-X SAV 2011_12_16 - дата простановки OKFlag
+begin
+  record POVc POr;
+  record CUVc VEr;
+  Boolean TrHs;
+  val iv;
+  val TotSum;
+  Boolean testf;
+  LongInt afr,ato;
+  string 255 tstr;
+  Integer rw;
+  array val av1;
+  array val av2;
+  array val av3;
+  array string 20 acur;
+  Integer curcnt;
+	record RHistVc RHr;
+	string 255 rlink;
+  rw = 1;
+  afr = FirstInRange(RepSpec.f1,30);
+  ato = LastInRange(RepSpec.f1,30);
+
+  TotSum = 0;
+  BeginCurncyTotals(curcnt);
+  StartReportJob(USetStr(4941));
+  if nonblank(RepSpec.f1) then begin
+    HTNr(1823,1822,afr,ato,tstr);
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end;
+  HTDetailLevel(RepSpec.ArtMode,tstr);
+  Header(rw,tstr,1);
+  rw = rw + 1;
+  HTSupplier(RepSpec.f2,tstr);
+  if nonblank(tstr) then begin
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end;
+  if (nonblank(RepSpec.f3)) then begin
+      tstr = USetStr(2768);
+      tstr = tstr & ": " & RepSpec.f3;
+      Header(rw,tstr,1);
+      rw = rw + 1;
+  end; 
+  HTCustClass(RepSpec.f4,tstr);
+  if (nonblank(tstr)) then begin
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end; 
+  HTCustClassType(RepSpec.f5,tstr);
+  if (nonblank(tstr)) then begin
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end; 
+  EndHeader;
+  if ((RepSpec.ArtMode==2) or (RepSpec.ArtMode==0)) then  begin
+    StartFormat(15);
+    OutString(0,0,USetStr(4942),false);
+    OutString(60,0,USetStr(4943),false);
+	 OutString(100,0,USetStr(4862),false);// SAV 2011_08_18
+    OutString(180,0,USetStr(4944),false);
+    OutString(1,0,USetStr(4947),true);
+    EndFormat;
+  end;
+  if (RepSpec.ArtMode==1)  then  begin
+    StartFormat(15);
+    OutString(0,0,USetStr(4942),false);
+    OutString(130,0,USetStr(4943),false);
+	 OutString(300,0,USetStr(4862),false);// SAV 2011_08_18
+    EndFormat;
+  end;
+  POr.SerNr = afr;
+  if (RepSpec.ArtMode==0) then begin
+    Gray_Divider(0,1);
+  end;
+  TrHs = true;
+  while LoopMain(POr,1,TrHs) begin
+    if (ato<>-1) then begin
+      if (POr.SerNr>ato) then begin
+        TrHs = false;
+      end;
+    end;
+    if (TrHs) then begin
+      testf = true;
+      if (nonblank(RepSpec.f2) and (RepSpec.f2<>POr.VECode)) then begin
+         testf = false;
+      end;
+		if (nonblank(RepSpec.f6) and (RepSpec.f6<>POr.PRCode)) then begin
+         testf = false;
+      end;
+      if (nonblank(RepSpec.FirstAcc) and (RepSpec.FirstAcc<>POr.POClass)) then begin
+         testf = false;
+      end;
+      if ((nonblank(RepSpec.f3)) and (RepSpec.f3<>POr.Location)) then begin 
+        testf = false; 
+      end;
+      
+      if (testf) then begin
+        VEr.Code = POr.VECode;
+        if ReadFirstMain(VEr,1,true) then begin
+          if (nonblank(RepSpec.f4)) then begin
+            if (SetInSet2(RepSpec.f4,VEr.Classification)==false) then begin
+              testf = false;
+            end;
+          end;
+          if (nonblank(RepSpec.f5)) then begin
+            if (testf) then begin
+              testf = false;
+              ClassTypef(RepSpec.f5,VEr.Classification,testf);
+            end;
+          end;
+        end;  
+      end; 
+		if (VEr.blockedFlag==0) and (RepSpec.flags[16]==1) then begin testf = false; end; // SAV 2011_08_08
+		if (VEr.blockedFlag==1) and (RepSpec.flags[16]==0) then begin testf = false; end;
+		if (POr.OKFlag==0) and (RepSpec.flags[18]==0) then begin testf = false; end; // SAV 2011_09_07
+		// Gray-X SAV 2011_12_16 - дата простановки OKFlag
+		if (testf) and (RepSpec.flags[17]==1) then begin
+			if (DateInRange(POr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin testf = false; end;
+			if nonblankdate(POr.OKDate) then begin
+				if (POr.OKDate<RepSpec.sStartDate) or (POr.OKDate>RepSpec.sEndDate) then begin testf = false; end;
+				if (POr.OKDate>=RepSpec.sStartDate) and (POr.OKDate<=RepSpec.sEndDate) then begin testf = true; end;
+			end;
+			if (POr.Closed==0) then begin testf=false; end;
+		end;
+
+		if (testf)  and (RepSpec.flags[17]==0) then begin
+			testf = false; 
+			if DateInRange(POr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate) then begin
+				if POr.Closed==0 then begin testf = true; end;
+				if nonblankdate(POr.OKDate) and (POr.OKDate>RepSpec.sEndDate) then begin testf=true; end;
+			end;
+		end;
+      if (testf) then begin
+        if ((RepSpec.ArtMode==0) or (RepSpec.ArtMode==1)) then begin
+          iv = POr.Sum4;
+        end;
+        if (RepSpec.ArtMode==2) then begin
+          iv = POr.Sum1;
+        end;
+        TotSum = TotSum + iv;
+        AddCurncyTotals(acur,av1,curcnt,POr.CurncyCode,iv);
+        if  (RepSpec.ArtMode==1) then begin
+          Gray_Divider(0,1);
+          RepPO(POr);
+        end;
+        if ((RepSpec.ArtMode==0) or (RepSpec.ArtMode==2)) then begin
+          StartFormat(15);
+          OutLongInt(0,"DblPOVc",POr.SerNr,false);
+          OutDate(60,0,POr.TransDate,false);
+			 OutString(100,"dblPRVc",POr.PRCode,false);
+          OutString(180,0,POr.Addr0,false);
+          OutVal(440,0,iv,M4Val,true);
+          OutString(445,0,POr.CurncyCode,false);
+			 // RHr.RecidStr = GetRecordLink(POr);
+			 // if (ReadFirstKey("RecidStr",RHr,1,true)) then begin 
+			  // OutString(0,0,"!!!!!!!!!! " & RHr.TransDate,false);
+			 // end;
+			 // if (ReadLastKey("RecidStr",RHr,1,true)) then begin 
+			  // OutString(0,0," eeeee " & RHr.TransDate,false);
+			 // end;
+          EndFormat;
+         end;
+      end;
+    end;
+  end;
+  Gray_Divider(0,1);
+  if (RepSpec.ArtMode==1) then begin
+    PrintCurncyTotals(acur,av1,av2,av3,curcnt,460,-1,-1,140,true,RepSpec.PocketPC);
+  end else begin
+    PrintCurncyTotals(acur,av1,av2,av3,curcnt,440,-1,-1,140,true,RepSpec.PocketPC);
+  end; 
+  curcnt = 0;trhs = true;
+  // while (loopkey("RecidStr",RHr,1,trhs)) begin
+	// StartFormat (15);
+	// OutString(0,0,"!!!!!!!!!! " & RHr.TransDate,false);
+	// OutString(100,0,RHr.RecidStr,false);
+	// OutString(200,0,RHr.Math & " xx",false);
+	// OutString(300,0,RHr.User & " xx",false);
+	// EndFormat;
+	// curcnt = curcnt +1;
+	// if curcnt>2000 then begin trhs = false; end;
+  // end;
+  EndJob;
+  return;
+end;
+	// Edit End ---------------------------------------------- Edit End
+	

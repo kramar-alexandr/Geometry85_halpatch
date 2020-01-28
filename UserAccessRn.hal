@@ -1,0 +1,550 @@
+//переносить как есть
+external function string 255 GetModuleName(string);// Edit ************************** Friday, 1 September 2017 11:26:37
+external function string 255 GetDocumentName(string);// Edit ************************** Friday, 1 September 2017 11:26:38
+external function string 255 GetExportName(string);// Edit ************************** Friday, 1 September 2017 11:26:39
+external function string 255 GetRecordName(string);// Edit ************************** Friday, 1 September 2017 11:26:40
+external function string 255 GetActionName(string);// Edit ************************** Friday, 1 September 2017 11:26:41
+external function string 255 GetReportName(string);// Edit ************************** Friday, 1 September 2017 11:26:42
+external function string 255 GetMaintenanceName(string);// Edit ************************** Friday, 1 September 2017 11:26:42
+external function string 255 GetSettingName(string);// Edit ************************** Friday, 1 September 2017 11:26:34
+external function string 255 GetImportName(string);// Edit ************************** Friday, 1 September 2017 11:26:42
+external function string 255 GetOutputGroupName(string);// Edit ************************** Friday, 1 September 2017 11:26:34
+
+procedure PrintAccessPerCompany(record CompaniesBlock CompaniesRec,array string usercode,array string username,array date datecreated,array string accesscode,array string company,Integer cnt)
+begin
+  row CompaniesBlock comprw;
+  Integer i,j,rwcnt;
+  Boolean oneuseratleast;
+
+  StartFormat(15)
+  OutString(0,0,"User and Access per Company",false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:35:25
+  EndFormat;
+  Black_Divider(0,1);
+  StartFormat(15)
+  OutString(0,0,"Company",false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:35:29
+  OutString(2,0,"Company Name",false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:35:30
+  OutString(3,0,"Short Code",false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:35:31
+  EndFormat;
+  StartFormat(15);
+  OutString(4,0,"Person",false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:35:34
+  OutString(5,0,"Name",false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:35:35
+  OutString(6,0,"Access Gr.",false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:35:35
+  OutString(1,0,"Date Created",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:35:36
+  EndFormat;
+  Gray_Divider(0,1);
+  rwcnt = MatRowCnt(CompaniesRec);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(CompaniesRec,i,comprw);
+    StartFormat(15)
+    OutString(0,0,comprw.CompCode,false);
+    OutString(2,0,comprw.CompName,false);
+    OutString(3,0,comprw.ShortName,false);
+    OutString(1,0,comprw.EnqKey,true);
+    EndFormat;
+    Gray_Divider(0,1);
+    oneuseratleast = false;
+    for (j=0;j<cnt;j=j+1) begin
+      if (comprw.CompCode==company[j]) then begin
+        StartFormat(15)
+        OutString(4,0,usercode[j],false);
+        OutString(5,0,username[j],false);
+        OutString(6,0,accesscode[j],false);
+        OutString(1,0,datecreated[j],true);
+        EndFormat;
+        oneuseratleast = true;
+      end;
+    end;
+    if (oneuseratleast==false) then begin
+      StartFormat(15);
+      OutString(4,0,"No User At All!!",false);
+      EndFormat;
+    end;
+    Gray_Divider(0,1);
+  end;
+  StartFormat(15);
+  EndFormat;
+  return;
+end;
+
+procedure CombineArrays(array string usercode,Integer cnt,var array string usersort,var Integer sortcnt)
+begin
+  Integer i,j;
+  Boolean usrfndf;
+
+  for (i=0;i<cnt;i=i+1) begin
+    usrfndf = false;
+    for (j=0;j<sortcnt;j=j+1) begin
+      if (usercode[i]==usersort[j]) then begin
+        usrfndf = true;
+      end;
+    end;
+    if (usrfndf==false) then begin
+      usersort[sortcnt] = usercode[i];
+      sortcnt = sortcnt + 1;
+    end;
+  end;
+  return;
+end;
+
+procedure PrintCompanyPerAccess(record CompaniesBlock CompaniesRec,array string usercode,array string username,array date datecreated,array string accesscode,array string company,Integer cnt)
+begin
+  row CompaniesBlock comprw;
+  Integer i,j,k,rwcnt,sortcnt;
+  array string 20 usersort;
+  Boolean firstf;
+
+  StartFormat(15)
+  OutString(0,0,"All Companies Access per User",false);
+  EndFormat;
+  Black_Divider(0,1);
+  StartFormat(15)
+  OutString(0,0,"Person",false);
+  OutString(2,0,"Name",false);
+  OutString(3,0,"Access Gr.",false);
+  EndFormat;
+  StartFormat(15)
+  OutString(4,0,"Company",false);
+  OutString(5,0,"Company Name",false);
+  OutString(6,0,"Short Code",false);
+  OutString(1,0,"Encryption Key",true);
+  EndFormat;
+  Gray_Divider(0,1);
+  rwcnt = MatRowCnt(CompaniesRec);
+  CombineArrays(usercode,cnt,usersort,sortcnt);
+  for (i=0;i<sortcnt;i=i+1) begin
+    firstf = true;
+    for (j=0;j<cnt;j=j+1) begin
+      if (usersort[i]==usercode[j]) then begin
+        if (firstf) then begin
+          StartFormat(15)
+          OutString(0,0,usercode[j],false);
+          OutString(2,0,username[j],false);
+          OutString(3,0,accesscode[j],false);
+          OutString(1,0,datecreated[j],true);
+          EndFormat;
+          Gray_Divider(0,1);
+          firstf = false;
+        end;
+        for (k=0;k<rwcnt;k=k+1) begin
+          MatRowGet(CompaniesRec,k,comprw);
+          if (comprw.CompCode==company[j]) then begin
+            StartFormat(15)
+            OutString(4,0,comprw.CompCode,false);
+            OutString(5,0,comprw.CompName,false);
+            OutString(6,0,comprw.ShortName,false);
+            OutString(1,0,comprw.EnqKey,true);
+            EndFormat;
+          end;
+        end;
+      end;
+    end;
+    Gray_Divider(0,1);
+  end;
+  StartFormat(15);
+  EndFormat;
+  return;
+end;
+
+procedure PrintMailAccess(array string usercode,array string username,Integer cnt)
+begin
+  Integer i,j,k,rwcnt,sortcnt;
+  array string 20 usersort;
+  Boolean firstf;
+  record ConfVc Confr;
+  row ConfVc Confrw;
+  string 255 confacc;
+
+  StartFormat(15)
+  OutString(0,0,"User Mail Access",false);
+  EndFormat;
+  Black_Divider(0,1);
+  StartFormat(15)
+  OutString(0,0,"Person",false);
+  OutString(2,0,"Name",false);
+  OutString(3,0,"Conf. Access Group",false);
+  EndFormat;
+  Gray_Divider(0,1);
+  CombineArrays(usercode,cnt,usersort,sortcnt);
+  for (i=0;i<sortcnt;i=i+1) begin
+    firstf = true;
+    for (j=0;j<cnt;j=j+1) begin
+      if (usersort[i]==usercode[j]) then begin
+        if (firstf) then begin
+          confacc = "";
+          Confr.AddrCode = usercode[j];
+          if (ReadFirstKey("AddrCode",Confr,1,true)) then begin
+            rwcnt = MatRowCnt(Confr);
+            for (k=0;k<rwcnt;k=k+1) begin
+              MatRowGet(Confr,k,Confrw);
+              if (nonblank(confacc)) then begin
+                confacc = confacc & ", ";
+              end;
+              confacc = confacc & Confrw.Group;
+            end;
+          end;
+          StartFormat(15)
+          OutString(0,0,usercode[j],false);
+          OutString(2,0,username[j],false);
+          OutString(3,0,confacc,false);
+          EndFormat;
+          firstf = false;
+        end;
+      end;
+    end;
+  end;
+  Gray_Divider(0,1);
+  StartFormat(15);
+  EndFormat;
+  return;
+end;
+
+procedure PrintConfAccess()
+begin
+  record ConfVc Confr;
+  row ConfVc Confrw;
+  string 255 confacc;
+  string 255 tstr;
+  Boolean foundf,testf;
+  Integer rwcnt,k;
+
+  StartFormat(15)
+  OutString(0,0,"Conference Access",false);
+  EndFormat;
+  Black_Divider(0,1);
+  StartFormat(15)
+  OutString(0,0,"Conference",false);
+  OutString(3,0,"Conf. Access Group",false);
+  EndFormat;
+  Gray_Divider(0,1);
+  foundf = true;
+  Confr.AddrName = "";
+  while(LoopKey("AddrName",Confr,1,foundf)) begin
+    testf = true;
+    if (Confr.Class==kConfClassMailbox) then begin
+      testf = false;
+    end;
+    if (Confr.Closed!=0) then begin
+      testf = false;
+    end;
+    if (testf) then begin
+      confacc = "";
+      rwcnt = MatRowCnt(Confr);
+      for (k=0;k<rwcnt;k=k+1) begin
+        MatRowGet(Confr,k,Confrw);
+        if (nonblank(confacc)) then begin
+          confacc = confacc & ", ";
+        end;
+        confacc = confacc & Confrw.Group;
+      end;
+      tstr = Confr.AddrName;
+      if (nonblank(Confr.Comment)) then begin
+        tstr = tstr & " (" & Confr.Comment & ")";
+      end;
+      StartFormat(15)
+      OutString(0,0,tstr,false);
+      OutString(3,0,confacc,false);
+      EndFormat;
+    end;
+  end;
+  Gray_Divider(0,1);
+  StartFormat(15);
+  EndFormat;
+  return;
+end;
+
+procedure SortIt(var array string person,var array string access,var Integer cnt)
+begin
+  Integer i;
+  Boolean foundf;
+  string 5 perstemp,acctemp;
+
+  foundf = true;
+  while (foundf) begin
+    foundf = false;
+    for (i=0;i<cnt;i=i+1) begin
+     if (access[i] & person[i] > access[i+1] & person[i+1]) then begin
+        perstemp = person[i];
+        acctemp  = access[i];
+        person[i] = person[i+1];
+        access[i] = access[i+1];
+        person[i+1] = perstemp;
+        access[i+1] = acctemp;
+        foundf = true;
+      end;
+    end;
+  end;
+  return;
+end;
+
+procedure PrintConfAccessUsers(array string usercode,array string username,array date datecreated,array string accesscode,array string company,Integer acnt)
+begin
+  record ConfAccVc ConfAccr;
+  record ConfVc Confr;
+  row ConfVc Confrw;
+  Boolean foundf,testf;
+  Integer rwcnt,i,j,cnt;
+  array string 20 person;
+  array string 20 access;
+  string 20 oldacc;
+
+  StartFormat(15)
+  OutString(0,0,"Conference Access per User",false);
+  EndFormat;
+  Black_Divider(0,1);
+  StartFormat(15)
+  OutString(0,0,"Access Gr.",false);
+  OutString(2,0,"Comment",false);
+  EndFormat;
+  StartFormat(15)
+  OutString(4,0,"Person",false);
+  OutString(5,0,"Name",false);
+  OutString(6,0,"Access Gr.",false);
+  OutString(7,0,"Company",false);
+  EndFormat;
+  Gray_Divider(0,1);
+  Confr.AddrCode = "";
+  foundf = true;
+  while LoopKey("AddrCode",Confr,1,foundf) begin
+    testf = true;
+    if (Confr.Class!=kConfClassMailbox) then begin
+      testf = false;
+    end;
+    if (Confr.Closed!=0) then begin
+      testf = false;
+    end;
+    if (testf) then begin
+      rwcnt = MatRowCnt(Confr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(Confr,i,Confrw);
+        if (nonblank(Confrw.Group)) then begin
+          testf = true;
+          if (testf) then begin
+            person[cnt] = Confr.AddrCode;
+            access[cnt] = Confrw.Group;
+            cnt = cnt + 1;
+          end;
+        end;
+      end;
+    end;
+  end;
+  SortIt(person,access,cnt);
+  for (i=0;i<=cnt;i=i+1) begin
+    if (nonblank(access[i])) then begin
+      if (access[i]!=oldacc) then begin
+        ConfAccr.Code = access[i];
+        if (ReadFirstMain(ConfAccr,1,true)) then begin end;
+        StartFormat(15);
+        OutString(0,0,access[i],false);
+        OutString(2,0,ConfAccr.Comment,false);
+        EndFormat;
+        oldacc = access[i];
+      end;
+      for (j=0;j<acnt;j=j+1) begin
+        if (person[i]==usercode[j]) then begin
+          StartFormat(15)
+          OutString(4,0,usercode[j],false);
+          OutString(5,0,username[j],false);
+          OutString(6,0,accesscode[j],false);
+          OutString(7,0,company[j],false);
+          OutString(1,0,datecreated[j],true);
+          EndFormat;
+        end;
+      end;
+    end;
+  end;
+  Gray_Divider(0,1);
+  StartFormat(15);
+  EndFormat;
+  return;
+end;
+
+procedure PrintAccessGroupsPerCompany(record CompaniesBlock CompaniesRec)
+begin
+  record AccessVc Accessr;
+  row AccessVc Accessrw;
+  row CompaniesBlock comprw;
+  Integer rwcnt,i,j,arwcnt;
+  string 200 atype,tstr;// Edit ************************** Friday, 1 September 2017 11:27:21
+  Boolean foundf;
+
+  StartFormat(15)
+  OutString(0,0,"Access Groups per Company",false);
+  EndFormat;
+  Black_Divider(0,1);
+  StartFormat(15)
+  OutString(0,0,"Company",false);
+  OutString(2,0,"Company Name",false);
+  OutString(3,0,"Short Code",false);
+  EndFormat;
+  StartFormat(15)
+  OutString(0,0,"Access Gr.",false);
+  OutString(2,0,"Comment",false);
+  OutString(3,0,"Access Gr.",false);
+  OutString(1,0,"Start From",true);
+  EndFormat;
+  Gray_Divider(0,1);
+  rwcnt = MatRowCnt(CompaniesRec);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(CompaniesRec,i,comprw);
+    if (SetCompany(i+1,false)) then begin
+      StartFormat(15)
+      OutString(0,0,comprw.CompCode,false);
+      OutString(2,0,comprw.CompName,false);
+      OutString(3,0,comprw.ShortName,false);
+      OutString(1,0,comprw.EnqKey,true);
+      EndFormat;
+      ResetLoop(Accessr);
+      Accessr.Code = "";
+      foundf = true;
+      while (LoopMain(Accessr,1,foundf)) begin
+        Gray_Divider(0,1);
+        StartFormat(15);
+        OutString(0,0,Accessr.Code,false);
+        OutString(2,0,Accessr.Comment,false);
+        switch(Accessr.StartLevel) begin
+          case -1: OutString(1,0,"Additional",true);
+          case 0: OutString(1,0,"No Access",true);
+          case 1: OutString(1,0,"Full Access",true);
+        end;
+        EndFormat;
+        Gray_Divider(0,1);
+        arwcnt = MatRowCnt(Accessr);
+        for (j=0;j<arwcnt;j=j+1) begin
+          MatRowGet(Accessr,j,Accessrw);
+          if(Accessrw.AccType>0)then begin
+						StartFormat(15);
+						switch (Accessrw.AccType) begin
+							case 1: atype = "Module";
+							case 2: atype = "Register";
+							case 3: atype = "Setting";
+							case 4: atype = "Report";
+							case 5: atype = "Document";
+							case 6: atype = "Export";
+							case 7: atype = "Import";
+							case 8: atype = "Maintenance";
+							case 9: atype = "Action";
+							case 10: atype = "Display Group";
+						end;
+						OutString(4,0,atype,false);
+					
+						tstr = "";
+						switch(Accessrw.AccType)begin
+							case 1: tstr = GetModuleName(Accessrw.AccName);	
+							case 2: tstr = GetRecordName(Accessrw.AccName);
+							case 3: tstr = GetSettingName(Accessrw.AccName);	
+							case 4: tstr = GetReportName(Accessrw.AccName);	
+							case 5: tstr = GetDocumentName(Accessrw.AccName);	
+							case 6: tstr = GetExportName(Accessrw.AccName);
+							case 7: tstr = GetImportName(Accessrw.AccName);
+							case 8: tstr = GetMaintenanceName(Accessrw.AccName);
+							case 9: tstr = GetActionName(Accessrw.AccName);
+							case 10: tstr = GetOutputGroupName(Accessrw.AccName);
+						end;
+					
+						//OutString(5,0,StringFromStringSet(3,Accessrw.AccName),false);
+						OutString(5,0,tstr,false);// Edit ************************** Friday, 1 September 2017 11:28:19
+						switch (Accessrw.AccLevel) begin
+							case 1: atype = "Full";
+							case 2: atype = "Read";
+							case 3: atype = "Read/New";
+							case 6: atype = "Browse";
+							case 7: atype = "Browse/New";
+							case 4: atype = "Limited";
+							case 5: atype = "None";
+						end;
+						OutString(6,0,atype,false);
+						EndFormat;
+          end;
+        end;
+      end;
+    end;
+    Gray_Divider(0,1);
+    StartFormat(15);
+    EndFormat;
+  end;
+  StartFormat(15);
+  EndFormat;
+  return;
+end;
+
+global
+procedure UserAccessRn(record RcVc RepSpec)
+begin
+  record UserVc Userr;
+  Boolean foundf,testf;
+  Integer i,rwcnt;
+  Integer compnr,oldcomp;
+  Array string 20 usercode;
+  Array string 60 username;
+  Array string 20 accesscode;
+  Array Date  datecreated;
+  Array string 5  company;
+  Integer cnt;
+  record CompaniesBlock CompaniesRec;
+  row CompaniesBlock comprw;
+
+  StartReportJob(USetStr(13244));
+  EndHeader;
+  SetRepCol(2,80);
+  SetRepCol(3,220);
+  SetRepCol(4,20);
+  SetRepCol(5,100);
+  SetRepCol(6,240);
+  SetRepCol(7,400);
+// To create the Array of information
+  cnt = 0;
+  oldcomp = CurrentCompany;
+  BlockLoad(CompaniesRec);
+  rwcnt = MatRowCnt(CompaniesRec);
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(CompaniesRec,i,comprw);
+    if (SetCompany(i+1,false)) then begin
+      ResetLoop(Userr);
+      Userr.Code = RepSpec.f1;
+      foundf = true;
+      while (LoopMain(Userr,1,foundf)) begin
+        if (nonblank(RepSpec.f1)) then begin
+          if (Userr.Code!=RepSpec.f1) then begin
+            foundf = false;
+          end;
+        end;
+        testf = true;
+        if (foundf==false) then begin
+          testf = false;
+        end;
+        if (Userr.Closed!=0) then begin
+          testf = false;
+        end;
+        if (testf) then begin
+          usercode[cnt] = Userr.Code;
+          username[cnt] = Userr.Name;
+          datecreated[cnt] = Userr.DateCreated;
+          accesscode[cnt] = Userr.AccessGroup;
+          company[cnt] = comprw.CompCode;
+          cnt = cnt + 1;
+        end;
+      end;
+    end;
+  end;
+  switch (RepSpec.flags[0]) begin
+    case 0:
+      PrintAccessPerCompany(CompaniesRec,usercode,username,datecreated,accesscode,company,cnt);
+      PrintCompanyPerAccess(CompaniesRec,usercode,username,datecreated,accesscode,company,cnt);
+      PrintMailAccess(usercode,username,cnt);
+      PrintConfAccess;
+      PrintConfAccessUsers(usercode,username,datecreated,accesscode,company,cnt);
+      PrintAccessGroupsPerCompany(CompaniesRec);
+    case 1:
+      PrintAccessPerCompany(CompaniesRec,usercode,username,datecreated,accesscode,company,cnt);
+      PrintCompanyPerAccess(CompaniesRec,usercode,username,datecreated,accesscode,company,cnt);
+    case 2:
+      PrintMailAccess(usercode,username,cnt);
+      PrintConfAccess;
+      PrintConfAccessUsers(usercode,username,datecreated,accesscode,company,cnt);
+    case 3:
+      PrintAccessGroupsPerCompany(CompaniesRec);
+  end;
+  ResetCompany(oldcomp);
+  EndJob;
+  return;
+end;

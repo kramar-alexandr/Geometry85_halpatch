@@ -1,0 +1,229 @@
+//ïåðåíîñèòü êàê åñòü
+external procedure VATIVRegUkrNew(record RcVc,Boolean,var val,var val,var vector val,var vector val);// Edit ************************** Thursday, 21 November 2013 13:41:46
+external procedure VATVIRegUkrNew(record RcVc,Boolean,var val,var val,var vector val,var vector val);// Edit ************************** Thursday, 21 November 2013 13:41:47
+external function LongInt DateDiff(Date,Date);
+external procedure NewLineExport();
+
+function string 255 Convert(string source)
+begin
+  string 255 res;
+  Integer l,i;
+  string 1 addstr;
+  
+  l = len(source);
+  for (i=0;i<l;i=i+1) begin
+    addstr = Mid(source,i,1);
+    switch (addstr) begin
+      case "<": addstr = "&lt;";
+      case ">": addstr = "&gt;";
+      case "&": addstr = "&amp;";
+      case "'": addstr = "&apos;";
+      case """": addstr = "&quot;";
+    end;
+    res = res & addstr;
+  end;
+  Convert = res;
+  return;
+end;
+
+procedure ExportTheLevel(Integer level)
+begin
+  string 255 tstr;
+  Integer i;
+  
+  tstr = "";
+  for (i=0;i<level;i=i+1) begin
+    tstr = tstr & "  ";
+  end;
+  ExportPadString(tstr,len(tstr)," ",false);
+  return;
+end;
+
+procedure ExportPlainXml(string value,Integer level)
+begin
+  ExportTheLevel(level);
+  ExportPadString(value,BytesInString(value)," ",false);
+  NewLineExport;
+  return;
+end;
+
+procedure ExportTagXml(string tag,string pvalue,Integer level)
+begin
+  string 255 value;
+  
+  value = Convert(pvalue);
+  ExportTheLevel(level);
+  ExportPadString("<",1," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);  
+  ExportPadString(value,BytesInString(value)," ",false);
+  ExportPadString("</",2," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);
+  NewLineExport;
+  return;
+end;
+
+procedure ExportAttributeTagXml(string tag,string pvalue,string attr,string attrvalue,Integer level)
+begin
+  string 255 value;
+  
+  value = Convert(pvalue);
+  ExportTheLevel(level);
+  ExportPadString("<",1," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  if (nonblank(attr)) then begin
+    ExportPadString(" ",1," ",false);
+    ExportPadString(attr,len(attr)," ",false);
+    ExportPadString("=""",2," ",false);
+    ExportPadString(attrvalue,BytesInString(attrvalue)," ",false);
+    ExportPadString("""",1," ",false);
+  end;
+  ExportPadString(">",1," ",false);  
+  ExportPadString(value,BytesInString(value)," ",false);
+  ExportPadString("</",2," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);
+  NewLineExport;
+  return;
+end;
+
+global
+procedure VATIVVIRegUkrEn(var record RcVc RepSpec)
+begin
+  Integer level,i;
+  record CYBlock CYb;
+  Date td,ed;
+  string 255 tstr;
+  val totsumval,totvatval;
+  vector val vT1R01G;
+  vector val vT1R02G;
+  vector val vT2R01G;
+  vector val vT2R02G;
+
+  td = RepSpec.sStartDate;
+  ed = RepSpec.sEndDate;
+  
+  if(ed.month!=td.month)then begin
+  	ed = addmonth(td,1);
+  	ed = addday(ed,-(ed.day+1));
+  end;
+  RepSpec.sEndDate = ed;
+  BlockLoad(CYb);
+  if (SetExportCodePage("CP1251")== false) then begin end;
+  level = 0;
+  ExportPlainXml("<?xml version=""1.0"" encoding=""windows-1251""?>",level);
+  ExportPlainXml("<DECLAR xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xsi:noNamespaceSchemaLocation=""J1201506.xsd"">",level);
+  level = 1;
+  ExportPlainXml("<DECLARHEAD>",level);
+  level = 2;
+	tstr=CYb.OrgNr;
+	ExportTagXml("TIN",tstr,level); 
+  ExportTagXml("C_DOC","J12",level);  
+  ExportTagXml("C_DOC_SUB","015",level);  
+  ExportTagXml("C_DOC_VER","6",level);  
+  ExportTagXml("C_DOC_TYPE","0",level);  
+  ExportTagXml("PERIOD_MONTH",td.month,level);  
+  ExportTagXml("PERIOD_TYPE","1",level);  
+  ExportTagXml("PERIOD_YEAR",td.year,level);  
+  ExportTagXml("C_DOC_STAN","1",level);  
+  ExportTagXml("D_FILL",DateToString(CurrentDate,"DDMMYYYY"),level);  
+  ExportTagXml("SOFTWARE",USetStr(1802) & " " & USetStr(901),level);    
+  level = 1;
+  ExportPlainXml("</DECLARHEAD>",level);
+  ExportPlainXml("<DECLARBODY>",level);
+  level = 2;
+  i = GetMonth(ed);
+  /*
+	
+	ExportTagXml("HNUM",i,level);  
+	ExportTagXml("H01G01D",DateToString(RepSpec.sStartDate,"DDMMYYYY"),level);  
+	ExportTagXml("H02G01D",DateToString(RepSpec.sEndDate,"DDMMYYYY"),level);  
+	ExportTagXml("H03G01S",USetStr(18860),level);  
+	ExportTagXml("HREG",CYb.EInvoiceAccount,level);  
+	ExportTagXml("HLOC",tstr,level); */
+
+  ExportTagXml("HZY",td.year,level);  
+  if (td.month>=1) and (td.month<=3) then begin i = 1; end;
+  if (td.month>=4) and (td.month<=6) then begin i = 2; end;
+  if (td.month>=7) and (td.month<=9) then begin i = 3; end;
+  if (td.month>=10) and (td.month<=12) then begin i = 4; end;
+  ExportTagXml("HZKV",i,level);  
+  ExportTagXml("HZM",td.month,level);  
+  //ExportTagXml("HNAME",CYb.CompName,level); 
+  ExportTagXml("HNAME","§„ˆ¸Œ‘’‚Ž \"„†ˆ ’“ ƒ…‰ “Š€º€\"",level);  
+  tstr = CYb.Addr0;
+  if (nonblank(CYb.Addr1)) then begin
+    tstr = tstr & ",";
+    tstr = tstr & CYb.Addr1;
+  end;
+  if (nonblank(CYb.Addr2)) then begin
+    tstr = tstr & ",";
+    tstr = tstr & CYb.Addr2;
+  end;
+  if (nonblank(CYb.Addr3)) then begin
+    tstr = tstr & ",";
+    tstr = tstr & CYb.Addr3;
+  end;
+  if (nonblank(CYb.Addr4)) then begin
+    tstr = tstr & ",";
+    tstr = tstr & CYb.Addr4;
+  end;
+  ExportTagXml("HNPDV",CYb.VATNr,level);  
+  ExportTagXml("HNSPDV",CYb.OrgNr,level);  
+  
+
+  totsumval = blankval;
+  totvatval = blankval;
+ 	VATIVRegUkrNew(RepSpec,false,totsumval,totvatval,vT2R01G,vT2R02G);// Edit ************************** Thursday, 21 November 2013 13:41:37
+  
+	ExportTagXml("R011G7",ValToString(totsumval+totvatval,M4Val,"",".",0),level);  
+	ExportTagXml("R011G8",ValToString(vT2R01G[8],M4Val,"",".",0),level);  
+	ExportTagXml("R011G9",ValToString(vT2R01G[9],M4Val,"",".",0),level);  
+	ExportTagXml("R011G10",ValToString(vT2R01G[10],M4Val,"",".",0),level);  
+	ExportTagXml("R011G11",ValToString(vT2R01G[11],M4Val,"",".",0),level);  
+	ExportTagXml("R011G12",ValToString(vT2R01G[12],M4Val,"",".",0),level); 
+	ExportTagXml("R011G13",ValToString(vT2R01G[13],M4Val,"",".",0),level);  
+	ExportTagXml("R012G7",ValToString(vT2R02G[7],M4Val,"",".",0),level);  
+	ExportTagXml("R012G8",ValToString(vT2R02G[8],M4Val,"",".",0),level);  
+	ExportTagXml("R012G9",ValToString(vT2R02G[9],M4Val,"",".",0),level);  
+	ExportTagXml("R012G10",ValToString(vT2R02G[10],M4Val,"",".",0),level);  
+	ExportTagXml("R012G11",ValToString(vT2R02G[11],M4Val,"",".",0),level);  
+	ExportTagXml("R012G12",ValToString(vT2R02G[12],M4Val,"",".",0),level);
+	ExportTagXml("R012G13",ValToString(vT2R02G[13],M4Val,"",".",0),level);
+  
+  totsumval = blankval;
+  totvatval = blankval;
+  VATVIRegUkrNew(RepSpec,false,totsumval,totvatval,vT1R01G,vT1R02G);// Edit ************************** Thursday, 21 November 2013 13:41:38
+  
+  ExportTagXml("R021G8",ValToString(vT1R01G[8],M4Val,"",".",0),level);  
+  ExportTagXml("R021G9",ValToString(vT1R01G[9],M4Val,"",".",0),level);  
+  ExportTagXml("R021G10",ValToString(vT1R01G[10],M4Val,"",".",0),level);  
+  ExportTagXml("R021G11",ValToString(vT1R01G[11],M4Val,"",".",0),level);  
+  ExportTagXml("R021G12",ValToString(vT1R01G[12],M4Val,"",".",0),level);  
+  ExportTagXml("R021G13",ValToString(vT1R01G[13],M4Val,"",".",0),level);  
+  ExportTagXml("R021G14",ValToString(vT1R01G[14],M4Val,"",".",0),level);  
+  ExportTagXml("R021G15",ValToString(vT1R01G[15],M4Val,"",".",0),level);  
+  ExportTagXml("R021G16",ValToString(vT1R01G[16],M4Val,"",".",0),level);  
+
+  ExportTagXml("R022G8",ValToString(vT1R02G[8],M4Val,"",".",0),level);  
+  ExportTagXml("R022G9",ValToString(vT1R02G[9],M4Val,"",".",0),level);  
+  ExportTagXml("R022G10",ValToString(vT1R02G[10],M4Val,"",".",0),level);  
+  ExportTagXml("R022G11",ValToString(vT1R02G[11],M4Val,"",".",0),level);  
+  ExportTagXml("R022G12",ValToString(vT1R02G[12],M4Val,"",".",0),level);  
+  ExportTagXml("R022G13",ValToString(vT1R02G[13],M4Val,"",".",0),level);  
+  ExportTagXml("R022G14",ValToString(vT1R02G[14],M4Val,"",".",0),level);  
+  ExportTagXml("R022G15",ValToString(vT1R02G[15],M4Val,"",".",0),level);  
+  ExportTagXml("R022G16",ValToString(vT1R02G[16],M4Val,"",".",0),level);
+
+
+  
+
+//      ExportTagXml("BIC",Bankr.SWIFT,4);  
+//      ExportAttributeTagXml("InstdAmt",ValToString(aprbankval[i],M4Val,"",".",0),"Ccy",aprbankcur[i],3);
+  level = 1;
+  ExportPlainXml("</DECLARBODY>",level);
+  level = 0;
+  ExportPlainXml("</DECLAR>",level);
+  return;
+end;

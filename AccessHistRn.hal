@@ -1,0 +1,269 @@
+//<halrule>server-only</halrule>
+external function string 255 GetModuleName(string);
+external function string 255 GetDocumentName(string);
+external function string 255 GetExportName(string);
+external function string 255 GetRecordName(string);
+external function string 255 GetActionName(string);
+external function string 255 GetReportName(string);
+external function string 255 GetMaintenanceName(string);
+external function string 255 GetSettingName(string);
+
+global
+function string 255 GetImportName(string accname)begin
+	string 255 res;
+	res = "GetImportName";
+	switch(accname)begin
+		case "AutIn": res = "Manual file search";
+		case "FullyAutIn": res = "Automatic";
+		case "RefIPIn": res = "Banking File";
+		case "CommodityIn": res = "Customs Commodity";
+		case "EDICustomsIn": res = "Customs Response";
+		case "EuroCardAccIn": res = "Eurocard Accounts";
+		case "EuroCardIn": res = "EuroCard Invoice";
+		case "HLaunIn": res = "H-Laun Payroll";
+		case "HogiaIn": res = "Hogia Payroll";
+		case "INDanIn": res = "Item Prices import";
+		case "ImportPosIn": res = "Positions";
+		case "PercAndWHIClass": res = "Regional Perceptions & Withholdings (Argentina)";
+		case "PercAndWHIClass": res = "Regional Perceptions & Withholdings (Argentina)";
+		case "PercAndWHCorrIClass": res = "Regional Perceptions & Withholdings Corrections (Argentina)";
+		case "PercAndWHCorrIClass": res = "Regional Perceptions & Withholdings Corrections (Argentina)";
+		case "SieIn": res = "SIE (Swedish Std Export/Import)";
+		case "INPrUpdIn": res = "Update Cost Prices import";
+		case "UpdateSRUIn": res = "Update SRU Codes";
+	end;
+	GetImportName = res;
+return;
+end;
+
+global
+function string 255 GetOutputGroupName(string accname)begin
+	string 255 res;
+	res = "GetOutputGroupName";
+	GetOutputGroupName = res;
+return;
+end;
+
+
+global procedure AccessHistRn(record RcVc RepSpec)
+begin
+	record AccessRecHistoryVc ACHr;
+	row AccessRecHistoryVc ACHrw;
+	integer i,mtrw;
+	string 255 tstr,oldaccname,newacclev,newaccname,oldacclev;
+	boolean TrHs;
+	record UserVc USr;
+	
+	startreportjob("Access Hist");
+	
+	endheader;
+	ACHr.TransDate = RepSpec.sStartDate;
+	TrHs = true;
+	
+	while(loopkey("DateCode",ACHr,1,TrHs))begin
+		if(ACHr.TransDate<RepSpec.sStartDate)then begin TrHs = false; end;
+		if(ACHr.TransDate>RepSpec.sEndDate)then begin TrHs = false; end;
+		
+		if(TrHs)then begin
+			black_divider(0,1);
+			startformat(15);
+				outstring(0,0,"Access Group",false);
+				outstring(100,0,ACHr.Code,false);
+			endformat;
+			startformat(15);
+				outstring(0,0,"User",false);
+				USr.Code = ACHr.User;
+				readfirstmain(USr,1,true);
+				outstring(100,0,ACHr.User & " (" & USr.Name & ")" ,false);
+			endformat;
+			startformat(15);
+				outstring(0,0,"Date",false);
+				outstring(100,0,ACHr.TransDate,false);
+				outstring(150,0,ACHr.TransTime,false);
+			endformat;
+			startformat(15);
+				outstring(0,0,"Change type",false);
+				outstring(100,0,ACHr.Type,false);
+			endformat;
+			startformat(15);
+			endformat;
+			gray_Divider(0,1);
+			
+			startformat(15);
+				outstring(0,0,"Header field",false);
+				outstring(100,0,"Old Data",false);
+				outstring(250,0,"New Data",false);
+			endformat;
+			
+			if(ACHr.Type!="DELETE")then begin
+				if(nonblank(ACHr.OldComment) or nonblank(ACHr.NewComment))then begin
+					startformat(15);
+						outstring(11,0,"Comment:",false);
+						outstring(110,0,ACHr.OldComment,false);
+						outstring(260,0,ACHr.NewComment,false);
+					endformat;
+				end;
+				if(nonblank(ACHr.OldAccessGroup) or nonblank(ACHr.NewAccessGroup))then begin
+					startformat(15);
+						outstring(11,0,"Access Group:",false);
+						outstring(110,0,ACHr.OldAccessGroup,false);
+						outstring(260,0,ACHr.NewAccessGroup,false);
+					endformat;
+				end;
+				if(nonblank(ACHr.OldAccessGroup) or nonblank(ACHr.NewAccessGroup))then begin
+					startformat(15);
+						outstring(11,0,"Blocked Accounts:",false);
+						outstring(110,0,ACHr.OldBlockAccs,false);
+						outstring(260,0,ACHr.NewBlockAccs,false);
+					endformat;
+				end;
+			end else begin
+				if(nonblank(ACHr.OldComment) or nonblank(ACHr.NewComment))then begin
+					startformat(15);
+						outstring(11,0,"Comment:",false);
+						outstring(110,0,ACHr.NewComment,false);
+					endformat;
+				end;
+				if(nonblank(ACHr.OldAccessGroup) or nonblank(ACHr.NewAccessGroup))then begin
+					startformat(15);
+						outstring(11,0,"Access Group:",false);
+						outstring(110,0,ACHr.NewAccessGroup,false);
+					endformat;
+				end;
+				if(nonblank(ACHr.OldAccessGroup) or nonblank(ACHr.NewAccessGroup))then begin
+					startformat(15);
+						outstring(11,0,"Blocked Accounts:",false);
+						outstring(110,0,ACHr.NewBlockAccs,false);
+					endformat;
+				end;
+			end;
+			
+			startformat(15);
+			endformat;
+			
+			gray_Divider(0,1);
+			startformat(15);
+				outstring(0,0,"Field/Type",false);
+				outstring(100,0,"Parameter",false);
+				outstring(250,0,"Old Access",false);
+				outstring(300,0,"New Access",false);
+			endformat;
+			
+			mtrw = matrowcnt(ACHr);
+			For(i=0;i<mtrw;i=i+1) begin
+				matrowget(ACHr,i,ACHrw);
+				
+				newacclev = "";
+				switch(ACHrw.NewAccLevel)begin
+					case 1: newacclev = "Full";
+					case 2: newacclev = "Read";
+					case 3: newacclev = "Read/New";
+					case 5: newacclev = "None";
+					case 6: newacclev = "Browse";
+					case 7: newacclev = "Browse/New";
+				end;
+				oldaccname = "";
+				switch(ACHrw.OldAccType)begin
+					case 1: tstr = "Module "; oldaccname = GetModuleName(ACHrw.OldAccName);	
+					case 2: tstr = "Register "; oldaccname = GetRecordName(ACHrw.OldAccName);
+					case 3: tstr = "Setting "; oldaccname = GetSettingName(ACHrw.OldAccName);	
+					case 4: tstr = "Report "; oldaccname = GetReportName(ACHrw.OldAccName);	
+					case 5: tstr = "Document "; oldaccname = GetDocumentName(ACHrw.OldAccName);	
+					case 6: tstr = "Export "; oldaccname = GetExportName(ACHrw.OldAccName);
+					case 7: tstr = "Import "; oldaccname = GetImportName(ACHrw.OldAccName);
+					case 8: tstr = "Maintenamce "; oldaccname = GetMaintenanceName(ACHrw.OldAccName);
+					case 9: tstr = "Action "; oldaccname = GetActionName(ACHrw.OldAccName);
+					case 10: tstr = "Output "; oldaccname = GetOutputGroupName(ACHrw.OldAccName);
+				end;
+				oldacclev = "";
+				switch(ACHrw.OldAccLevel)begin
+					case 1: oldacclev = "Full";
+					case 2: oldacclev = "Read";
+					case 3: oldacclev = "Read/New";
+					case 3: oldacclev = "Limited";
+					case 5: oldacclev = "None";
+					case 6: oldacclev = "Browse";
+					case 7: oldacclev = "Browse/New";
+				end;
+				newaccname = "";
+				switch(ACHrw.NewAccType)begin
+					case 1: tstr = "Module "; newaccname = GetModuleName(ACHrw.NewAccName);	
+					case 2: tstr = "Register "; newaccname = GetRecordName(ACHrw.NewAccName);
+					case 3: tstr = "Setting "; newaccname = GetSettingName(ACHrw.NewAccName);	
+					case 4: tstr = "Report "; newaccname = GetReportName(ACHrw.NewAccName);	
+					case 5: tstr = "Document "; newaccname = GetDocumentName(ACHrw.NewAccName);	
+					case 6: tstr = "Export "; newaccname = GetExportName(ACHrw.NewAccName);
+					case 7: tstr = "Import "; newaccname = GetImportName(ACHrw.NewAccName);
+					case 8: tstr = "Maintenamce "; newaccname = GetMaintenanceName(ACHrw.NewAccName);
+					case 9: tstr = "Action "; newaccname = GetActionName(ACHrw.NewAccName);
+					case 10: tstr = "Output "; newaccname = GetOutputGroupName(ACHrw.NewAccName);
+				end;
+				
+				if(ACHr.Type=="UPDATE")then begin
+					startformat(15);
+						outstring(11,0,tstr,false);
+						if(ACHrw.Addflag==0)then begin
+							outstring(110,0,oldaccname,false);
+						end;
+						if(ACHrw.Addflag==1)then begin
+							outstring(110,0,newaccname,false);
+						end;
+						if(ACHrw.Addflag==2)then begin
+							outstring(110,0,oldaccname,false);
+						end;
+						
+						
+						if(ACHrw.Addflag==0)then begin
+							outstring(260,0,oldacclev,false);
+							outstring(310,0,newacclev,false);
+						end;
+						if(ACHrw.Addflag==1)then begin
+							outstring(260,0,"",false);
+							outstring(310,0,newacclev,false);
+						end;
+						if(ACHrw.Addflag==2)then begin
+							outstring(260,0,oldacclev,false);
+							outstring(310,0,"",false);
+						end;
+						
+						
+						switch(ACHrw.Addflag)begin
+							case 0: outstring(350,0,"Updated",false);
+							case 1: outstring(350,0,"Added",false);
+							case 2: outstring(350,0,"Deleted",false);
+						end;
+					endformat;
+					gray_divider(11,350);
+				end;
+				if(ACHr.Type=="CREATE")then begin
+					startformat(15);
+						outstring(11,0,tstr,false);
+						outstring(110,0,newaccname,false);
+						//outstring(250,0,newacclev,false);
+						//outstring(300,0,newaccname,false);
+						outstring(310,0,newacclev,false);
+						outstring(350,0,"Added",false);
+					endformat;
+					gray_divider(11,350);
+				end;
+				if(ACHr.Type=="DELETE")then begin
+					startformat(15);
+						outstring(11,0,tstr,false);
+						outstring(120,0,oldaccname,false);
+						outstring(260,0,oldacclev,false);
+						//outstring(300,0,newaccname,false);
+						//outstring(300,0,oldacclev,false);
+						outstring(350,0,"Deleted",false);
+					endformat;
+					gray_divider(11,350);
+				end;
+			
+			end; 
+		end;
+	
+	end;
+	
+	endjob;
+	
+return;
+end;

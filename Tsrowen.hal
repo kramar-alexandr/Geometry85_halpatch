@@ -1,0 +1,266 @@
+//проверить, переносить как есть
+procedure OutTSRows(record TSVc TSp, Integer fl1)
+begin
+  Integer i,rwcnt;
+  row TSVc TSrw;
+  record PRVc PRr,oldPRr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:36:53
+  Boolean testf;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:36:59
+	  record UserVc USr;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 30 March 2018 13:39:57
+  string 255 username,department,role,prclname,brand,mothercode;
+  string 255 subpr,subprname;
+	record INVc INr;
+	record PRClassBlock PRClassb;
+	row PRClassBlock PRClassrw;
+	integer j,prcnt;
+	integer acnt;
+	
+	
+	blockload(PRClassb);
+	prcnt = matrowcnt(PRClassb);
+	
+
+	// Edit End ---------------------------------------------- Edit End
+	  rwcnt = MatRowCnt(TSp);
+  for (i = 0 ; i<rwcnt ;i=i+1) begin
+    MatRowGet(TSp,i,Tsrw);
+    testf = true;
+    if (fl1==1) then begin
+      if (TSrw.ItemType<>3) then begin testf = false; end;
+    end;
+    if (testf) then begin
+      PRr.Code = TSrw.PRCode;
+      if ReadFirstMain(PRr,1,true) then begin
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:37:10
+	        
+        For(j=0;j<prcnt;j=j+1) begin
+	  			matrowget(PRClassb,j,PRClassrw);
+	  			if(PRr.PRClass==PRClassrw.Code)then begin
+	  				if(PRClassrw.Comment=="Brand")then begin
+	  					brand = PRr.Code;
+	  				end;
+	  			end;
+				end; 
+				brand = "";
+				subpr = "";
+				subprname = "";
+        mothercode = PRr.MotherCode;
+lprfound:;
+        if(nonblank(mothercode))then begin
+					oldPRr.Code = mothercode;
+					if(readfirstmain(oldPRr,1,true))begin
+						mothercode = oldPRr.MotherCode;
+						For(j=0;j<prcnt;j=j+1) begin
+							matrowget(PRClassb,j,PRClassrw);
+							if(oldPRr.PRClass==PRClassrw.Code)then begin
+								if(PRClassrw.Code=="B")then begin
+									brand = oldPRr.Code;
+								end;
+								if(PRClassrw.Code=="SB")then begin
+									subpr = oldPRr.Code;
+									subprname = oldPRr.Name;
+								end;
+							end;
+						end;
+						Goto lprfound; 
+					end;
+        end;
+        
+        
+        
+        OutLongInt(0,0,TSp.SerNr,false);
+        OutDate(0,0,TSrw.date,false);
+        OutString(0,0,TSrw.EMCode,false);
+        USr.Code = TSrw.EMCode;
+        username = "";
+        department = "";
+        role = "";
+        prclname = "";
+        if(readfirstmain(USr,1,true))then begin
+        	username = USr.Name;
+        	department = USr.Department;
+        	role = USr.Spec;
+        end;
+        OutString(0,0,username,false);
+        OutString(0,0,department,false);
+        OutString(0,0,role,false);
+        if(TSrw.Qty==0)then begin
+        	TSrw.Qty = 0;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 27 April 2018 10:24:16
+        end;
+        OutString(0,0,ValToString(TSrw.Qty,M4Val,"",",",0),false);
+        OutString(0,0,PRr.CustCode,false);//client
+        OutString(0,0,TSrw.PRCode,false);//JN
+        OutString(0,0,PRr.Name,false);
+        OutString(0,0,PRr.PRClassification,false);//Stages
+        OutString(0,0,PRr.PRClass,false);//Type
+        //INr.Code = TSrw.ArtCode;
+        //readfirstmain(INr,1,true);
+        For(j=0;j<prcnt;j=j+1) begin
+	  			matrowget(PRClassb,j,PRClassrw);
+	  			if(PRr.PRClass==PRClassrw.Code)then begin
+	  				prclname = PRClassrw.Comment;
+	  			end;
+				end; 
+        OutString(0,0,prclname,false);//Type name
+        if(PRr.Terminated==0)then begin
+        	OutString(0,0,"Active",false);//Job Closed \ status
+        end else begin
+        	OutString(0,0,"Closed",false);//Job Closed \ status
+        end;
+        OutString(0,0,brand,false);
+        OutString(0,0,subpr,false);
+        OutString(0,0,subprname,false);
+        OutString(0,0,PRr.Text0,false);       
+        
+        /*ExportLongInt(TSp.SerNr);
+
+	// Edit End ---------------------------------------------- Edit End
+	        ExportDate(TSp.RegDate);
+        OutString(0,0,TSrw.PRCode);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:37:22
+        
+        ExportVal(TSrw.Qty,M4Qty);
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:37:28
+	        OutString(0,0,PRr.CustCode);
+        OutString(0,0,TSrw.ArtCode);
+        OutString(0,0,TSrw.Spec);
+        OutString(0,0,PRr.PRClassification);
+        OutString(0,0,TSrw.ArtCode);*/
+        
+        //**************
+       	/*ExportLongInt(TSp.SerNr);№
+        ExportDate(TSp.RegDate);Date
+        OutString(0,0,TSp.Comment);Comment
+        ExportDate(TSrw.date);Date
+        OutString(0,0,TSrw.EMCode);Code
+        OutString(0,0,TSrw.PRCode);JN
+        OutString(0,0,TSrw.ArtCode);Type
+        ExportVal(TSrw.Qty,M4Qty);time
+        OutString(0,0,TSrw.Spec);Description
+        OutString(0,0,PRr.Leader);Salesperson
+        OutString(0,0,TSrw.TimeClass);Description
+        OutString(0,0,TSrw.Objects);JN*/
+        //************
+
+	// Edit End ---------------------------------------------- Edit End
+	        NewLine;
+      end;
+    end;
+  end;
+  return;
+end;
+
+global
+procedure TSRowEn(record RcVc RepSpec)
+begin
+  record TSVc MR;
+  Boolean TrHs,testf;
+  LongInt frnr,tonr;
+
+  frnr = FirstInRange(RepSpec.f1,20);
+  tonr = LastInRange(RepSpec.f1,20);
+  MR.SerNr = frnr;
+  TrHs = true;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:37:33
+	  
+  
+  exportstring("#");
+  exportstring("Date");
+  exportstring("Code");
+  exportstring("Employee Name");
+	exportstring("Department");
+	exportstring("Role");
+	exportstring("time");
+	exportstring("Client");
+	exportstring("JN");
+	exportstring("Job Name");
+	exportstring("Stages");
+	exportstring("Type");
+	exportstring("Type name");
+	exportstring("Job Closed \ status");
+	exportstring("Brand");
+	exportstring("Brand Subproject");
+	exportstring("Brand Subproject name");
+	exportstring("Cosmos ID");
+	
+  NewLine;
+
+	// Edit End ---------------------------------------------- Edit End
+	  while (TrHs == LoopMain(MR,1,TrHs)) begin
+    testf = true;
+    if (TrHs) then begin
+      if (tonr<>-1) then begin
+        if (MR.SerNr>tonr) then begin TrHs = false; end;
+      end;
+    end;
+    if (RepSpec.flags[2]==0) then begin
+      if (Mr.OKFlag<>0) then begin testf = false; end;
+    end;
+    if (RepSpec.flags[3]==0) then begin
+      if (Mr.OKFlag==0) then begin testf = false; end;
+    end;
+    if (TrHs and testf) begin
+      if ((MR.RegDate>=RepSpec.sStartDate) and (MR.RegDate<=RepSpec.sEndDate)) then begin
+        OutTSRows(MR, RepSpec.flags[1]);
+        UserTrace(MR.SerNr,0);
+      end;
+    end;
+  end;
+  NewLine;
+  return;
+end;
+
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:37:38
+	
+global
+procedure TSRowRn(record RcVc RepSpec)
+begin
+  record TSVc MR;
+  Boolean TrHs,testf;
+  LongInt frnr,tonr;
+
+	startreportnoheaderjob("TSRowRn");
+	
+		startformat(15);
+						outstring(0,0,"TSRowRn",false);
+					endformat;
+		frnr = FirstInRange(RepSpec.f1,20);
+		tonr = LastInRange(RepSpec.f1,20);
+		MR.SerNr = frnr;
+		TrHs = true;
+		while (TrHs == LoopMain(MR,1,TrHs)) begin
+			
+			testf = true;
+			if (TrHs) then begin
+				if (tonr<>-1) then begin
+					if (MR.SerNr>tonr) then begin TrHs = false; end;
+				end;
+			end;
+					
+			
+			if (RepSpec.flags[2]==0) then begin
+				if (Mr.OKFlag<>0) then begin testf = false; end;
+			end;
+
+			if (RepSpec.flags[3]==0) then begin
+				if (Mr.OKFlag==0) then begin testf = false; end;
+			end;
+		
+			
+			if (TrHs and testf) begin
+				if ((MR.RegDate>=RepSpec.sStartDate) and (MR.RegDate<=RepSpec.sEndDate)) then begin
+					OutTSRows(MR, RepSpec.flags[1]);
+				end;
+			end;
+		end;
+  endjob;
+  return;
+end;
+
+
+	// Edit End ---------------------------------------------- Edit End
+	

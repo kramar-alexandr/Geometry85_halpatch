@@ -1,0 +1,700 @@
+//кастомнаЯ
+external function longint DateDiff(date,date);
+external function longint TimeDiff(time,time);
+external function longint TimeDiffInSeconds(Time,Time);
+external function Boolean FindTheUser(var record UserVc);
+external procedure ExtractObj(string,var Integer,var string);
+external function LongInt POSNETHexToLong(string);
+external function boolean MySendRawWebRequest(string, longint, boolean, string, string, string, string, boolean, area, var area, integer);
+external procedure TSVc_PastePRCode(var record TSVc,Integer);
+external procedure TSVc_PasteEMCode(var record TSVc,Integer);
+external function Boolean TSVc_PasteArtCode(var record TSVc,Integer,var string);
+external function Boolean FindStringInString(string, string);
+
+SetLangMode(LangRussian,"RUS",0);
+
+
+
+procedure TSSumUp(record TSVc TSp)
+BEGIN
+  row TSVc TSrw;
+  Integer rwcnt,i;
+  
+  rwcnt = MatRowCnt(TSp);
+  TSp.Sum = blankval;
+  TSp.SumOther = blankval;
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(TSp,i,TSrw);
+    if ((TSrw.stp==1) and (TSrw.ovst==0)) then begin
+      if (TSrw.ItemType==3) then begin
+        TSp.Sum = TSp.Sum + TSrw.Qty;
+      end else begin
+        TSp.SumOther = TSp.SumOther + TSrw.Qty;
+      end;
+    end;
+  end;
+  RETURN;
+END;
+
+
+global webpublic procedure WebReply()
+begin
+	area request,replyarea;
+	
+	WebGetPostData(replyarea);
+	
+	messagebox(0,GetAreaLength(replyarea));
+	
+return;
+end;
+
+function string 10 MyGetDateString(string res1)
+BEGIN
+  string 20 tstr,t2,res;
+
+  res = res1;
+  tstr = res;
+  res = "";
+  res = MID(tstr,8,2) & ".";
+  t2  = MID(tstr,5,2) & ".";
+  res = res & t2;
+  t2  = MID(tstr,0,4);
+  res = res & t2;  
+ 
+  MyGetDateString = res;
+  RETURN;
+END;
+
+function string 100 randomString()
+begin
+	string 100 res,ast;
+	integer i,cnt,pos;
+	
+  ast = "1234567890abcdef"; // 61 characters	
+	For(i=0;i<32;i=i+1) begin
+		pos = Random(0,15);
+	  res = res & Mid(ast,pos,1);
+	end; 
+	
+	randomString = res;
+	
+return;
+end;
+
+function LongInt LongIntGetUnixTime()
+begin
+	longint res;
+	time stime,curtime;
+	date sdate,curdate;
+	longint timedif,datdif;
+	
+	sdate = stringtodate("13/2/2009");
+	curdate = addday(currentdate,-1);
+	datdif = datediff(curdate,sdate);
+
+	stime = stringtotime("00:00:00");
+	curtime = currenttime;
+	timedif =TimeDiffInSeconds(stime,curtime);
+
+	res = timedif + datdif*86400 + 1234567890;
+	
+	LongIntGetUnixTime = res;
+return;
+end;
+
+global
+procedure GetJSONArea(var area a)
+begin
+  longint alen,i,outlen;
+  area out;
+  longint nodelen,res;
+  string 100 str;
+  		
+  res = 0;
+  
+  alen = GetAreaLength(a);
+  if(alen>0)then begin  
+		for(i=0;i<alen;i=i+1)begin
+			str = GetStringFromArea(a,i,8);
+			if(str==("{" & chr(34) & "result"))then begin
+				res = GetAreaFromArea(a,i,alen-i,out);
+				goto GetJSONAreaPoint;
+			end;
+		end;
+	end else begin
+				logtext(0,"JSON file is empty.")
+				goto GetJSONAreaPoint2;
+		end;
+	
+	GetJSONAreaPoint:;
+	
+	setareazerosize(a);
+	outlen = GetAreaLength(out);
+	GetAreaFromArea(out,0,outlen,a);
+	
+	GetJSONAreaPoint2:;
+	   
+  return;
+end;
+
+global
+procedure FindArea(string node, integer n, var area a)
+begin
+  longint alen,i;
+  area out;
+  longint nodelen,res,curlevel,outlen;
+  string 100 str;
+  		
+  res = 0;
+  curlevel = 0;
+  alen = GetAreaLength(a);
+  nodelen = len(node)+2;
+  
+  for(i=0;i<alen-nodelen;i=i+1)begin
+		str = GetStringFromArea(a,i,nodelen);
+		if(str==chr(34) & node & chr(34))then begin
+			if(curlevel==n)then begin
+				res = GetAreaFromArea(a,i,alen-i,out);
+				goto FindAreaPoint;
+			end;
+			curlevel = curlevel + 1;
+		end;
+	end;
+	
+	FindAreaPoint:;
+	
+	setareazerosize(a);
+	outlen = GetAreaLength(out);
+	GetAreaFromArea(out,0,outlen,a);
+	   
+  return;
+end;
+
+global
+function integer CountDataLen(area a,integer databegin)
+begin
+  string 100 str;
+  longint alen,i,cnt,res;
+  integer slen,nodelen,paramlen;
+  
+  res = 0;
+  cnt = 0;
+  alen = GetAreaLength(a);
+	
+	for(i=databegin;i<alen;i=i+1)begin
+		str = GetStringFromArea(a,i,1);
+		cnt = cnt + 1;
+		if(str==Chr(34) or str=="," or str=="}")then begin
+			res = cnt-1;
+			goto point4;
+		end;
+	end;
+  
+  point4:;
+  
+  CountDataLen = res;
+  return;
+end;
+
+global
+function string 255 ChekUnicode(string str)
+begin
+  string 10 c, c1;
+  string 10 ucode;
+  string 255 res,tmp; 
+  integer slen,i,int;
+  longint lmes;
+  
+  res = str;
+  i=0;
+  slen = Len(res);
+	
+	if(slen>0)then begin
+		for(i=0;i<slen;i=i+1)begin
+			c = mid(res,i,2);
+			if(c==(chr(92) & "u"))then begin
+				ucode = mid(res,i,6);
+				lmes = POSNETHexToLong(ucode);
+				int = lmes;
+				res = left(res,i) & uchr(int) & right(res, (len(res)-(i+6)));
+				slen = Len(res);
+			end;
+		end;
+	end;
+		
+  ChekUnicode = res;
+  return;
+end;
+
+global
+function string 60 GetField(area areaIn, string path)
+begin
+  string 200 str,res,node,lastnode; 
+  area a;
+  longint alen,i,j;
+  integer nodelen,pos,lastpos,lastnodelen,datalen;
+  Array string 255 nodename;
+  Array integer nodeNum;
+  Integer acnt,k;
+	
+	if(GetAreaFromArea(areaIn,0,GetAreaLength(areaIn),a)>=0)then begin	end;
+	
+	res = "";
+  pos = 0;
+  k=0;
+  ExtractObj(path,pos,node);
+	while (nonblank(node)) begin
+		if(nonblank(node))then begin
+			//nodelen = len(node) - 2;// symbols ":" and № before ","
+			nodename[k] = firstInRange(node, 10);
+			nodeNum[k] = StringToInt(lastInRange(node,2));
+			lastpos = k;
+			k=k+1;
+			ExtractObj(path,pos,node);
+		end;
+	end;
+  
+  for(j=0;j<k;j=j+1)begin
+  	//logtext(0,"    " & nodename[j] & "   " & nodeNum[j]);
+		if(nonblank(nodename[j]))then begin
+			FindArea(nodename[j], nodeNum[j],a);
+			//writeareatofile(a,"a" & j & ".txt",0);
+			lastnode = nodename[j];
+		end;
+	end;
+  
+  lastnodelen = len(lastnode);
+  
+  if(lastnode=="sd" or lastnode=="day")then begin  
+  	datalen = 10;
+  end else begin
+		if(lastnode=="hours" or lastnode=="lock")then begin
+			datalen = CountDataLen(a,lastnodelen+3);
+		end else begin
+			datalen = CountDataLen(a,lastnodelen+4);// from where are start reading = nodelen + ": ";
+		end;
+	end;
+		
+	if(lastnode=="hours" or lastnode=="lock")then begin
+		res = GetStringFromArea(a,lastnodelen+3,datalen);
+	end else begin
+		res = GetStringFromArea(a,lastnodelen+4,datalen);
+	end;
+		
+  GetField = res;
+  return;
+end;
+
+function integer GetJSONChildrenCount(area areaIn, string path)
+begin
+	boolean testf,testf2;
+	area outArea,a;
+	string 255 lstr,tmp,tstr;
+	string 100 keystr,node,lastnode;
+	longint i,open,closeCnt,res,j,lcnt,nodelevel,open2,close;
+	longint keypos, alen;
+	integer nodeLen,curlevel,pos,lastpos;
+	string 1 c;
+	string 2 c2;
+	Array string 255 nodename;
+  Array integer nodeNum;
+	
+	if(GetAreaFromArea(areaIn,0,GetAreaLength(areaIn),a)>=0)then begin	
+	end;
+	
+	pos = 0;
+	alen = GetAreaLength(a);
+	res = 0;
+	open2 = 0;
+	open = 0;
+	testf = true;
+	testf2 = true;
+  
+  ExtractObj(path,pos,node);
+    while (nonblank(node)) begin
+    	nodelen = len(node) - 2;// symbols ":" and № before ","
+    	nodename[pos] = firstInRange(node, nodelen);
+    	nodeNum[pos] = StringToInt(lastInRange(node, 2));
+    	lastpos = pos;
+    	ExtractObj(path,pos,node);
+  	end;
+			
+	for(j=0;j<=lastpos;j=j+1)begin
+		if(nonblank(nodename[j]))then begin
+			FindArea(nodename[j], nodeNum[j],a);
+			lastnode = nodename[j];
+		end;
+	end;
+	
+	nodelen = len(lastnode);
+	pos = 0;
+	alen = GetAreaLength(a);
+	res = 0;
+	
+	if(GetStringFromArea(a,nodelen,3)==(chr(34) & ":" & chr(34)))then begin // if ":" 1 else more then 1
+		res = 1;
+	end else begin	
+			for(i=0;i<=alen;i=i+1)begin
+				
+				c2 = GetStringFromArea(a,i,2);
+				if(c2=="[{")then begin
+					open2 = open2 + 1;
+					//openCnt = openCnt - 1;
+					if(open2>1)then begin
+						testf = false;
+					end;
+				end;
+				
+				if(c2=="}]")then begin
+					open2 = open2 - 1;
+					i = i + 1;
+					if(open2<2)then begin
+						testf = true;
+					end;
+					if(open2==0)then begin
+						testf = false;
+						goto GetJSONChildrenCount1;
+					end;
+				end;			
+											
+				if(testf)then begin	
+										
+					c = GetStringFromArea(a,i,1);
+															
+					if(c=="{")then begin
+						open = open + 1;
+						
+						if(open>1)then begin
+							testf2 = false;
+						end else begin
+							testf2 = true;
+						end;
+						
+						if(testf2)then begin
+							res = res + 1;
+						end;
+					end;
+					
+					if(c=="}")then begin
+						open = open - 1;
+					end;
+				end;
+					
+			end;
+		end;
+	
+	GetJSONChildrenCount1:;
+	
+	GetJSONChildrenCount = res;
+return;
+end;
+
+
+procedure OAuthAutoriazation(string aPubKey,string aPrKey,string aTokenKey, string aTokenSecret, string awebAddr, string aGET, var area aOAuthRequest)
+begin
+	record EnabServerBlock ESb;
+  area request,replyarea;
+  string 100 tstr;
+  string 200 getParam,host,page, webAddr;
+  string 20 timed;
+  string 200 secrets,sharesult,TokenSecret;
+  string 200 	oauth_consumer_key,oauth_nonce,oauth_signature,oauth_signature_method,oauth_timestamp,oauth_token,oauth_version,realm;
+  area basestring;
+  	
+  timed = stringtolongint(LongIntGetUnixTime);
+  tstr = randomString;
+    
+  webAddr = awebAddr;// host include page
+  
+  page = "/";
+    
+  oauth_nonce = tstr;
+  oauth_timestamp = timed;
+  oauth_token = aTokenKey;
+    
+  oauth_consumer_key = aPubKey;
+  
+  oauth_signature_method = "HMAC-SHA1";
+  
+	oauth_version = "1.0";
+	
+	addtexttoarea("GET&",basestring);
+	addtexttoarea(urlencode("https://" & webAddr) & "&",basestring);// "https://" & host & page -> "https://" & host
+	addtexttoarea(urlencode("oauth_consumer_key=" & oauth_consumer_key),basestring);
+	addtexttoarea(urlencode("&oauth_nonce=" & oauth_nonce),basestring);
+	addtexttoarea(urlencode("&oauth_signature_method=" & oauth_signature_method),basestring);
+	addtexttoarea(urlencode("&oauth_timestamp=" & oauth_timestamp),basestring);
+	if(nonblank(aTokenKey))then begin
+		addtexttoarea(urlencode("&oauth_token=" & oauth_token),basestring);
+	end;
+	addtexttoarea(urlencode("&oauth_version=" & oauth_version),basestring);
+			
+	secrets = aPrKey;
+	TokenSecret = aTokenSecret;
+	
+	sharesult = HMACSHA1Area(secrets,basestring);
+
+	addtexttoarea(chr(10) & chr(13),basestring);
+	addtexttoarea(sharesult,basestring);
+	
+	sharesult = urlencode(sharesult);
+	addtexttoarea(chr(10) & chr(13),basestring);
+	addtexttoarea(sharesult,basestring);
+	
+	oauth_signature = sharesult;
+      
+ 	tstr = "user:passwd";
+ 	tstr = Base64Encode(tstr);
+		
+	AddTextToArea("Authorization: OAuth oauth_signature_method=" & chr(34) & oauth_signature_method & chr(34) & " oauth_version=" & chr(34) & "1.0" & chr(34) &  " oauth_nonce=" & chr(34) & oauth_nonce & chr(34) & " oauth_timestamp=" & chr(34) & oauth_timestamp &chr(34) &  " oauth_consumer_key=" & chr(34) & oauth_consumer_key & chr(34) & " oauth_signature=" & chr(34) & oauth_signature & chr(34),aOAuthRequest);
+	
+	AddTextToArea("" & chr(13) & chr(10),aOAuthRequest);
+	AddTextToArea("" & chr(13) & chr(10),aOAuthRequest);
+  
+return;
+end;
+
+global
+updating procedure CreateTS(record TSVc TSr, date sd, string user, string email)
+begin
+	record TSVc TS2r;
+	row TSVc TSrw, TS2rw,TS3rw;
+	boolean findf, TrHs, testOK;	
+	integer i,k,k2,rwcnt,rwcnt2,j;
+	string 100 inwarn;
+				
+		TS2r.UserCode = user;
+		TS2r.RegDate = sd;
+		findf = false;
+		TrHs = True;
+		testOK = true;
+		
+		while(loopkey("DateUser",TS2r,2,TrHs))begin//Finding matching
+			if(TS2r.UserCode!=user or TS2r.RegDate!=sd)then begin TrHs = false; end;
+				
+			if(TrHs) then begin
+				if(TS2r.Comment=="Time Tracker " & email)then begin
+					findf = true;
+					TrHs = false;
+					if(TS2r.OKFlag>0)then begin
+						testOK=false;
+					end;
+				end;
+			end;
+		end;
+		
+		if(testOK)then begin
+		
+			if(findf==false)then begin
+				RecordNew(TS2r);
+				TS2r.SalesMan = "";
+				TS2r.UserCode = user;
+				TS2r.RegDate = sd;
+				TS2r.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");
+				TS2r.Comment="Time Tracker " & email; 
+			
+			end;
+		
+			rwcnt = matrowcnt(TSr);
+		
+			for(k=0;k<rwcnt;k=k+1)begin	//Refreshing hours (Qty)
+				matrowget(TSr,k,TSrw);
+					rwcnt2 = matrowcnt(TS2r);
+				findf = true;
+				for(k2=0;k2<rwcnt2;k2=k2+1)begin
+					matrowget(TS2r,k2,TS2rw);
+					if(TS2rw.date==TSrw.date and TS2rw.PRCode==TSrw.PRCode  and TSrw.Spec==TS2rw.Spec)then begin
+						Ts2rw.Qty = TSrw.Qty;
+						matrowput(TS2r,k2,TS2rw);
+						findf = false;
+					end;
+				end;
+			
+				if(findf)then begin							
+					if(TSrw.date>=sd and TSrw.date<addmonth(sd,1))then begin						
+						ClearRow(TS2r,TS2rw,1);
+						TS2rw.stp = 1;
+						TS2rw.ovst = 0;
+						TS2rw.date = TSrw.date;
+						
+						TS2rw.PRCode = TSrw.PRCode;
+						MatRowPut(TS2r,rwcnt2,TS2rw);
+						TSVc_PastePRCode(TS2r,rwcnt2);
+						MatRowget(TS2r,rwcnt2,TS2rw);
+
+						TS2rw.EMCode = user;
+						MatRowPut(TS2r,rwcnt2,TS2rw);
+						TSVc_PasteEMCode(TS2r,rwcnt2);
+						MatRowget(TS2r,rwcnt2,TS2rw);
+						
+						TS2rw.ArtCode = "GENERAL";
+						MatRowPut(TS2r,rwcnt2,TS2rw);
+						TSVc_PasteArtCode(TS2r,rwcnt2,inwarn);
+						MatRowget(TS2r,rwcnt2,TS2rw);
+						
+						TS2rw.Qty = TSrw.Qty;
+						TS2rw.Spec =  TSrw.Spec;
+											
+						MatRowPut(TS2r,rwcnt2,TS2rw);
+						rwcnt2 = rwcnt2 + 1;
+			
+					end;
+				end;
+			end;	
+			
+			
+			//TSSumUp(TS2r);
+			
+			
+			
+			rwcnt = matrowcnt(TS2r);
+			if(rwcnt>0)then begin
+				if(rwcnt>1)then begin
+					For(i=0;i<rwcnt-1;i=i+1) begin
+						For(j=i+1;j<rwcnt;j=j+1) begin
+							matrowget(TS2r,j-1,TSrw);
+	  					matrowget(TS2r,j,TS2rw);
+	  					if(TS2rw.date<TSrw.date)then begin
+	  						matrowput(TS2r,j-1,TS2rw);
+	  						matrowput(TS2r,j,TSrw);
+	  					end;
+						end; 
+						
+					end; 
+				end;
+				TSSumUp(TS2r);
+				if (RecordStore(TS2r,true)) then begin		end;
+			end;
+			
+		end;
+
+  return;
+end;
+
+global updating
+procedure TimeTrackerTSRequestMn(record RcVc RepSpec)
+begin
+  record EnabServerBlock ESb;
+  record UserVc Userr;
+  date sd,sd2;
+  area request,replyarea,OAuthRequest,extracted;
+  string 255 username,filename;
+  string 100 email;
+  Boolean testf,findf,TrHs;
+  record TSVc TSr,TS2r;
+  row TSVc TSrw, TS2rw;
+  string 200 getParam,host,page,webaddr,path;
+  string 20 timed, flag;
+  string 200 secrets,sharesult;
+  string 200 	oauth_consumer_key,oauth_nonce,oauth_signature,oauth_signature_method,oauth_timestamp,oauth_token,oauth_version,realm;
+  area basestring;
+  integer rescnt,rwcnt,i,j,tscnt,times,rwcnt2,k,k2,cnt2;
+  longint alen;
+  string 255 tstr2,mes;
+  record SysFormatBlock SysFormatRec;
+  Array integer ts;
+  BlockLoad(SysFormatRec);
+  
+  host = "api.creativeworx.com";
+  page = "/v1/timesheet";
+  webaddr = "api.creativeworx.com/v1/timesheet";
+    
+	OAuthAutoriazation("3683ace4e8e9b84532aa600f","0012ef0ab376277c30c4156a&","","",webaddr, "GET", OAuthRequest);
+		
+  if(MySendRawWebRequest(host,443,true,"GET",page & getParam,"text/plain","",false,OAuthRequest,replyarea,600))then begin  //WORK! 
+    logtext(0,"Hansa World: Connection on");
+    writeareatofile(replyarea,"112.txt",0);
+    GetJSONArea(replyarea);
+    
+    writeareatofile(replyarea,"111.txt",0);
+                    
+    tscnt = GetJSONChildrenCount(replyarea, "result");
+    
+  	//messagebox(0,tscnt);
+    sd = CurrentDate;    
+  	i = GetDay(sd);
+  	sd2 = AddDay(sd, -i+1);
+		sd = AddMonth(sd,-1);
+  	sd = AddDay(sd, -i+1);
+  		
+    rwcnt = 0;
+    for(i=0;i<tscnt;i=i+1) begin
+    	ts[i] = GetJSONChildrenCount(replyarea, "result,ts:" & i & ",time");
+    	times = ts[i];
+			email = "";
+			
+			email = GetField(replyarea, "result:0,ts:" & i & ",email:0");
+			
+			Userr.Code = "";
+			findf = true;
+			mes = "";
+			resetloop(Userr);
+			while(loopMain(Userr,1,findf))begin
+				if(nonblank(email) and FindStringInString(email,Userr.emailAddr))then begin
+					TSr.UserCode = Userr.Code;
+					mes = Userr.Code;
+					findf = false;
+				end;
+			end;
+			
+			if(nonblank(mes))then begin		//if find user with email						
+				RecordNew(TSr);
+				TSr.UserCode = mes;
+			
+				
+				rwcnt = 0;
+				TSr.RegDate = StringToDate(MyGetDateString(GetField(replyarea, "result:0,sd:" & i)));
+				TSr.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");  
+					
+				for(j=0;j<times;j=j+1)begin
+					ClearRow(TSr,TSrw,1);
+					
+					TSrw.date = StringToDate(MyGetDateString(GetField(replyarea, "result:0,ts:" & i & ",time,day:" & j)));
+					TSrw.stp = 1;
+      		TSrw.ovst = 0;
+					TSrw.PRCode = GetField(replyarea, "result:0,ts:" & i & ",time,jobid:" & j);
+					TSrw.Qty = StringToVal(GetField(replyarea, "result:0,ts:" & i & ",time,hours:" & j),M4Qty);
+					TSrw.Spec = ChekUnicode(GetField(replyarea, "result:0,ts:" & i & ",time,desc:" & j));
+					TSrw.EMCode = mes;		
+										
+					MatRowPut(TSr,rwcnt,TSrw);
+					rwcnt = rwcnt + 1;
+				end;
+				
+				for(j=0;j<rwcnt;j=j+1)begin
+					matrowget(TSr,j,TSrw);
+					if(j<rwcnt-1)then begin
+						for(k=j+1;k<rwcnt;k=k+1)begin
+							matrowget(TSr,k,TS2rw);
+							if(TS2rw.date==TSrw.date and TS2rw.PRCode==TSrw.PRCode and TSrw.Spec==TS2rw.Spec)then begin
+								TSrw.Qty = TSrw.Qty + TS2rw.Qty;
+								matrowput(TSr,j,TSrw);
+								matrowdelete(TSr,k);
+								k=k-1;
+								rwcnt = rwcnt - 1;
+							end;
+						end;					
+					end;
+				end;
+				
+				CreateTS(TSr, sd, mes, email);
+				CreateTS(TSr, sd2, mes, email);
+						
+				mes = "";
+											
+			end;			
+    end;
+  end else begin
+ 		logtext(0,"Hansa World: No Connection to api.creativeworx.com");
+  end;
+ 
+  return;
+end;
+
+global
+updating procedure LaunchTSprocedure()
+begin
+	record RcVc RepSpec;
+	TimeTrackerTSRequestMn(RepSpec)
+	return;
+end;

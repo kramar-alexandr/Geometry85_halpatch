@@ -1,0 +1,29 @@
+external updating procedure UpdateInvrs(string,string,LongInt,Date,string,Integer,string);
+
+
+global
+updating function LongInt AT2UnitVcRecordSaveAfter(var record AT2UnitVc AT2Unitr,record AT2UnitVc AT2Unit2r,LongInt stat,LongInt long4)
+begin
+  LongInt res;
+  record SRBlock SRRec;
+	record VIVc VIr;
+
+  BlockLoad(SRRec);
+  SRRec.LastInventoryNr = AT2Unitr.InventoryNr;
+  BlockStore(SRRec);
+  UpdateInvrs(AT2Unitr.InventoryNr,AT2Unitr.DepCode,0,AT2Unitr.PurchaseDate,"AT2UnitVc",-1,"");   
+  // Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 31 July 2013 08:58:01
+	
+  if(AT2Unitr.VISerNr>0)then begin
+		VIr.SerNr = AT2Unitr.VISerNr;
+		if(readfirstmain(VIr,1,true))then begin
+			CreateRecordLink(AT2Unitr,CurrentCompany,VIr,CurrentCompany);  
+			CreateRecordLink(VIr,CurrentCompany,AT2Unitr,CurrentCompany);  
+		end;
+	end;
+  
+	// Edit End ---------------------------------------------- Edit End
+  AT2UnitVcRecordSaveAfter = res;
+  return;
+end;

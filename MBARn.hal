@@ -1,0 +1,888 @@
+// проверить. Попробоать оставить как есть
+external procedure GetAccountDescription2(string,string,var string);
+external procedure FindFiscalYear(Date,var Date,var Date);
+external function Integer GetVATLaw();
+external function Boolean CheckObjType(string,string);
+external procedure GetAccTurnover(string,string,Date,Date,record ObjBalVc,string,Integer,Integer,Integer,var val,var val);
+external procedure HT2Per(Date,Date,var string);
+external procedure LstRegDat(var string);
+external procedure HTObj(string, var string);
+external procedure HTAccs(string,string,Integer, var string);
+external procedure ListPerTrans(record RcVc);
+external procedure GetAccDCBalance(string,string,Date,record ObjBalVc,Integer,Integer,Integer,string,var val,var val,Integer);
+external procedure AnalyticalGroup(record RcVc);
+external procedure ClearAcums();
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:48:14
+	// 62s
+function string 3 GetLast3Symb(string obj)
+BEGIN
+string 3 res;
+Integer i;
+res="";
+  for (i=len(obj); i>=(len(obj)-3); i=i-1) begin
+    res = mid(obj,i,1) & res;    
+  end;
+GetLast3Symb=res;
+  RETURN;
+END;
+// 62e
+
+	// Edit End ---------------------------------------------- Edit End
+	procedure GetMonthText(Date td,var string res)
+BEGIN
+  res = USetStr(2780+GetMonth(td));
+  RETURN;
+END;
+
+procedure AddDebCred(val a,var val b,var val c)
+BEGIN
+  if (a>=0) then begin
+    b = a + b;
+  end else begin
+    c = a + c;
+  end;  
+  RETURN;   
+END;
+
+procedure PrintObjectsResults(record RcVc RepSpec,string accnr)
+BEGIN
+  record ObjVc Objr;
+  record ObjBalVc ObjBalr;
+  Boolean objfnd,testf;
+  Integer keys;
+  val t,dv,cv,sdv,scv,edv,ecv,fdv,fcv,bval; // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:48:19
+  Date fwddate;
+  record AccVc Accr;
+  integer ovst;// Edit ************************** Monday, 24 December 2012 13:48:50
+
+  Accr.AccNumber = accnr;
+  if (ReadFIrstMain(Accr,1,true)) then begin
+  end;
+  keys = 1;
+  ObjBalr.AccNumber = accnr;
+  ObjBalr.Object = RepSpec.ObjStr;
+  if (nonblank(ObjBalr.Object)) then begin
+    keys = 2;
+  end;
+  objfnd = true;
+  ResetLoop(ObjBalr);
+  while (LoopKey("AccObjKey",ObjBalr,keys,objfnd)) begin
+    if (objfnd) then begin
+      if (nonblank(RepSpec.ObjStr)) then begin
+        if (ObjBalr.Object!=RepSpec.ObjStr) then begin
+          objfnd = false;
+        end;
+      end;
+      if (ObjBalr.AccNumber!=accnr) then begin
+        objfnd = false;
+      end;
+    end;
+    if (objfnd) then begin
+      testf = true;
+      if (blank(ObjBalr.Object)) then begin testf = false; end;
+      if (Mid(ObjBalr.Object,len(ObjBalr.Object)-1,1)==":") then begin testf = false; end;
+      if (Mid(ObjBalr.Object,len(ObjBalr.Object)-2,1)==":") then begin testf = false; end;
+
+      if (nonblank(RepSpec.ObjType)) then begin
+        if (CheckObjType(ObjBalr.Object,RepSpec.ObjType)==false) then begin 
+          testf = false;
+        end;  
+      end;          
+      if (testf) then begin
+        t = blankval;
+        GetAccDCBalance(ObjBalr.AccNumber,ObjBalr.Object,AddDay(RepSpec.sStartDate,-1),ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,sdv,scv,RepSpec.flags[6]); // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:48:29
+        GetAccDCBalance(ObjBalr.AccNumber,ObjBalr.Object,RepSpec.sEndDate,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,edv,ecv,RepSpec.flags[6]);
+        dv = edv - sdv;
+        cv = ecv - scv;
+        if (cv==0) then begin
+          cv = blankval;
+        end;
+        if (dv==0) then begin
+          dv = blankval;
+        end;
+        fwddate = RepSpec.sStartDate;
+        if (nonblankdate(RepSpec.d2)) then begin
+          if (RepSpec.d2<fwddate) then begin fwddate = RepSpec.d2; end;
+        end;
+        GetAccDCBalance(ObjBalr.AccNumber,ObjBalr.Object,AddDay(fwddate,-1),ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,fdv,fcv,RepSpec.flags[6]);
+        GetAccDCBalance(ObjBalr.AccNumber,ObjBalr.Object,RepSpec.sEndDate,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,edv,ecv,RepSpec.flags[6]);
+        if ((dv!=0) or (cv!=0) or (fdv!=0) or (fcv!=0)) then begin
+          Objr.Code = ObjBalr.Object;
+          if (ReadFirstMain(Objr,1,true)) then begin end;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:48:44
+	            if (GetLast3Symb(ObjBalr.Object)!="::S") then begin // 62
+            		if(bval!=0 or dv!=0 or cv!=0 or (fdv-fcv)!=0 or (edv-ecv)!=0)then begin// Edit ************************** Monday, 24 December 2012 12:19:18
+									ovst = Objr.TerminateFlag;
+									/*StartFormat(15);
+										OutVal(0,0,fdv,M4Val,true);
+										OutVal(50,0,fcv,M4Val,true);
+										OutVal(100,0,bval,M4Val,true);
+										OutVal(150,0,dv,M4Val,true);
+										OutVal(200,0,cv,M4Val,true);
+										OutVal(250,0,edv,M4Val,true);
+										OutVal(300,0,ecv,M4Val,true);
+									endformat;*/
+								StartFormat(15);
+									OutStringOvst(20,"DblObj",ObjBalr.Object,false,ovst);// 62
+									OutStringOvst(65,0,Objr.Comment,false,ovst);
+									bval=0; // 62
+									if fdv-fcv>=0 then begin  // 62
+										OutValOvst(190,0,fdv-fcv,M4DVal,true,ovst);// 62 
+										OutValOvst(8,0,bval,M4Val,true,ovst);// 62
+									end else begin
+										OutValOvst(190,0,bval,M4Val,true,ovst); // 62
+										OutValOvst(8,0,fdv-fcv,M4CVal,true,ovst); // 62
+									end;
+									if dv==blankval then begin // 62s
+									 dv=0;
+									end;
+									if cv==blankval then begin
+									 cv=0;
+									end;// 62w
+									OutValOvst(3,0,dv,M4Val,true,ovst);
+									OutValOvst(5,0,cv,M4Val,true,ovst);
+	
+									if edv-ecv>=0 then begin
+									 OutValOvst(7,0,edv-ecv,M4DVal,true,ovst);// 62
+									 OutValOvst(1,0,bval,M4Val,true,ovst);// 62
+									 end else begin
+									 OutValOvst(7,0,bval,M4Val,true,ovst);// 62
+									 OutValOvst(1,0,edv-ecv,M4CVal,true,ovst);// 62
+									end;
+								EndFormat;
+              end;// Edit ************************** Monday, 24 December 2012 12:19:20
+            end;
+
+	// Edit End ---------------------------------------------- Edit End
+	        end;
+      end;
+    end;
+  end; // 62
+  RETURN;   
+END;
+
+procedure MBALine(record RcVc RepSpec,string accnr,string comment,var val sbdp,var val sbcp,var val pdp,var val pcp,
+                  var val adp,var val acp,var val asdp,var val ascp,Integer lmod,string dblstr,var val stde,var val stcr,val lade,val lacr) // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:06
+BEGIN
+  val sbal,bval; // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:10
+  Integer screen;
+  
+  bval=0; // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:14
+  screen = 6;
+  sbal = sbdp + sbcp;
+  if (lmod==1) then begin
+    StartFormat(15);
+    OutString(0,dblstr,accnr,false);
+    OutString(2,0,comment,false);
+    if ((RepSpec.Media==screen) and (RepSpec.flags[9]==1)) then begin
+      if stde+stcr>=0 then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:27
+      OutVal(190,0,stde+stcr,M4DVal,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:26
+      OutVal(8,0,bval,M4Val,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:27
+      end else begin
+      OutVal(190,0,bval,M4Val,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:34
+      OutVal(8,0,stcr+stde,M4CVal,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:35
+          end;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:35
+      if pdp==blankval then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:36
+      pdp=0;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:36
+      end;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:36
+      if pcp==blankval then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:37
+      pcp=0;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:49:37
+      end;
+      OutVal(3,0,pdp,M4Val,true);
+      //trace(pcp,"cr1");
+      OutVal(5,0,pcp,M4NegVal,true);
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:49:47
+	      if lade+lacr>=0 then begin
+	  OutVal(7,0,lade+lacr,M4DVal,true); 
+	  OutVal(1,0,bval,M4Val,true); 
+	  end else begin
+	  OutVal(7,0,bval,M4DVal,true); 
+	  OutVal(1,0,lacr+lade,M4CVal,true); 
+          end;
+
+	// Edit End ---------------------------------------------- Edit End
+	    end else begin
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:49:52
+	      
+      if stde+stcr>=0 then begin
+      OutVal(450 - (47*6),0,stde+stcr,M4DVal,true);
+      OutVal(8,0,bval,M4Val,true);
+      end else begin
+      OutVal(450 - (47*6),0,bval,M4Val,true);
+      OutVal(8,0,stcr+stde,M4CVal,true);
+          end;
+      if pdp==blankval then begin
+      pdp=0;
+      end;
+      if pcp==blankval then begin
+      pcp=0;
+      end;
+
+	// Edit End ---------------------------------------------- Edit End
+	      OutVal(3,0,pdp,M4Val,true);
+      //trace(pcp,"cr2");
+      OutVal(4,0,pcp,M4NegVal,true);
+  /*    if nonblank(adp) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:01
+      OutVal(5,0,adp,M4Val,true);
+      end else begin
+        OutString(5,0," ",true);
+        end;
+      if nonblank(acp) then begin
+      OutVal(6,0,acp,M4NegVal,true);
+      end else begin
+        OutString(6,0," ",true);
+        end;*/// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:02
+      if lade+lacr>=0 then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:12
+      OutVal(7,0,lade+lacr,M4DVal,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:13
+      OutVal(1,0,bval,M4Val,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:12
+      end else begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:11
+      OutVal(7,0,bval,M4Val,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:11
+      OutVal(1,0,lacr+lade,M4CVal,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:10
+        end;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:10
+      if (nonblank(comment)) then begin
+        AddToAccumulator(0,stde);   // Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:18   
+        AddToAccumulator(1,pdp);      
+        AddToAccumulator(2,-pcp);
+
+        AddToAccumulator(3,stde);    // Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:23  
+        AddToAccumulator(4,pdp);      
+        AddToAccumulator(5,-pcp);  
+      end;
+    end;
+    EndFormat;
+    if (RepSpec.flags[15]!=0) then begin
+      PrintObjectsResults(RepSpec,accnr);
+    end;
+  end else begin
+//    AddM4Val(sbdp,sbcp,&sbal);
+//    AddARSMBARow(mh,accnr,comment,sbdp,sbcp,pdp,pcp,adp,acp,asdp,ascp);
+  
+  end;  
+  StartFooter(45,true);
+   Black_Divider(0,1);
+   OutString(50,0,USetStr(2412),false)
+   OutAccumulator(240,6,M4Val,true);
+   OutAccumulator(360,7,M4Val,true);
+   OutAccumulator(1,8,M4Val,true);
+   OutString(50,0,USetStr(2413),false)
+   OutAccumulator(240,0,M4Val,true);
+   OutAccumulator(360,1,M4Val,true);
+   OutAccumulator(1,2,M4Val,true);
+   ClearAccumulator(0);
+   ClearAccumulator(1);
+   ClearAccumulator(2);
+   OutString(50,0,USetStr(2414),false)
+   OutAccumulator(240,3,M4Val,true);
+   OutAccumulator(360,4,M4Val,true);
+   OutAccumulator(1,5,M4Val,true);
+   CopyAccumulator(6,3);
+   CopyAccumulator(7,4);
+   CopyAccumulator(8,5);
+  EndFooter;
+  RETURN;
+END;
+
+procedure PrintMBAHeader1(record RcVc RepSpec)
+BEGIN
+  Integer screen;
+  string 255 tstr;
+  record BaseCurBlock BC;  
+  BlockLoad(BC);
+  
+  SetLangMode(LangUkrainian,"UKR",0);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:30
+  
+  screen = 6;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:31
+  if (RepSpec.flags[10]==0) then begin    
+    StartFormat(15);
+    OutString(0,0,USetStr(3462),false);
+    OutString(2,0,USetStr(3471),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:36
+    if ((RepSpec.Media==screen) and (RepSpec.flags[9]==1)) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:37
+      OutString(220,0,USetStr(3468),true);
+      OutString(3,0,USetStr(3463),true);
+      OutString(5,0,USetStr(3464),true);
+    end else begin
+      OutString(450 - (47*6),0,"Дебет на початок",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:43
+      OutString(8,0,"Кредит на початок",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:43
+      OutString(3,0,USetStr(3463),true);
+      OutString(4,0,USetStr(3464),true);
+    /*  OutString(5,0,USetStr(3465),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:47
+      OutString(6,0,USetStr(3466),true);*/// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:47
+    end;
+    OutString(7,0,"Дебет на кінець",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:51
+    OutString(1,0,"Кредит на кінець",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:52
+    EndFormat;
+  end else begin
+    if ((RepSpec.Media==6) and (RepSpec.flags[9]==1)) then begin
+      StartFormat(15);
+      OutString(0,0,USetStr(3462),false);
+      OutString(200,0,USetStr(3468),false);
+      OutString(320,0,USetStr(3474),false);
+      OutString(440,0,USetStr(3467),false);
+      EndFormat;
+      StartFormat(15);
+      OutString(0,0,USetStr(3470),false);
+      OutString(2,0,USetStr(3471),false);
+      OutString(220,0,USetStr(3472),true);
+      OutString(8,0,USetStr(3473),true);
+      OutString(3,0,USetStr(3472),true);
+      OutString(5,0,USetStr(3473),true);
+      OutString(7,0,USetStr(3472),true);
+      OutString(1,0,USetStr(3473),true);
+      EndFormat;
+    end else begin
+      StartFormat(15);
+      OutString(0,0,USetStr(3462),false);
+      OutString(160,0,USetStr(3468),false);
+      OutString(260,0,USetStr(3474),false);
+      OutString(350,0,USetStr(3475),false);
+      OutString(440,0,USetStr(3467),false);
+      EndFormat;
+      StartFormat(15);
+      OutString(0,0,USetStr(3470),false);
+      OutString(2,0,USetStr(3471),false);
+      OutString(450 - (47*6),0,USetStr(3472),true);
+      OutString(8,0,USetStr(3473),true);
+      OutString(3,0,USetStr(3472),true);
+      OutString(4,0,USetStr(3473),true);
+    /*  OutString(5,0,USetStr(3472),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:55
+      OutString(6,0,USetStr(3473),true);*/// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:50:56
+      OutString(7,0,USetStr(3472),true);
+      OutString(1,0,USetStr(3473),true);
+      EndFormat;
+    end;
+  end;  
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:51:09
+	
+  tstr = USetStr(2513);
+  if (repspec.basecurncy==0) then begin
+    tstr=tstr & BC.BaseCur1;
+  end;
+  if (repspec.basecurncy==1) then begin
+    tstr=tstr & " " & BC.BaseCur2;
+  end; 
+  
+  StartFormat(15);
+  OutString(0,0,tstr,false);
+  EndFormat;
+
+	// Edit End ---------------------------------------------- Edit End
+	
+  Gray_Divider(0,1);
+  RETURN;
+END;
+
+procedure PrintMBAHeader(record RcVc RepSpec)
+BEGIN
+  string 255 tstr,t2;
+  Integer rw,screen;
+
+  record BaseCurBlock BC;
+  
+  BlockLoad(BC);
+   
+  rw = 1;
+  HT2Per(RepSpec.sStartDate,RepSpec.sEndDate,tstr);
+  Header(rw,tstr,1);
+  rw = rw + 1;
+  LstRegDat(tstr);
+  Header(rw,tstr,0);
+  HTAccs(RepSpec.FirstAcc,RepSpec.LastAcc,RepSpec.UsedOnly,tstr);
+  Header(rw,tstr,1);
+  rw = rw + 1;
+  
+  tstr = USetStr(2513);
+  if (repspec.basecurncy==0) then begin
+    tstr=tstr & BC.BaseCur1;
+  end;
+  if (repspec.basecurncy==1) then begin
+    tstr=tstr & " " & BC.BaseCur2;
+  end;
+  Header(rw,tstr,0);
+
+  if (nonblank(RepSpec.ObjStr)) then begin
+    HTObj(RepSpec.ObjStr,tstr);
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end;
+  if (nonblankdate(RepSpec.d1)) then begin
+    tstr = USetStr(3469);
+    t2 = RepSpec.d1;
+    tstr = tstr & " ";
+    tstr = tstr & t2;
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end;
+  if (nonblankdate(RepSpec.d2)) then begin
+    tstr = USetStr(3470);
+    t2 = RepSpec.d2;
+    tstr = tstr & " ";
+    tstr = tstr & t2;
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end;
+  if (RepSpec.SimVerf==1) then begin
+    tstr = USetStr(3019);
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end;
+  if (RepSpec.flags[1]==1) then begin
+    tstr = USetStr(3021);
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end;
+  if (RepSpec.flags[4]==1) then begin
+    tstr = USetStr(5212);
+    Header(rw,tstr,1);
+    rw = rw + 1;
+  end; 
+  screen = 6;
+  if ((RepSpec.Media==screen) and  (RepSpec.flags[9]==1)) then begin
+//    SetRepCol(9,220);9 doesn't work
+    SetRepCol(8,220);
+    SetRepCol(3,290);
+    SetRepCol(5,360);
+  end else begin
+//    SetRepCol(9,450 - (47*6));9 doesn't work
+    SetRepCol(8,450 - (47*5));
+    SetRepCol(3,450 - (47*4));
+    SetRepCol(5,450 - (47*2));
+  end;
+  SetRepCol(4,450 - (47*3));
+  SetRepCol(6,403);
+  SetRepCol(7,450);  
+  RETURN;
+END;
+
+procedure GetAccObjTypeDCBalance(string accstr,string objtype,Date bdp,
+                                 Integer simf,Integer basecurncy,Integer crncy,string crncycode,var val dvp,var val cvp,Integer IncDaughter)
+BEGIN                                 
+  record ObjBalVc ObjBalr;
+  record ObjVc Objr;
+  Boolean TrHs;
+  val dv,cv;
+
+  dvp = 0;
+  cvp = 0;
+  TrHs = true;
+  Objr.OTCode = objtype;
+  while (LoopKey("OTCode",Objr,1,TrHs)) begin
+    if (Objr.OTCode!=objtype) then begin
+      TrHs = false;
+    end;
+    if (TrHs) then begin
+      ObjBalr.AccNumber = accstr;
+      ObjBalr.Object = Objr.Code;
+      if (ReadFirstMain(ObjBalr,2,true)) then begin
+        GetAccDCBalance(accstr,Objr.Code,bdp,ObjBalr,simf,basecurncy,0,crncycode,dv,cv,IncDaughter);
+        dvp = dvp + dv;
+        cvp = cvp + cv;
+      end;
+    end;
+  end;
+  RETURN;
+END;
+
+procedure MBACode(var record RcVc RepSpec,Integer lmod)
+BEGIN  
+  Integer i;
+  Integer subaccCnt;
+  record AccVc Accr;
+  record ObjBalVc ObjBalr;
+  record TRVc TRr;
+  record SMVc SMr;
+  row SMVc SMrw;
+  LongInt mbarws;
+  val as,fws,dv,cv,stde,stcr,lade,lacr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:51:16
+  val sfwd,sfwc,spd,spc,sad,sac,sedb,secb,sstde,sstcr,slade,slacr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:51:17
+  val tfwd,tfwc,tpd,tpc,tad,tac,tedb,tecb,tstde,tstcr,tlade,tlacr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:51:18
+  val ufwd,ufwc,upd,upc,uad,uac,uedb,uecb,ustde,ustcr,ulade,ulacr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:51:18
+  Boolean first;
+  string 1 lastgroup;
+  string 10 lastsub,newsub;
+  string 255 tstr,gstr,blankstr;
+  Date fwddate,sbd;
+  Date curYearstartdate,curYearenddate;
+//  record ARSVc ARSr;
+/*lmod : report = 1, document = 0*/
+  string 20 sDate;
+  string 255 accname;
+  
+  first = true;
+  subaccCnt = 0;
+  lastgroup = " ";
+  gstr = " '";
+  lastsub = "";
+  if (RepSpec.FirstVer>10) then begin RepSpec.FirstVer = 3; end;
+  RepSpec.FirstAcc = FirstInRange(RepSpec.AccStr,10);
+  RepSpec.LastAcc = LastInRange(RepSpec.AccStr,10);
+  mbarws = CountRecords("AccVc");
+  fwddate = RepSpec.sStartDate;
+  if (nonblankdate(RepSpec.d2)) then begin
+    if (RepSpec.d2<fwddate) then begin fwddate = RepSpec.d2; end;
+  end;
+  FindFiscalYear(fwddate,curYearstartdate,curYearenddate);  
+  ClearAcums;    
+  if (lmod==1) then begin  
+    if (RepSpec.flags[11]==1) then begin
+      if (GetVATLaw==8) then begin//langPortuguese
+        StartReportNoHeaderJob(USetStr(3461));
+        Header(1,"",0);
+        Header(2,"",0);
+        Header(3,"",0);
+        Header(4,"",0);
+        EndHeader;
+      end else begin
+        StartReportNoHeaderJob(USetStr(3461));
+      end;
+      if ((RepSpec.Media==6) and  (RepSpec.flags[9]==1)) then begin
+//        SetRepCol(9,220); 9 doesnt' work
+        SetRepCol(8,250);
+        SetRepCol(3,310);
+        SetRepCol(5,380);
+      end else begin
+//        SetRepCol(9,450 - (47*6)); 9 doesn't work
+        SetRepCol(8,450 - (47*5));
+        SetRepCol(3,450 - (47*4));
+        SetRepCol(5,450 - (47*2));
+      end;
+      SetRepCol(4,450 - (47*3));
+      SetRepCol(6,403);
+      SetRepCol(7,450);      
+    end else begin
+      StartReportJob(USetStr(3461));
+      PrintMBAHeader(RepSpec);
+      EndHeader;
+    end;
+    SetRepCol(2,50);
+  end;
+  if(GetVATLaw==8) then begin
+    GetMonthText(RepSpec.sStartDate,sDate);
+    StartFormat(20);
+    OutString(480,0,"" & sDate & " " & GetYear(RepSpec.sStartDate),true);
+    EndFormat;
+  end;
+  if (mbarws==0) then begin goto L99; end;
+  if (RepSpec.ArtMode>0) then begin
+    AnalyticalGroup(RepSpec);
+  end else begin
+  Accr.AccNumber = "";
+  RecordNew(SMr);
+  for (i=0; i<mbarws; i=i+1) begin
+    ClearRow(SMr,SMrw,i);
+    if (LoopMain(Accr,1,true)) then begin end;//m4_ReadLogicalMain(AccVc,i+1,Accr);
+    if (nonblank(RepSpec.FirstAcc)) then begin
+      if (Accr.AccNumber<RepSpec.FirstAcc) then begin goto L22; end;
+    end;  
+    if (nonblank(RepSpec.LastAcc)) then begin
+      if (Accr.AccNumber>RepSpec.LastAcc) then begin goto L22; end;
+    end;  
+    SMrw.AccNumber = Accr.AccNumber;
+    
+    ObjBalr.AccNumber = Accr.AccNumber;
+    ObjBalr.Object = RepSpec.ObjStr;
+    if (ReadFirstMain(ObjBalr,2,true)) then begin
+      if ((blank(RepSpec.ObjType)) or (nonblank(RepSpec.ObjStr))) then begin
+        sbd = AddDay(fwddate,-1);
+       GetAccDCBalance(Accr.AccNumber,RepSpec.ObjStr,sbd,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+        SMrw.DebVal = SMrw.DebVal + dv;//StartDeb
+        SMrw.CredVal = SMrw.CredVal - cv; //StartCred
+
+        sbd = AddDay(RepSpec.sStartDate,-1);
+        GetAccDCBalance(Accr.AccNumber,RepSpec.ObjStr,sbd,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+        SMrw.DebVal2 = SMrw.DebVal2 + dv; //PerDeb
+        SMrw.CredVal2 = SMrw.CredVal2 - cv; //PerCred
+
+        GetAccDCBalance(Accr.AccNumber,RepSpec.ObjStr,RepSpec.sEndDate,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+        SMrw.CurDebVal = SMrw.CurDebVal + dv; //AccDeb
+        SMrw.CurCredVal = SMrw.CurCredVal - cv; //AccCred
+      end else begin
+        sbd = AddDay(fwddate,-1);
+        GetAccObjTypeDCBalance(Accr.AccNumber,RepSpec.ObjType,sbd,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+        SMrw.DebVal = SMrw.DebVal + dv;//StartDeb
+        SMrw.CredVal = SMrw.CredVal - cv; //StartCred
+
+        sbd = AddDay(RepSpec.sStartDate,-1);
+        GetAccObjTypeDCBalance(Accr.AccNumber,RepSpec.ObjType,sbd,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+        SMrw.DebVal2 = SMrw.DebVal2 + dv; //PerDeb
+        SMrw.CredVal2 = SMrw.CredVal2 - cv; //PerCred
+
+        GetAccObjTypeDCBalance(Accr.AccNumber,RepSpec.ObjType,RepSpec.sEndDate,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+        SMrw.CurDebVal = SMrw.CurDebVal + dv; //AccDeb
+        SMrw.CurCredVal = SMrw.CurCredVal - cv; //AccCred
+      end;      
+      SMrw.DebVal2 = SMrw.CurDebVal - SMrw.DebVal2;
+      SMrw.CredVal2 = SMrw.CurCredVal - SMrw.CredVal2;
+
+      SMrw.CurDebVal = SMrw.CurDebVal - SMrw.DebVal;
+      SMrw.CurCredVal = SMrw.CurCredVal - SMrw.CredVal;
+
+      if ((Accr.AccType==3) or (Accr.AccType==4)) then begin
+        if (fwddate==curYearstartdate) then begin
+          SMrw.DebVal = 0;
+          SMrw.CredVal = 0;
+        end;
+      end; 
+    end;
+L22:;
+    MatRowPut(SMr,i,SMrw);
+  end;  
+  if (lmod==1) then begin
+    PrintMBAHeader1(RepSpec);
+    Gray_Divider(0,480);
+  end;  
+
+  blankstr = "";
+  Accr.AccNumber = RepSpec.FirstAcc;
+  ResetLoop(Accr);  
+  as = 0;
+//  mbarws = MatRowCnt(SMr); //??
+  for (i=0; i<mbarws; i=i+1) begin
+    MatRowGet(SMr,i,SMrw);
+    if (blank(SMrw.AccNumber)) then begin goto L44; end;
+    if (LoopMain(Accr,1,true)==false) then begin goto L44; end;
+    if ((SMrw.DebVal==0) and (SMrw.CredVal==0) and
+        (SMrw.DebVal2==0) and (SMrw.CredVal2==0) and
+        (SMrw.CurDebVal==0) and (SMrw.CurCredVal==0)) then begin goto L44; end;
+    newsub = Left(SMrw.AccNumber,RepSpec.FirstVer);   
+    if (first==false) then begin
+      if (newsub<>lastsub) then begin
+        if (subaccCnt>1) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:51:42
+          if (RepSpec.flags[8]<>0) then begin
+            if (RepSpec.flags[1]==0) then begin
+              if (lmod==1) then begin
+                Gray_Divider(2,1);
+              end;  
+            end;
+            MBALine(RepSpec,USetStr(3478),lastsub,ufwd,ufwc,upd,upc,uad,uac,uedb,uecb,lmod,"DblNL",ustde,ustcr,ustde+upd,ustcr+upc);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:51:51
+            if (RepSpec.flags[1]==0) then begin
+              if (lmod==1) then begin
+                StartFormat(10);
+                EndFormat;
+              end;  
+            end;
+          end;
+        end;
+        ufwd = 0;
+        ufwc = 0;
+        upd = 0;
+        upc = 0;
+        uad = 0;
+        uac = 0;
+        uedb = 0;
+        uecb = 0;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:51:57
+	        ustde = 0;
+        ustcr = 0;
+        ulade = 0;
+        ulacr = 0;
+
+	// Edit End ---------------------------------------------- Edit End
+	        subaccCnt = 0;
+      end;
+      if (CharacterMatch(lastgroup,Accr.AccNumber,1)==false) then begin
+        if ((RepSpec.flags[10]==0) or (RepSpec.flags[0]==1))  then begin        
+          if (RepSpec.flags[1]==0) then begin
+            if (lmod==1) then begin
+              Gray_Divider(2,1);
+            end;  
+          end;    
+          tstr = USetStr(3248);
+          tstr = tstr & gstr;
+          tstr = tstr & lastgroup;
+          tstr = tstr & "'";
+          if (tpd!=0) or (tpc!=0) or (tad!=0) or (tac!=0) or (tfwd!=0) or (tfwc!=0) then begin
+            MBALine(RepSpec,tstr,blankstr,tfwd,tfwc,tpd,tpc,tad,tac,tedb,tecb,lmod,"",tstde,tstcr,tstde+tpd,tstcr+tpc);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:02
+          end;
+        end;  
+        if (RepSpec.flags[1]==0) then begin
+          if (lmod==1) then begin
+            StartFormat(10);
+            EndFormat;
+          end;  
+        end;
+        tfwd = 0;
+        tfwc = 0;
+        tpd = 0;
+        tpc = 0;
+        tad = 0;
+        tac = 0;
+        tedb = 0;
+        tecb = 0;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:52:06
+	        tstde = 0;
+        tstcr = 0;
+        tlade = 0;
+        tlacr = 0;
+
+	// Edit End ---------------------------------------------- Edit End
+	      end;
+    end;
+    first = false;
+    subaccCnt = subaccCnt +1 ;
+    lastsub = newsub;
+    lastgroup = Left(Accr.AccNumber,1);
+
+    as = SMrw.CurDebVal + SMrw.CurCredVal;//AccDeb + AccCred
+    fws = SMrw.DebVal + SMrw.CredVal;//StartDeb + StartCred
+    as = as + fws;
+    spd = spd + SMrw.DebVal2;//PerDeb
+    spc = spc + SMrw.CredVal2;//PerDeb
+    sad = sad + SMrw.CurDebVal;//AccDeb
+    sac = sac + SMrw.CurCredVal;//AccCred
+    AddDebCred(as,sedb,secb);
+    AddDebCred(fws,sfwd,sfwc);
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:52:11
+	    sstde = sstde + SMrw.DebVal;
+    sstcr = sstcr + SMrw.CredVal;
+    slade = slade + SMrw.CurDebVal;
+    slacr = slade + SMrw.CurCredVal;
+
+	// Edit End ---------------------------------------------- Edit End
+	
+    tpd = tpd + SMrw.DebVal2;//PerDeb
+    tpc = tpc + SMrw.CredVal2;//PerCred
+    tad = tad + SMrw.CurDebVal;//AccDeb
+    tac = tac + SMrw.CurCredVal;//AccCred
+    AddDebCred(as,tedb,tecb);
+    AddDebCred(fws,tfwd,tfwc);
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:52:15
+	    tstde = tstde + SMrw.DebVal;
+    tstcr = tstcr + SMrw.CredVal;
+    tlade = tlade + SMrw.CurDebVal;
+    tlacr = tlade + SMrw.CurCredVal;
+   
+
+	// Edit End ---------------------------------------------- Edit End
+	    upd = upd + SMrw.DebVal2;//PerDeb
+    upc = upc + SMrw.CredVal2;//PerCred
+    uad = uad + SMrw.CurDebVal;//AccDeb
+    uac = uac + SMrw.CurCredVal;//AccCred
+    AddDebCred(as,uedb,uecb);
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:52:19
+	    AddDebCred(fws,ufwd,ufwc);  
+    ustde = ustde + SMrw.DebVal;
+    ustcr = ustcr + SMrw.CredVal;
+    ulade = ulade + SMrw.CurDebVal;
+    ulacr = ulade + SMrw.CurCredVal;
+
+
+	// Edit End ---------------------------------------------- Edit End
+	    if (RepSpec.flags[1]==0) then begin
+      GetAccountDescription2(Accr.AccNumber,RepSpec.Language,accname);        
+      if (RepSpec.flags[14]!=0) then begin
+        accname = Left(accname,15);
+      end;      
+      if (SMrw.DebVal2!=0) or (SMrw.CredVal2!=0) or (SMrw.CurDebVal!=0) or (SMrw.CurCredVal!=0) or (fws!=0) then begin
+       MBALine(RepSpec,SMrw.AccNumber,accname,fws,fws,SMrw.DebVal2,SMrw.CredVal2,SMrw.CurDebVal,SMrw.CurCredVal,as,as,lmod,"DblNL",SMrw.DebVal,SMrw.CredVal,SMrw.CurDebVal+SMrw.DebVal,SMrw.CurCredVal+SMrw.CredVal);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:26
+      end;
+    end; 
+L44:;
+  end;
+  if (subaccCnt>1) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:32
+    if (RepSpec.flags[8]<>0) then begin
+      if (RepSpec.flags[1]==0) then begin
+        if (lmod==1) then begin
+          Gray_Divider(2,1);
+        end;  
+      end; 
+      MBALine(RepSpec,blankstr,blankstr,ufwd,ufwc,upd,upc,uad,uac,uedb,uecb,lmod,"DblNL",ustde,ustcr,upd+ustde,upc+ustcr);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:36
+      if (RepSpec.flags[1]==0) then begin
+        if (lmod==1) then begin
+          StartFormat(10);
+          EndFormat;
+        end;  
+      end;
+    end;
+  end;
+  if ((RepSpec.flags[10]==0) or (RepSpec.flags[0]==1))  then begin
+    if (RepSpec.flags[1]==0) then begin
+      if (lmod==1) then begin
+        Gray_Divider(2,1);
+      end;  
+    end;  
+    tstr = USetStr(3248);
+    tstr = tstr & gstr;
+    tstr = tstr & lastgroup;    
+    tstr = tstr & "'";    
+    MBALine(RepSpec,tstr,blankstr,tfwd,tfwc,tpd,tpc,tad,tac,tedb,tecb,lmod,"",tstde,tstcr,tstde+tpd,tstcr+tpc);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:42
+  end;  
+  if (RepSpec.flags[1]==0) then begin
+    if (lmod==1) then begin
+      StartFormat(10);
+      EndFormat;
+    end;  
+  end;
+
+  if (lmod==1) then begin
+    Gray_Divider(0,1);
+  end;  
+  MBALine(RepSpec,blankstr,blankstr,sfwd,sfwc,spd,spc,sad,sac,sedb,secb,lmod,"DblNL",sstde,sstcr,sstde+spd,sstcr+spc);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:45
+  end; /* ArtMode */
+  if (RepSpec.flags[4]<>0) then begin 
+    if (lmod==1) then begin
+      ListPerTrans(RepSpec); 
+    end;  
+  end;
+  if (lmod==0) then begin
+/*
+not possible yet but almost
+    ARSr.StartBal = sfwd;
+    ARSr.OnAccBal = sfwc;
+    ARSr.s0 = spd;
+    ARSr.s1 = spc;
+    ARSr.s16 = sad;
+    ARSr.s31 = sac;
+    ARSr.s61 = sedb;
+    ARSr.Sum = secb;
+    ARSr.IntSum = 0;
+    ARSr.SumNotLate = 0;
+    ARSr.SumLate = 0;
+    ARSr.ARSum = 0;
+    PrintDocument(ARSr,"MBAForm",false);
+*/    
+  end;
+    
+L99:;
+  EndJob;    
+  RETURN;
+END;
+
+global
+procedure MBARn(var record RcVc RepSpec)
+BEGIN
+  if (RepSpec.Media==mtScreen) then begin
+    RepSpec.flags[9] = 1;
+  end;
+  MBACode(RepSpec,1);
+  RETURN;
+END;
+
+global
+procedure MBA3Rn(var record RcVc RepSpec)
+BEGIN  
+
+  MBACode(RepSpec,1);
+  RETURN;
+END;
+
+
+/*
+not possible yet but almost
+global
+procedure MBAForm(var record RcVc RepSpec)
+BEGIN
+
+  MBACode(RepSpec,0);
+  RETURN;
+END;
+*/

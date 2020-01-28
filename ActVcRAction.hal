@@ -1,0 +1,387 @@
+//<halrule>server-only</halrule>
+
+external function Boolean FindAcceptanceRulesAndAmountForActivity(record ActVc,var record AcceptanceRulesVc,var val);
+external function val GetAcceptanceSum_SDVc(record SDVc);
+external function val GetAcceptanceSum_OPVc(record OPVc);
+external function Boolean FindTheUser(var record UserVc);
+external updating function Integer TestLinkedRecordCanBeOKed(record ActVc);
+external function val MulRateToBase1(var string,val,val,val,val,val,val,roundmode);
+external function Boolean ReadAcceptanceRules(Integer,string,var record AcceptanceRulesVc);
+external updating procedure InvalidateTR(Integer,LongInt);
+external function Boolean TBIVItemsUsage(record PRVc,record INVc,val);
+external function Boolean CheckProjectMember(record PRVc);
+external function Boolean IsPRPhaseLocked(string,Date,var string);
+external function Boolean Date2Test(string,Date,string,Integer);
+external procedure GetProjectWIPAcc(record PRAccBlock,string,var string,var string);
+external procedure GetFullCurncyRate(var string,Date,var val,var val,var val,var val,var val);
+external updating procedure SaveTrans(record TRVc);
+external function string 255 CheckTrans(var record TRVc,Integer,Boolean);
+external updating procedure DeleteAlarm(record ActVc);
+external updating procedure UpdateAlarm(record ActVc);
+external updating procedure CreateAlarm(record ActVc);
+external function Integer CheckResources(string,var string);
+external procedure ExtractObj(string,var Integer,var string);
+external function GetPRName(string, var string);
+external function Integer CountObjects(string);
+external updating procedure CreateConsequences(record ActVc);
+external procedure GetItemGroup(string,var string);
+external function Integer ActLenClass(Date,Date);
+external function Boolean SerNrTestTSVc(LongInt,Date,var Boolean);
+external function Boolean GetAccName(string,var string,Integer);
+external procedure AddEuroTrRow(record TRVc,string,string,string,string,val,val,val,Boolean,Boolean,var val,Boolean,string,string,string);
+external function Boolean TransInFiscal(Date);
+external procedure GetPRItemCost(string,string,string,string,Integer,var val);
+external function Integer CheckUsers(string,string,var string,Boolean);
+external function Boolean GetTSAcc(string,string,var string,var string,var string);
+external function Integer GetINType(string);
+external function val TimeToVal2(Time);
+external updating procedure ActOK(record ActVc);
+external function Boolean ActivityIsForAbsence(record ActVc);
+external function Boolean DateLocked(Date,string);
+external function Boolean DateWarned(Date,string);
+
+
+external updating function boolean AuthTurboSMS(var string);// Edit ************************** Monday, 13 February 2017 15:12:54
+external updating function val GetCreditBalanceTurboSMS(string);// Edit ************************** Monday, 13 February 2017 15:12:54
+external updating function boolean EasySendTurboSMS(string,string);// Edit ************************** Monday, 13 February 2017 15:12:55
+external procedure ExtractObj(string,var Integer,var string);// Edit ************************** Monday, 13 February 2017 15:12:55
+external function string 255 StrReplace(string,string,string);// Edit ************************** Monday, 13 February 2017 15:12:56
+
+updating procedure LinkRecordToActivity(record ActVc Actr)
+begin
+  switch (Actr.FromFileName) begin
+    case "ExpVc": begin
+        record ExpVc Expr;
+        
+        Expr.SerNr = StringToLongInt(Actr.FromSerNr);
+        ReadFirstMain(Expr,1,true);
+        CreateRecordLink(Expr,CurrentCompany,Actr,CurrentCompany);  
+        CreateRecordLink(Actr,CurrentCompany,Expr,CurrentCompany);  
+      end;
+    case "POVc": begin
+        record POVc POr;
+        
+        POr.SerNr = StringToLongInt(Actr.FromSerNr);
+        ReadFirstMain(POr,1,true);
+        CreateRecordLink(POr,CurrentCompany,Actr,CurrentCompany);  
+        CreateRecordLink(Actr,CurrentCompany,POr,CurrentCompany);  
+      end;
+    case "VIVc": begin
+        record VIVc VIr;
+        
+        VIr.SerNr = StringToLongInt(Actr.FromSerNr);
+        ReadFirstMain(VIr,1,true);
+        CreateRecordLink(VIr,CurrentCompany,Actr,CurrentCompany);  
+        CreateRecordLink(Actr,CurrentCompany,VIr,CurrentCompany);  
+      end;
+    case "QTVc": begin
+        record QTVc QTr;
+        
+        QTr.SerNr = StringToLongInt(Actr.FromSerNr);
+        ReadFirstMain(QTr,1,true);
+        CreateRecordLink(QTr,CurrentCompany,Actr,CurrentCompany);  
+        CreateRecordLink(Actr,CurrentCompany,QTr,CurrentCompany);  
+      end;
+    case "IVVc": begin
+        record IVVc IVr;
+        
+        IVr.SerNr = StringToLongInt(Actr.FromSerNr);
+        ReadFirstMain(IVr,1,true);
+        CreateRecordLink(IVr,CurrentCompany,Actr,CurrentCompany);  
+        CreateRecordLink(Actr,CurrentCompany,IVr,CurrentCompany);  
+      end;
+    case "TBBUVc": begin
+        record TBBUVc TBBUr;
+        
+        TBBUr.PRCode = Actr.FromSerNr;
+        ReadFirstMain(TBBUr,1,true);
+        CreateRecordLink(TBBUr,CurrentCompany,Actr,CurrentCompany);  
+        CreateRecordLink(Actr,CurrentCompany,TBBUr,CurrentCompany);  
+      end;
+    case "SDVc": begin
+        record SDVc SDr;
+        
+        SDr.SerNr = StringToLongInt(Actr.FromSerNr);
+        ReadFirstMain(SDr,1,true);
+        CreateRecordLink(SDr,CurrentCompany,Actr,CurrentCompany);  
+        CreateRecordLink(Actr,CurrentCompany,SDr,CurrentCompany);  
+      end;
+    case "IntORVc": begin
+        record IntORVc IntORr;
+        
+        IntORr.SerNr = StringToLongInt(Actr.FromSerNr);
+        ReadFirstMain(IntORr,1,true);
+        CreateRecordLink(IntORr,CurrentCompany,Actr,CurrentCompany);  
+        CreateRecordLink(Actr,CurrentCompany,IntORr,CurrentCompany);  
+      end;
+    case "LeaveApplicationVc": begin
+        record LeaveApplicationVc LeaveApplicationr;
+        
+        LeaveApplicationr.SerNr = StringToLongInt(Actr.FromSerNr);
+        ReadFirstMain(LeaveApplicationr,1,true);
+        CreateRecordLink(LeaveApplicationr,CurrentCompany,Actr,CurrentCompany);  
+        CreateRecordLink(Actr,CurrentCompany,LeaveApplicationr,CurrentCompany);  
+      end;
+  end;
+  return;
+end;
+
+global
+updating function LongInt ActVcRecordSaveAfter(var record ActVc Actr,record ActVc Act2r,LongInt stat,LongInt long4)
+BEGIN
+  LongInt res;
+	record UserVc Ur;// Edit ************************** Monday, 13 February 2017 15:15:04
+  record AcceptanceRulesVc ARr;// Edit ************************** Monday, 13 February 2017 15:15:04
+  string 255 reciever, text;// Edit ************************** Monday, 13 February 2017 15:15:05
+  string 5 person;// Edit ************************** Monday, 13 February 2017 15:15:06
+  string 15 phone;// Edit ************************** Monday, 13 February 2017 15:15:06
+  string 30 phonetmp;// Edit ************************** Monday, 13 February 2017 15:15:07
+  integer pos;// Edit ************************** Monday, 13 February 2017 15:15:07
+  boolean testf,test2f;// Edit ************************** Monday, 13 February 2017 15:15:08
+	
+	
+  if (Actr.OKFlag!=0) then begin
+    ActOK(Actr);        // Swapped to fix order of operation with approval rules.
+    CreateConsequences(Actr);
+//    ActOK(Actr);
+  end;
+  if (Actr.OKFlag==0) then begin
+    CreateAlarm(Actr);  
+  end;
+  LinkRecordToActivity(Actr);
+  
+  
+  testf = false;
+  if Actr.TodoFlag==1 then begin
+    while (loopmain(ARr,1,testf==false)) begin
+      if ARr.AcceptanceActType==Actr.ActType then begin
+        testf = true;
+      end;
+    end;
+  end;
+  if testf begin
+    ExtractObj(Actr.MainPersons,pos,person);
+    while (nonblank(person)) begin
+      Ur.Code = person;
+      if ReadFirstMain(Ur,1,true) then begin
+        if nonblank(Ur.Phone1) then begin
+          phonetmp = Ur.Phone1;
+        end else begin
+          phonetmp = Ur.Phone2;
+        end;
+        if nonblank(phonetmp) then begin
+          phonetmp = StrReplace(phonetmp,"-","");
+          phonetmp = StrReplace(phonetmp," ","");
+          phonetmp = StrReplace(phonetmp,"(","");
+          phonetmp = StrReplace(phonetmp,")","");
+          phonetmp = StrReplace(phonetmp,"*","");
+          switch (left(phonetmp,1)) begin
+            case "+":
+              phone = phonetmp;
+            case "3":
+              phone = "+" & phonetmp;
+            case "8":
+              phone = "+3" & phonetmp;
+            case "0":
+              phone = "+38" & phonetmp;
+            otherwise
+              phone = "+380" & phonetmp;
+          end;
+          reciever = reciever & phone & ",";
+        end;
+      end;
+      ExtractObj(Actr.MainPersons,pos,person);
+    end;
+    reciever = left(reciever,len(reciever) - 1);
+    text = "Please approve ";
+    test2f = false;
+    switch (Actr.FromFileName) begin
+      case "POVc":
+        if blank(Actr.ActResult) then begin
+          text = text & "PO ";
+          test2f = true;
+        end;
+      case "IPVc":
+        if blank(Actr.ActResult) then begin
+          text = text & "payment ";
+          test2f = true;
+        end;
+      case "PIVc":
+        if blank(Actr.ActResult) then begin
+          text = text & "payment ";
+          test2f = true;
+        end;
+      case "QTVc":
+        if blank(Actr.ActResult) then begin
+          text = text & "CE ";
+          test2f = true;
+        end;
+    end;
+    if test2f then begin
+      text = text & Actr.FromSerNr;
+      Ur.Code = CurrentUser;
+      if ReadFirstMain(Ur,1,true) then begin
+        text = text & " from ";
+        if nonblank(Ur.emailAddr) then begin
+          text = text & Ur.emailAddr;
+        end else begin
+          text = text & Ur.Name;
+        end;
+      end;
+      EasySendTurboSMS(reciever,text);
+    end;
+  end;
+  
+  ActVcRecordSaveAfter = res;
+  RETURN;
+END;
+
+global
+updating function LongInt ActVcRecordUpdateAfter(var record ActVc Actr,record ActVc Act2r,LongInt stat,LongInt long4)
+BEGIN
+  LongInt res;
+  transaction Boolean gActVcRecordUpdateAfterf;
+  record UserVc Ur;// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 03 12 2019 y. at 5:00:31 PM
+  record AcceptanceRulesVc ARr;
+  string 255 reciever,text;
+  string 5 person;
+  string 15 phone,appr,corr,rej;
+  string 30 phonetmp;
+  integer pos;
+  boolean testf,test2f,test3f;
+  record QTVc QTr;
+  record POVc POr;
+  string 200 salesman;// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 03 12 2019 y. at 5:00:33 PM
+
+  gActVcRecordUpdateAfterf = true;
+  if ((Actr.OKFlag!=0) and (Act2r.OKFlag==0)) then begin
+    ActOK(Actr);   // Swapped to fix order of operation with approval rules.
+    CreateConsequences(Actr);
+//    ActOK(Actr);
+    DeleteAlarm(Actr);  
+  end;
+  if ((Actr.OKFlag==0) and (Act2r.OKFlag==0)) then begin
+    if (Actr.TransDate!=Act2r.TransDate) or
+       (Actr.StartTime!=Act2r.StartTime) or 
+       (Actr.MainPersons!=Act2r.MainPersons) or
+       (Actr.CCPersons!=Act2r.CCPersons) or
+       (Actr.Comment!=Act2r.Comment) or
+       (Actr.AlarmType!=Act2r.AlarmType) or
+       (Actr.AlarmUnits!=Act2r.AlarmUnits) or
+       (Actr.AlarmWhen!=Act2r.AlarmWhen) then begin
+      UpdateAlarm(Actr);  
+    end;
+  end;
+  if ((Act2r.Invalid==0) and (Actr.Invalid!=0)) then begin
+    if (Act2r.OKFlag!=0) then begin
+      InvalidateTR(ActYc,Actr.TRSerNr);
+    end;
+  end;
+  
+  testf = false;
+  //if (Act2r.OKFlag==0) and (Actr.OKFlag==1) then begin
+    if Actr.TodoFlag==1 then begin
+      while (loopmain(ARr,1,testf==false)) begin
+        if ARr.AcceptanceActType==Actr.ActType then begin
+          testf = true;
+          appr = ARr.AcceptedActType;
+          //corr = ARr.CancelledActType;// Edit ************************** Monday, 13 February 2017 15:37:25
+          rej = ARr.RejectedActType;
+        end;
+      end;
+    end;
+  //end;
+  if testf begin
+  	switch (Actr.FromFileName) begin
+      case "POVc":
+      	POr.SerNr = Actr.FromSerNr;
+      	if(readfirstmain(POr,1,true))then begin
+      		salesman = POr.SalesMan;
+      	end;
+      case "QTVc":
+        QTr.SerNr = Actr.FromSerNr;
+      	if(readfirstmain(QTr,1,true))then begin
+      		salesman = QTr.SalesMan;
+      	end;
+    end;
+  	
+    ExtractObj(salesman,pos,person);
+    while (nonblank(person)) begin
+      Ur.Code = person;
+      if ReadFirstMain(Ur,1,true) then begin
+        if nonblank(Ur.Phone1) then begin
+          phonetmp = Ur.Phone1;
+        end else begin
+          phonetmp = Ur.Phone2;
+        end;
+        if nonblank(phonetmp) then begin
+          phonetmp = StrReplace(phonetmp,"-","");
+          phonetmp = StrReplace(phonetmp," ","");
+          phonetmp = StrReplace(phonetmp,"(","");
+          phonetmp = StrReplace(phonetmp,")","");
+          phonetmp = StrReplace(phonetmp,"*","");
+          switch (left(phonetmp,1)) begin
+            case "+":
+              phone = phonetmp;
+            case "3":
+              phone = "+" & phonetmp;
+            case "8":
+              phone = "+3" & phonetmp;
+            case "0":
+              phone = "+38" & phonetmp;
+            otherwise
+              phone = "+380" & phonetmp;
+          end;
+          reciever = reciever & phone & ",";
+        end;
+      end;
+      ExtractObj(salesman,pos,person);
+    end;
+    reciever = left(reciever,len(reciever) - 1);
+    test2f = false;
+    switch (Actr.FromFileName) begin
+      case "POVc":
+        text = "PO ";
+        test2f = true;
+      case "QTVc":
+        text = "CE ";
+        test2f = true;
+    end;
+    if test2f then begin
+      text = text & Actr.FromSerNr & " was ";
+      test3f = false;
+      if (Actr.ActResult=="ACPT") then begin
+        text = text & "approved ";
+        test3f = true;
+      end;
+      /*if (Actr.ActResult==corr) then begin
+        text = text & "sent for correction ";
+        test3f = true;
+      end;*/
+      if (Actr.ActResult=="REJEC") then begin
+        text = text & "rejected ";
+        test3f = true;
+      end;
+      if (Actr.ActResult=="CANCL") then begin
+        text = text & "canceled ";
+        test3f = true;
+      end;
+      if test3f then begin
+        Ur.Code = CurrentUser;
+        if ReadFirstMain(Ur,1,true) then begin
+          text = text & "by ";
+          if nonblank(Ur.emailAddr) then begin
+            text = text & Ur.emailAddr;
+          end else begin
+            text = text & Ur.Name;
+          end;
+        end;
+        EasySendTurboSMS(reciever,text);
+      end;
+    end;
+  end;
+  
+  gActVcRecordUpdateAfterf = false;
+  ActVcRecordUpdateAfter = res;
+  RETURN;
+END;

@@ -1,0 +1,612 @@
+//переносить как есть
+external outer function boolean TriggerCaption(integer);// проверка активности "доработок"
+external function val MulRateToBase1(var string,val,val,val,val,val,val,roundmode);
+external procedure NewLineExport();
+external procedure GetVATRowFromBlock(string,record VATCodeBlock,var row VATCodeBlock);
+external procedure HTOKF(Integer,Integer, var string);
+external procedure MulVATIV(string,val,var val,var val,Integer,Integer);
+external function Integer VATType(string);
+external procedure HT2Per(Date, Date , var string);
+
+procedure HTCorrection(Integer a,Integer b, var string tstr)
+begin
+  tstr = "";
+  if (a<>0 and b==0) then begin
+   tstr = USetStr(18829);
+  end;
+  if (a==0 and b<>0) then begin
+   tstr = USetStr(18830);
+  end;
+  if (a<>0 and b<>0) then begin
+   tstr = USetStr(18831);
+  end;
+  return;
+end;
+
+function string 255 Convert(string source)
+begin
+  string 255 res;
+  Integer l,i;
+  string 1 addstr;
+  
+  l = len(source);
+  for (i=0;i<l;i=i+1) begin
+    addstr = Mid(source,i,1);
+    switch (addstr) begin
+      case "<": addstr = "&lt;";
+      case ">": addstr = "&gt;";
+      case "&": addstr = "&amp;";
+      case "'": addstr = "&apos;";
+      case """": addstr = "&quot;";
+    end;
+    res = res & addstr;
+  end;
+  Convert = res;
+  return;
+end;
+
+procedure ExportTheLevel(Integer level)
+begin
+  string 255 tstr;
+  Integer i;
+  
+  tstr = "";
+  for (i=0;i<level;i=i+1) begin
+    tstr = tstr & "  ";
+  end;
+  ExportPadString(tstr,len(tstr)," ",false);
+  return;
+end;
+
+procedure ExportPlainXml(string value,Integer level)
+begin
+  ExportTheLevel(level);
+  ExportPadString(value,BytesInString(value)," ",false);
+  NewLineExport;
+  return;
+end;
+
+procedure ExportTagXml(string tag,string pvalue,Integer level)
+begin
+  string 255 value;
+  
+  value = Convert(pvalue);
+  ExportTheLevel(level);
+  ExportPadString("<",1," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);  
+  ExportPadString(value,BytesInString(value)," ",false);
+  ExportPadString("</",2," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);
+  NewLineExport;
+  return;
+end;
+
+procedure ExportAttributeTagXml(string tag,string pvalue,string attr,string attrvalue,Integer level)
+begin
+  string 255 value;
+  
+  value = Convert(pvalue);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:27:46
+  ExportTheLevel(level);
+  ExportPadString("<",1," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  if (nonblank(attr)) then begin
+    ExportPadString(" ",1," ",false);
+    ExportPadString(attr,len(attr)," ",false);
+    ExportPadString("=""",2," ",false);
+    ExportPadString(attrvalue,BytesInString(attrvalue)," ",false);
+    ExportPadString("""",1," ",false);
+  end;
+  ExportPadString(">",1," ",false);  
+  ExportPadString(value,BytesInString(value)," ",false);
+  ExportPadString("</",2," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);
+  NewLineExport;
+  return;
+end;
+
+procedure CustSortArray(array Integer avt,Array val avtsumval,Array val avtvatval,Integer acnt)
+begin
+  Integer i;
+  Boolean changef;
+  Integer vt;
+  val v;
+  string 255 tstr;
+  
+  changef = true;
+  while (changef) begin
+    changef = false;
+    for (i=0;i<acnt-1;i=i+1) begin
+      if (avt[i]>avt[i+1]) then begin
+        changef = true;
+        vt = avt[i];
+        avt[i] = avt[i+1];
+        avt[i+1] = vt;
+        v = avtsumval[i];
+        avtsumval[i] = avtsumval[i+1];
+        avtsumval[i+1] = v;
+        v = avtvatval[i];
+        avtvatval[i] = avtvatval[i+1];
+        avtvatval[i+1] = v;
+      end;
+    end;
+  end;
+  return;
+end;
+
+procedure ExportVATVIRegUkr(record VATVIVc VATVIr,
+                           array Integer avt,Array val avtsumval,Array val avtvatval,Integer acnt,
+                           var LongInt seqnr,var val totsumval,var val totvatval,var LongInt rownr,
+                           var vector val vT1R01G,var vector val vT1R02G,integer Count)// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:27:50
+begin
+  Integer ai;
+  Integer level;
+  Integer T1R01GNr;
+  val v;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:27:54
+	  boolean Trigger48;
+  integer sign;
+  record OperTypeVc OPr;
+  record CUVc CUr;
+
+	// Edit End ---------------------------------------------- Edit End
+	  
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:28:06
+	  sign=1;
+  if VATVIr.InvType==3 then begin sign=-1; end;
+  OPr.Type = VATVIr.OperType;
+  CUr.Code = VATVIr.VECode;
+  if (ReadFirstMain(CUr,1,true)) then begin end;
+  if (ReadFirstMain(OPr,1,true)) then begin end;
+
+	// Edit End ---------------------------------------------- Edit End
+	  CustSortArray(avt,avtsumval,avtvatval,acnt);
+  level = 2;
+  Trigger48 = true; // // Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:28:12
+  for (ai=0;ai<acnt;ai=ai+1) begin
+    totsumval = totsumval + avtsumval[ai];
+    totvatval = totvatval + avtvatval[ai];
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:28:20
+	    ExportAttributeTagXml("T2RXXXXG1",Count,"ROWNUM",rownr,level);
+    ExportAttributeTagXml("T2RXXXXG2D",DateToString(VATVIr.TransDate,"DDMMYYYY"),"ROWNUM",rownr,level);
+    ExportAttributeTagXml("T2RXXXXG3D",DateToString(VATVIr.VATVIDate,"DDMMYYYY"),"ROWNUM",rownr,level);
+	 if Trigger48==false then begin // SAV NS-48 2011_12_06 
+		ExportAttributeTagXml("T2RXXXXG4S",VATVIr.InvoiceNr,"ROWNUM",rownr,level);
+	 end else begin
+		ExportAttributeTagXml("T2RXXXXG4S",VATVIr.VEPN,"ROWNUM",rownr,level);
+	 end;
+	 
+    ExportAttributeTagXml("T2RXXXXG5S",VATVIr.VATVIType,"ROWNUM",rownr,level);
+	 if nonblank(OPr.Comment) then begin 
+		ExportAttributeTagXml("T2RXXXXG6S",OPr.Comment,"ROWNUM",rownr,level);
+	 end else begin
+		ExportAttributeTagXml("T2RXXXXG6S",VATVIr.VEName,"ROWNUM",rownr,level);
+	 end;
+	 if nonblank(OPr.IPN) then begin 
+		ExportAttributeTagXml("T2RXXXXG7",OPr.IPN,"ROWNUM",rownr,level);    
+	 end else begin
+		ExportAttributeTagXml("T2RXXXXG7",CUr.VATNr,"ROWNUM",rownr,level);    
+	 end;
+	 
+
+	// Edit End ---------------------------------------------- Edit End
+	    T1R01GNr = 8;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:28:31
+		 if Trigger48==false then begin // SAV NS-48 2011_12_06 
+		ExportAttributeTagXml("T2RXXXXG"  & T1R01GNr,ValToString(avtsumval[ai]+avtvatval[ai],M4Val,"",".",0),"ROWNUM",rownr,level);
+		vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + avtsumval[ai] + avtvatval[ai];
+		switch (VATVIr.InvType) begin
+			case kInvoiceTypeCredit:
+			vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + avtsumval[ai] + avtvatval[ai];
+		end;
+	 end else begin
+		v =VATVIr.PayVal;
+		v=MulRateToBase1(VATVIr.CurncyCode,v,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+		ExportAttributeTagXml("T2RXXXXG"  & T1R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+		vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + v;
+		switch (VATVIr.InvType) begin
+
+	// Edit End ---------------------------------------------- Edit End
+	      case kInvoiceTypeCredit:
+        vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + v;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:28:40
+		end;
+	 end;
+
+    
+    T1R01GNr = 9;
+    v = blankval;
+    if (avt[ai]==kVATTypeNormal) then begin
+      v = avtsumval[ai];
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:28:47
+			if Trigger48 then begin // SAV NS-48 2011_12_06 
+			v = VATVIr.PayVal-VATVIr.CalcVATVal;
+			v=MulRateToBase1(VATVIr.CurncyCode,v,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+		end;
+
+	// Edit End ---------------------------------------------- Edit End
+	    end;
+    ExportAttributeTagXml("T2RXXXXG" & T1R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:28:58
+    vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + v;
+    switch (VATVIr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + v;
+    end;
+    
+    T1R01GNr = 10;
+    v = blankval;
+    if (avt[ai]==kVATTypeNormal) then begin
+      v = avtvatval[ai];
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:29:06
+			if Trigger48 then begin // SAV NS-48 2011_12_06 
+			v = VATVIr.CalcVATVal;
+			v=MulRateToBase1(VATVIr.CurncyCode,v,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+		end;
+
+	// Edit End ---------------------------------------------- Edit End
+	    end;
+    ExportAttributeTagXml("T2RXXXXG" & T1R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:29:13
+    vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + v;
+    switch (VATVIr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + v;
+    end;
+
+    T1R01GNr = 11;
+    v = blankval;
+    if (avt[ai]==kVATTypeNoVAT) then begin
+      v = avtsumval[ai];
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 10:29:19
+			if Trigger48 then begin // SAV NS-48 2011_12_06 
+			v = VATVIr.PayVal-VATVIr.CalcVATVal;
+			v=MulRateToBase1(VATVIr.CurncyCode,v,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+		end;		
+
+	// Edit End ---------------------------------------------- Edit End
+	    end;
+    ExportAttributeTagXml("T2RXXXXG" & T1R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + v;
+    switch (VATVIr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + v;
+    end;
+
+    T1R01GNr = 12;
+    v = blankval;
+    if (avt[ai]==kVATTypeNoVAT) then begin
+      v = avtvatval[ai];
+		if Trigger48 then begin // SAV NS-48 2011_12_06 
+			v = VATVIr.CalcVATVal;
+			v=MulRateToBase1(VATVIr.CurncyCode,v,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+		end;	 		
+    end;
+    ExportAttributeTagXml("T2RXXXXG" & T1R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + v;
+    switch (VATVIr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + v;
+    end;
+
+    T1R01GNr = 13;
+    v = blankval;
+    if (avt[ai]==kVATTypeExempt) then begin
+      v = avtsumval[ai];
+		if Trigger48 then begin // SAV NS-48 2011_12_06 
+			v = VATVIr.PayVal-VATVIr.CalcVATVal;
+			v=MulRateToBase1(VATVIr.CurncyCode,v,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+		end;		
+    end;
+    ExportAttributeTagXml("T2RXXXXG" & T1R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + v;
+    switch (VATVIr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + v;
+    end;
+
+    T1R01GNr = 14;
+    v = blankval;
+    if (avt[ai]==kVATTypeExempt) then begin
+      v = avtvatval[ai];
+		if Trigger48 then begin // SAV NS-48 2011_12_06 
+			v = VATVIr.CalcVATVal;
+			v=MulRateToBase1(VATVIr.CurncyCode,v,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+		end;			
+    end;
+    ExportAttributeTagXml("T2RXXXXG" & T1R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + v;
+    switch (VATVIr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + v;
+    end;
+
+    T1R01GNr = 15;
+    v = blankval;
+    if (avt[ai]==kVATTypeExportDeductable) then begin
+      v = avtsumval[ai];
+		if Trigger48 then begin // SAV NS-48 2011_12_06 
+			v = VATVIr.PayVal-VATVIr.CalcVATVal;
+			v=MulRateToBase1(VATVIr.CurncyCode,v,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+		end;		
+    end;
+    ExportAttributeTagXml("T2RXXXXG" & T1R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + v;
+    switch (VATVIr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + v;
+    end;
+
+    T1R01GNr = 16;
+    v = blankval;
+    if (avt[ai]==kVATTypeExportDeductable) then begin
+      v = avtvatval[ai];
+		if Trigger48 then begin // SAV NS-48 2011_12_06 
+			v = VATVIr.CalcVATVal;
+			v=MulRateToBase1(VATVIr.CurncyCode,v,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+		end;	 		
+    end;
+    ExportAttributeTagXml("T2RXXXXG" & T1R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT1R01G[T1R01GNr] = vT1R01G[T1R01GNr] + v;
+    switch (VATVIr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT1R02G[T1R01GNr] = vT1R02G[T1R01GNr] + v;
+    end;
+    rownr = rownr + 1;
+  end;
+  seqnr = seqnr + 1;
+  return;
+end;
+
+procedure PrintVATVIRegUkr(record VATVIVc VATVIr,
+                           array Integer avt,Array val avtsumval,Array val avtvatval,Integer acnt,
+                           var LongInt seqnr,var val totsumval,var val totvatval)
+begin
+  Integer ai;
+  
+  for (ai=0;ai<acnt;ai=ai+1) begin
+    StartFormat(15);
+     OutLongInt(0,0,seqnr,false);
+     switch (VATVIr.InvType) begin
+       case 0: 
+         if (VATVIr.PayVal<0) then begin
+           OutString(40,0,USetStr(18849),false);
+         end;
+       case kInvoiceTypeCredit: OutString(40,0,USetStr(18849),false);
+     end;
+     OutLongInt(2,"DblVATVIVc",VATVIr.SerNr,false);
+     OutDate(3,0,VATVIr.VATVIDate,false);
+     OutString(4,0,StringFromSet(358,avt[ai]),false);
+     OutString(5,0,VATVIr.VECode,false);
+     OutVal(6,0,avtsumval[ai],M4Val,true);
+     OutVal(7,0,avtvatval[ai],M4Val,true);
+     OutVal(1,0,avtsumval[ai]+avtvatval[ai],M4Val,true);
+    EndFormat;
+    seqnr = seqnr + 1;
+    totsumval = totsumval + avtsumval[ai];
+    totvatval = totvatval + avtvatval[ai];
+  end;
+  return;
+end;
+
+global
+procedure VATVIRegUkr(record RcVc RepSpec,Boolean reportf,var val totsumval,var val totvatval,var vector val vT1R01G,var vector val vT1R02G)
+begin
+  record VATVIVc VATVIr;
+  row VATVIVc VATVIrw;
+  Integer i,rwcnt;
+  Integer vt;
+  val vat,t1;
+  Boolean found,testf;
+  string 255 keystr;
+  LongInt frvatvi,tovatvi,seqnr;
+  Array Integer avt;
+  Array val avtvatprc;
+  Array val avtsumval;
+  Array val avtvatval;
+  Integer ai,acnt;
+  record VATCodeBlock VATCodeb;
+  row VATCodeBlock VATCbrw;
+  record TaxRulesVc TaxRuler;
+  val sign;
+  LongInt rownr;
+  Boolean negopf;
+  integer count;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:29:32
+  
+  rownr = 1;
+  BlockLoad(VATCodeb);
+  seqnr = 1;
+  frvatvi = FirstInRange(RepSpec.f1,20);
+  tovatvi = LastInRange(RepSpec.f1,20);
+  found = true;
+  if (nonblank(RepSpec.f1)) then begin
+    keystr = "SerNr";
+  end else begin
+    keystr = "TransDate";
+  end;
+  VATVIr.SerNr = frvatvi;
+  VATVIr.TransDate = RepSpec.sStartDate;
+  while (LoopKey(keystr,VATVIr,1,found)) begin
+    if (nonblank(RepSpec.f1)) then begin
+      if (VATVIr.SerNr>tovatvi) then begin found = false; end;
+    end else begin
+      if (DateInRange(VATVIr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin found = false; end;
+    end;
+    if (found) then begin
+      testf = true;
+      if (nonblank(RepSpec.f1)) then begin
+        if (VATVIr.SerNr<frvatvi) then begin testf = false; end;
+        if (VATVIr.SerNr>tovatvi) then begin testf = false; end;
+      end;
+      if (DateInRange(VATVIr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin testf = false; end;
+      if (reportf) then begin
+        if (RepSpec.flags[1]==0) then begin
+          if (VATVIr.OKFlag!=0) then begin testf = false; end;
+        end;
+        if (RepSpec.flags[2]==0) then begin
+          if (VATVIr.OKFlag==0) then begin testf = false; end;
+        end;
+        if (RepSpec.flags[3]==0) then begin
+          switch (VATVIr.InvType) begin
+            case 0: 
+              if (VATVIr.PayVal>0) then begin testf = false; end;
+            case kInvoiceTypeCredit:
+            otherwise
+              testf = false;
+          end;
+        end;
+        if (RepSpec.flags[4]==0) then begin
+          switch (VATVIr.InvType) begin
+            case 0: 
+              if (VATVIr.PayVal<0) then begin testf = false; end;
+            case kInvoiceTypeCredit: testf = false;
+          end;
+        end;
+      end else begin
+        if (VATVIr.OKFlag==0) then begin testf = false; end;
+      end;
+      if (VATVIr.Invalid!=0) then begin testf = false; end;
+      if (testf) then begin
+        if (nonblank(RepSpec.f2)) then begin
+          testf = false;
+          rwcnt = MatRowCnt(VATVIr);
+          for (i=0;i<rwcnt;i=i+1) begin
+            MatRowGet(VATVIr,i,VATVIrw);
+            if (VATType(VATVIrw.VATCode)==SetFromString(358,RepSpec.f2)) then begin
+              testf = true;
+              i = rwcnt;
+            end;
+          end;
+        end;
+      end;
+      if (testf) then begin
+        acnt = 0;
+        negopf = false;
+        VATType(VATVIrw.VATCode)
+        rwcnt = MatRowCnt(VATVIr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          MatRowGet(VATVIr,i,VATVIrw);
+          GetVATRowFromBlock(VATVIrw.VATCode,VATCodeb,VATCbrw);
+          TaxRuler.Code = VATCbrw.TaxRules;
+          ReadFirstMain(TaxRuler,1,true);
+          vt = TaxRuler.VATType;
+          testf = true;
+          if (nonblank(RepSpec.f2)) then begin
+            if (vt!=SetFromString(358,RepSpec.f2)) then begin testf = false; end;
+          end;
+		  if blank(VATVIrw.Item) then begin testf = false; end;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:30:02
+          if (testf) then begin
+            sign = 1.00;
+            if (VATVIrw.Sum<0) then begin 
+              if (VATVIr.OPNr>0) then begin
+                negopf = true;
+              end;            
+              sign = -1.00; 
+            end;
+            VATVIrw.Sum = MulRateToBase1(VATVIr.CurncyCode,VATVIrw.Sum,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+            for (ai=0;ai<acnt;ai=ai+1) begin
+              testf = true;
+              if (vt!=avt[ai]) then begin testf = false; end;
+              if (vt!=kVATTypeExempt) and (vt!=kVATTypeRealEstateExempt) and (vt!=kVATTypeAssetsExempt) then begin
+                if (VATCbrw.ExVatpr!=avtvatprc[ai]) then begin testf = false; end;
+              end;
+              if (testf) then begin
+                avtsumval[ai] = avtsumval[ai] + sign*VATVIrw.Sum;
+                if (nonblank(VATVIrw.VATVal)) then begin
+                  VATVIrw.VATVal = MulRateToBase1(VATVIr.CurncyCode,VATVIrw.VATVal,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+                  avtvatval[ai] = avtvatval[ai] + sign*VATVIrw.VATVal;
+                end else begin
+                  MulVATIV(VATVIrw.VATCode,VATVIrw.Sum,vat,t1,0,VATVIr.NoTAXonVAT);
+                  avtvatval[ai] = avtvatval[ai] + sign*vat;
+                end;
+                goto Lvtfound;
+              end;
+            end;
+            avt[acnt] = vt;      
+            avtvatprc[acnt] = VATCbrw.ExVatpr;
+            if (nonblank(VATVIrw.VATVal)) then begin
+              VATVIrw.VATVal = MulRateToBase1(VATVIr.CurncyCode,VATVIrw.VATVal,VATVIr.FrRate,VATVIr.ToRateB1,VATVIr.ToRateB2,VATVIr.BaseRate1,VATVIr.BaseRate2,DefaultCurRoundOff);
+              avtvatval[acnt] = sign*VATVIrw.VATVal;
+            end else begin
+              MulVATIV(VATVIrw.VATCode,VATVIrw.Sum,vat,t1,0,VATVIr.NoTAXonVAT);
+              avtvatval[acnt] = sign*vat;
+            end;
+            avtsumval[ai] = sign*VATVIrw.Sum;
+            acnt = acnt + 1;
+          end;
+Lvtfound:;
+        end;
+        if (reportf) then begin
+          PrintVATVIRegUkr(VATVIr,avt,avtsumval,avtvatval,acnt,seqnr,totsumval,totvatval);        
+        end else begin
+          if (negopf) then begin
+            VATVIr.InvType = kInvoiceTypeCredit;
+          end;
+			 count = count +1;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:29:37
+          ExportVATVIRegUkr(VATVIr,avt,avtsumval,avtvatval,acnt,seqnr,totsumval,totvatval,rownr,vT1R01G,vT1R02G, count);        
+        end;
+      end;
+    end;
+  end;
+  return;
+end;
+
+global
+procedure VATVIRegUkrRn(record RcVc RepSpec)
+begin
+  LongInt frvatvi,tovatvi;
+  string 255 tstr;
+  Integer rw;
+  val totsumval,totvatval;
+  vector val vT1R01G;
+  vector val vT1R02G;
+
+  frvatvi = FirstInRange(RepSpec.f1,20);
+  tovatvi = LastInRange(RepSpec.f1,20);
+  StartReportJob(USetStr(18820));
+  rw = 1;
+  HT2Per(RepSpec.sStartDate,RepSpec.sEndDate,tstr);
+  Header(rw,tstr,1); 
+  rw = rw + 1; 
+  HTOKF(RepSpec.flags[2],RepSpec.flags[1],tstr);
+  Header(rw,tstr,0);
+  if (nonblank(RepSpec.f2)) then begin
+    Header(rw,StringFromStringSet(358,RepSpec.f2),1); 
+    rw = rw + 1; 
+  end;
+  HTCorrection(RepSpec.flags[3],RepSpec.flags[4],tstr);
+  Header(rw,tstr,1);
+  EndHeader;
+  SetRepCol(2,50);
+  SetRepCol(3,120);
+  SetRepCol(4,190);
+  SetRepCol(5,260);
+  SetRepCol(6,360);
+  SetRepCol(7,420);
+  StartFormat(15);
+   OutString(0,0,USetStr(18821),false);
+   OutString(2,0,USetStr(18822),false);
+   OutString(3,0,USetStr(18823),false);
+   OutString(4,0,USetStr(18824),false);
+   OutString(5,0,USetStr(18825),false);
+   OutString(6,0,USetStr(18826),true);
+   OutString(7,0,USetStr(18827),true);
+   OutString(1,0,USetStr(18828),true);
+  EndFormat;
+  Gray_Divider(0,1);
+  VATVIRegUkr(RepSpec,true,totsumval,totvatval,vT1R01G,vT1R02G);
+  Gray_Divider(0,1);
+  StartFormat(15);
+   OutVal(6,0,totsumval,M4Val,true);
+   OutVal(7,0,totvatval,M4Val,true);
+   OutVal(1,0,totsumval+totvatval,M4Val,true);
+  EndFormat;
+  EndJob;
+  return;
+end;

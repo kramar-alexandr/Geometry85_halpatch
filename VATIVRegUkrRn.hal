@@ -1,0 +1,543 @@
+//переносит как еесть
+external function val MulRateToBase1(var string,val,val,val,val,val,val,roundmode);
+external procedure NewLineExport();
+external procedure GetVATRowFromBlock(string,record VATCodeBlock,var row VATCodeBlock);
+external procedure HTOKF(Integer,Integer, var string);
+external procedure MulVATIV(string,val,var val,var val,Integer,Integer);
+external function Integer VATType(string);
+external procedure HT2Per(Date, Date , var string);
+
+procedure HTCorrection(Integer a,Integer b, var string tstr)
+begin
+  if (a<>0 and b==0) then begin
+   tstr = USetStr(18829);
+  end;
+  if (a==0 and b<>0) then begin
+   tstr = USetStr(18830);
+  end;
+  if (a<>0 and b<>0) then begin
+   tstr = USetStr(18831);
+  end;
+  return;
+end;
+
+function string 255 Convert(string source)
+begin
+  string 255 res;
+  Integer l,i;
+  string 1 addstr;
+  
+  l = len(source);
+  for (i=0;i<l;i=i+1) begin
+    addstr = Mid(source,i,1);
+    switch (addstr) begin
+      case "<": addstr = "&lt;";
+      case ">": addstr = "&gt;";
+      case "&": addstr = "&amp;";
+      case "'": addstr = "&apos;";
+      case """": addstr = "&quot;";
+    end;
+    res = res & addstr;
+  end;
+  Convert = res;
+  return;
+end;
+
+procedure ExportTheLevel(Integer level)
+begin
+  string 255 tstr;
+  Integer i;
+  
+  tstr = "";
+  for (i=0;i<level;i=i+1) begin
+    tstr = tstr & "  ";
+  end;
+  ExportPadString(tstr,len(tstr)," ",false);
+  return;
+end;
+
+procedure ExportPlainXml(string value,Integer level)
+begin
+  ExportTheLevel(level);
+  ExportPadString(value,BytesInString(value)," ",false);
+  NewLineExport;
+  return;
+end;
+
+procedure ExportTagXml(string tag,string pvalue,Integer level)
+begin
+  string 255 value;
+  
+  value = Convert(pvalue);
+  ExportTheLevel(level);
+  ExportPadString("<",1," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);  
+  ExportPadString(value,BytesInString(value)," ",false);
+  ExportPadString("</",2," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);
+  NewLineExport;
+  return;
+end;
+
+procedure ExportAttributeTagXml(string tag,string pvalue,string attr,string attrvalue,Integer level)
+begin
+  string 255 value;
+  
+  value = Convert(pvalue);
+  ExportTheLevel(level);
+  ExportPadString("<",1," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  if (nonblank(attr)) then begin
+    ExportPadString(" ",1," ",false);
+    ExportPadString(attr,len(attr)," ",false);
+    ExportPadString("=""",2," ",false);
+    ExportPadString(attrvalue,BytesInString(attrvalue)," ",false);
+    ExportPadString("""",1," ",false);
+  end;
+  ExportPadString(">",1," ",false);  
+  ExportPadString(value,BytesInString(value)," ",false);
+  ExportPadString("</",2," ",false);
+  ExportPadString(tag,len(tag)," ",false);
+  ExportPadString(">",1," ",false);
+  NewLineExport;
+  return;
+end;
+
+procedure CustSortArray(array Integer avt,Array val avtsumval,Array val avtvatval,Array val avtvatprc,Integer acnt)
+begin
+  Integer i;
+  Boolean changef;
+  Integer vt;
+  val v;
+  string 255 tstr;
+  
+  changef = true;
+  while (changef) begin
+    changef = false;
+    for (i=0;i<acnt-1;i=i+1) begin
+      if (avt[i]>avt[i+1]) then begin
+        changef = true;
+        vt = avt[i];
+        avt[i] = avt[i+1];
+        avt[i+1] = vt;
+        v = avtsumval[i];
+        avtsumval[i] = avtsumval[i+1];
+        avtsumval[i+1] = v;
+        v = avtvatval[i];
+        avtvatval[i] = avtvatval[i+1];
+        avtvatval[i+1] = v;
+        v = avtvatprc[i];
+        avtvatprc[i] = avtvatprc[i+1];
+        avtvatprc[i+1] = v;
+      end;
+    end;
+  end;
+  return;
+end;
+
+
+procedure ExportVATIVRegUkr(record VATIVVc VATIVr,
+                           array Integer avt,Array val avtsumval,Array val avtvatval,Array val avtvatprc,Integer acnt,
+                           var LongInt seqnr,var val totsumval,var val totvatval,var LongInt rownr,
+                           var vector val vT2R01G,var vector val vT2R02G, integer count)
+begin
+  Integer ai;
+  Integer level;
+  Integer T2R01GNr;
+  val v;
+  integer sign;
+  record OperTypeVc OPr;
+  record CUVc CUr;
+  
+  OPr.Type = VATIVr.OperType;
+  if (ReadFirstMain(OPr,1,true)) then begin end;
+  CUr.Code = VATIVr.CustCode;
+  if (ReadFirstMain(CUr,1,true)) then begin end;
+  sign=1;
+  if VATIVr.InvType==3 then begin sign=-1; end;
+  
+  CustSortArray(avt,avtsumval,avtvatval,avtvatprc,acnt);
+  level = 2;
+  for (ai=0;ai<acnt;ai=ai+1) begin
+    totsumval = totsumval + avtsumval[ai];
+    totvatval = totvatval + avtvatval[ai];
+	 ExportAttributeTagXml("T1RXXXXG1",Count,"ROWNUM",rownr,level);
+    ExportAttributeTagXml("T1RXXXXG2D",DateToString(VATIVr.TransDate,"DDMMYYYY"),"ROWNUM",rownr,level);
+    ExportAttributeTagXml("T1RXXXXG3S",VATIVr.VEPN,"ROWNUM",rownr,level);
+    ExportAttributeTagXml("T1RXXXXG4S",VATIVr.VATIVType & VATIVr.Reason,"ROWNUM",rownr,level);
+//    ExportAttributeTagXml("T1RXXXXG5S",VATIVr.Addr0,"ROWNUM",rownr,level);
+  //  ExportAttributeTagXml("T1RXXXXG6",VATIVr.VATNr,"ROWNUM",rownr,level);   
+
+	 if nonblank(OPr.Comment) then begin 
+		ExportAttributeTagXml("T1RXXXXG5S",OPr.Comment,"ROWNUM",rownr,level);
+	 end else begin
+		ExportAttributeTagXml("T1RXXXXG5S",VATIVr.Addr0,"ROWNUM",rownr,level);
+	 end;
+	 if nonblank(OPr.IPN) then begin 
+		ExportAttributeTagXml("T1RXXXXG6",OPr.IPN,"ROWNUM",rownr,level);    
+	 end else begin
+		ExportAttributeTagXml("T1RXXXXG6",CUr.VATNr,"ROWNUM",rownr,level);   
+	 end;	 
+
+	 v = VATIVr.Sum4;
+	 v = MulRateToBase1(VATIVr.CurncyCode,v,VATIVr.FrRate,VATIVr.ToRateB1,VATIVr.ToRateB2,VATIVr.BaseRate1,VATIVr.BaseRate2,DefaultCurRoundOff);
+    ExportAttributeTagXml("T1RXXXXG7",ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    T2R01GNr = 7;
+    vT2R01G[T2R01GNr] = vT2R01G[T2R01GNr] + v;
+    switch (VATIVr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT2R02G[T2R01GNr] = vT2R02G[T2R01GNr] + v;
+    end;
+    
+    T2R01GNr = 8;
+    v = blankval;
+    if (avt[ai]==kVATTypeNormal) and (avtvatprc[ai]==20) then begin
+      v = avtsumval[ai];
+		v = VATIVr.Sum1;
+		v = MulRateToBase1(VATIVr.CurncyCode,v,VATIVr.FrRate,VATIVr.ToRateB1,VATIVr.ToRateB2,VATIVr.BaseRate1,VATIVr.BaseRate2,DefaultCurRoundOff);
+    end;
+    ExportAttributeTagXml("T1RXXXXG" & T2R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT2R01G[T2R01GNr] = vT2R01G[T2R01GNr] + v;
+    switch (VATIVr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT2R02G[T2R01GNr] = vT2R02G[T2R01GNr] + v;
+    end;
+
+    T2R01GNr = 9;
+    v = blankval;
+    if (avt[ai]==kVATTypeNormal) and (avtvatprc[ai]==20) then begin
+      v = avtvatval[ai];
+		v = VATIVr.Sum3;
+		v = MulRateToBase1(VATIVr.CurncyCode,v,VATIVr.FrRate,VATIVr.ToRateB1,VATIVr.ToRateB2,VATIVr.BaseRate1,VATIVr.BaseRate2,DefaultCurRoundOff);
+    end;
+    if (v==0) then begin v = blankval; end;
+    ExportAttributeTagXml("T1RXXXXG" & T2R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT2R01G[T2R01GNr] = vT2R01G[T2R01GNr] + v;
+    switch (VATIVr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT2R02G[T2R01GNr] = vT2R02G[T2R01GNr] + v;
+    end;
+
+    T2R01GNr = 10;
+    v = blankval;
+    if (avt[ai]==kVATTypeNoVAT) then begin // and (avtvatprc[ai]==0)
+      v = avtsumval[ai];
+		v = VATIVr.Sum1;
+		v = MulRateToBase1(VATIVr.CurncyCode,v,VATIVr.FrRate,VATIVr.ToRateB1,VATIVr.ToRateB2,VATIVr.BaseRate1,VATIVr.BaseRate2,DefaultCurRoundOff);
+    end;
+    ExportAttributeTagXml("T1RXXXXG" & T2R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT2R01G[T2R01GNr] = vT2R01G[T2R01GNr] + v;
+    switch (VATIVr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT2R02G[T2R01GNr] = vT2R02G[T2R01GNr] + v;
+    end;
+
+    T2R01GNr = 11;
+    v = blankval;
+    if (avt[ai]==kVATTypeExempt)  then begin
+      v = avtsumval[ai];
+		v = VATIVr.Sum1;
+		v = MulRateToBase1(VATIVr.CurncyCode,v,VATIVr.FrRate,VATIVr.ToRateB1,VATIVr.ToRateB2,VATIVr.BaseRate1,VATIVr.BaseRate2,DefaultCurRoundOff);
+    end;
+    ExportAttributeTagXml("T1RXXXXG" & T2R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT2R01G[T2R01GNr] = vT2R01G[T2R01GNr] + v;
+    switch (VATIVr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT2R02G[T2R01GNr] = vT2R02G[T2R01GNr] + v;
+    end;
+
+    T2R01GNr = 12;
+    v = blankval;
+    if (avt[ai]==kVATTypeExportDeductable)  then begin
+      v = avtsumval[ai];
+		v = VATIVr.Sum1;
+		v = MulRateToBase1(VATIVr.CurncyCode,v,VATIVr.FrRate,VATIVr.ToRateB1,VATIVr.ToRateB2,VATIVr.BaseRate1,VATIVr.BaseRate2,DefaultCurRoundOff);
+    end;
+    ExportAttributeTagXml("T1RXXXXG" & T2R01GNr,ValToString(sign*v,M4Val,"",".",0),"ROWNUM",rownr,level);
+    vT2R01G[T2R01GNr] = vT2R01G[T2R01GNr] + v;
+    switch (VATIVr.InvType) begin
+      case kInvoiceTypeCredit:
+        vT2R02G[T2R01GNr] = vT2R02G[T2R01GNr] + v;
+    end;
+    rownr = rownr + 1;
+  end;
+
+  seqnr = seqnr + 1;
+  return;
+end;
+
+
+procedure PrintVATIVRegUkr(record VATIVVc VATIVr,
+                           array Integer avt,Array val avtsumval,Array val avtvatval,Integer acnt,
+                           var LongInt seqnr,var val totsumval,var val totvatval)
+begin
+  Integer ai;
+  
+  for (ai=0;ai<acnt;ai=ai+1) begin
+    StartFormat(15);
+     OutLongInt(0,0,seqnr,false);
+     switch (VATIVr.InvType) begin
+       case 0: 
+         if (VATIVr.Sum4<0) then begin
+           OutString(40,0,USetStr(18849),false);
+         end;
+       case kInvoiceTypeCredit: OutString(40,0,USetStr(18849),false);
+     end;
+     OutLongInt(2,"DblVATIVVc",VATIVr.SerNr,false);
+     OutDate(3,0,VATIVr.TransDate,false);
+     OutString(4,0,StringFromSet(358,avt[ai]),false);
+     OutString(5,0,VATIVr.CustCode,false);
+     OutVal(6,0,avtsumval[ai],M4Val,true);
+     OutVal(7,0,avtvatval[ai],M4Val,true);
+     OutVal(1,0,avtsumval[ai]+avtvatval[ai],M4Val,true);
+    EndFormat;
+    seqnr = seqnr + 1;
+    totsumval = totsumval + avtsumval[ai];
+    totvatval = totvatval + avtvatval[ai];
+  end;
+  return;
+end;
+
+global
+procedure VATIVRegUkr(record RcVc RepSpec,Boolean reportf,var val totsumval,var val totvatval,var vector val vT2R01G,var vector val vT2R02G)
+begin
+  record VATIVVc VATIVr;
+  row VATIVVc VATIVrw;
+  Integer i,rwcnt;
+  Integer vt;
+  val vat,t1;
+  Boolean found,testf;
+  string 255 keystr;
+  LongInt frvativ,tovativ,seqnr;
+  Array Integer avt;
+  Array val avtvatprc;
+  Array val avtsumval;
+  Array val avtvatval;
+  Integer ai,acnt;
+  record VATCodeBlock VATCodeb;
+  row VATCodeBlock VATCbrw;
+  record TaxRulesVc TaxRuler;
+  val sign;
+  LongInt rownr;
+  Boolean negipf,correctionf;
+  integer count;
+  
+  rownr = 1;
+  BlockLoad(VATCodeb);
+  seqnr = 1;
+  frvativ = FirstInRange(RepSpec.f1,20);
+  tovativ = LastInRange(RepSpec.f1,20);
+  found = true;
+  // if (nonblank(RepSpec.f1)) then begin
+    // keystr = "SerNr";
+  // end else begin
+    // keystr = "TransDate";
+  // end;
+  // VATIVr.SerNr = frvativ;
+  // VATIVr.TransDate = RepSpec.sStartDate;
+  keystr = "VEPN";
+  while (LoopKey(keystr,VATIVr,1,found)) begin
+    // if (nonblank(RepSpec.f1)) then begin
+      // if (VATIVr.SerNr>tovativ) then begin found = false; end;
+    // end else begin
+      // if (DateInRange(VATIVr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin found = false; end;
+    // end;
+    if (found) then begin
+      testf = true;
+      if (nonblank(RepSpec.f1)) then begin
+        if (VATIVr.SerNr<frvativ) then begin testf = false; end;
+        if (VATIVr.SerNr>tovativ) then begin testf = false; end;
+      end;
+      if (DateInRange(VATIVr.TransDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin testf = false; end;
+      if (reportf) then begin
+        if (RepSpec.flags[1]==0) then begin
+          if (VATIVr.OKFlag!=0) then begin testf = false; end;
+        end;
+        if (RepSpec.flags[2]==0) then begin
+          if (VATIVr.OKFlag==0) then begin testf = false; end;
+        end;
+        if (RepSpec.flags[3]==0) then begin
+          switch (VATIVr.InvType) begin
+            case 0: 
+              if (VATIVr.Sum4>0) then begin testf = false; end;
+            case kInvoiceTypeCredit:
+            otherwise
+              testf = false;
+          end;
+        end;
+        if (RepSpec.flags[4]==0) then begin
+          switch (VATIVr.InvType) begin
+            case 0: 
+              if (VATIVr.Sum4<0) then begin testf = false; end;
+            case kInvoiceTypeCredit: testf = false;
+          end;
+        end;
+      end else begin
+        if (VATIVr.OKFlag==0) then begin testf = false; end;
+      end;
+      if (VATIVr.Invalid!=0) then begin testf = false; end;
+      if (testf) then begin
+        if (nonblank(RepSpec.f2)) then begin
+          testf = false;
+          rwcnt = MatRowCnt(VATIVr);
+          for (i=0;i<rwcnt;i=i+1) begin
+            MatRowGet(VATIVr,i,VATIVrw);
+            if (VATType(VATIVrw.VATCode)==SetFromString(358,RepSpec.f2)) then begin
+              testf = true;
+              i = rwcnt;
+            end;
+          end;
+        end;
+      end;
+      if (testf) then begin
+        acnt = 0;
+        negipf = false;
+        correctionf = false;
+        rwcnt = MatRowCnt(VATIVr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          MatRowGet(VATIVr,i,VATIVrw);
+          if (VATIVr.InvType==kInvoiceTypeCredit) then begin
+            if (VATIVrw.stp==kInvoiceRowTypeCorrection) then begin
+              correctionf = true;
+            end;
+          end;
+        end;
+
+        rwcnt = MatRowCnt(VATIVr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          MatRowGet(VATIVr,i,VATIVrw);
+          testf = true;
+          if (correctionf) then begin
+            if (VATIVr.InvType==kInvoiceTypeCredit) then begin
+              if (VATIVrw.stp!=kInvoiceRowTypeCorrection) then begin
+                testf = false;
+              end;
+            end;
+          end;
+		  if blank(VATIVrw.ArtCode) then begin testf = false; end;
+          if (testf) then begin
+            sign = 1.00;
+            if (VATIVr.IPNr>0) then begin
+              if (VATIVrw.Sum<0) then begin
+                sign = -1.00;
+                negipf = true;
+              end;
+            end else begin          
+  /*          
+              if (VATIVr.InvType==kInvoiceTypeCredit) then begin
+                if (reportf) then begin
+                  sign = 1.00;
+                end;
+              end;
+              switch (VATIVrw.stp) begin
+                case kInvoiceRowTypeCorrection:
+                  if (VATIVr.InvType==kInvoiceTypeCredit) then begin
+                    sign = 1.00;
+                  end;
+              end;
+  */            
+            end;
+            
+            GetVATRowFromBlock(VATIVrw.VATCode,VATCodeb,VATCbrw);
+            TaxRuler.Code = VATCbrw.TaxRules;
+            ReadFirstMain(TaxRuler,1,true);
+            vt = TaxRuler.VATType;
+            testf = true;
+            if (nonblank(RepSpec.f2)) then begin
+              if (vt!=SetFromString(358,RepSpec.f2)) then begin testf = false; end;
+            end;
+            if (testf) then begin
+              VATIVrw.Sum = MulRateToBase1(VATIVr.CurncyCode,VATIVrw.Sum,VATIVr.FrRate,VATIVr.ToRateB1,VATIVr.ToRateB2,VATIVr.BaseRate1,VATIVr.BaseRate2,DefaultCurRoundOff);
+              for (ai=0;ai<acnt;ai=ai+1) begin
+                testf = true;
+                if (vt!=avt[ai]) then begin testf = false; end;
+                if (vt!=kVATTypeExempt) and (vt!=kVATTypeRealEstateExempt) and (vt!=kVATTypeAssetsExempt) then begin
+                  if (VATCbrw.ExVatpr!=avtvatprc[ai]) then begin testf = false; end;
+                end;
+                if (testf) then begin
+                  avtsumval[ai] = avtsumval[ai] + sign*VATIVrw.Sum;
+                  MulVATIV(VATIVrw.VATCode,VATIVrw.Sum,vat,t1,VATIVr.InclVAT,VATIVr.NoTAXonVAT);
+                  avtvatval[ai] = avtvatval[ai] + sign*vat;
+                  goto Lvtfound;
+                end;
+              end;
+              avt[acnt] = vt;          
+              avtvatprc[acnt] = VATCbrw.ExVatpr;
+              MulVATIV(VATIVrw.VATCode,VATIVrw.Sum,vat,t1,VATIVr.InclVAT,VATIVr.NoTAXonVAT);
+              avtvatval[acnt] = sign*vat;
+              avtsumval[acnt] = sign*VATIVrw.Sum;
+              acnt = acnt + 1;
+Lvtfound:;
+            end;
+          end;
+        end;
+        if (reportf) then begin
+          PrintVATIVRegUkr(VATIVr,avt,avtsumval,avtvatval,acnt,seqnr,totsumval,totvatval);        
+        end else begin
+          if (negipf) then begin
+            VATIVr.InvType = kInvoiceTypeCredit;
+          end;
+			 count = count +1;
+          ExportVATIVRegUkr(VATIVr,avt,avtsumval,avtvatval,avtvatprc,acnt,seqnr,totsumval,totvatval,rownr,vT2R01G,vT2R02G,count);
+        end;
+      end;
+    end;
+  end;
+  return;
+end;
+
+global
+procedure VATIVRegUkrRn(record RcVc RepSpec)
+begin
+  LongInt frvativ,tovativ;
+  string 255 tstr;
+  Integer rw;
+  val totsumval,totvatval;
+  vector val vT2R01G;
+  vector val vT2R02G;
+
+  frvativ = FirstInRange(RepSpec.f1,20);
+  tovativ = LastInRange(RepSpec.f1,20);
+  StartReportJob(USetStr(18840));
+  rw = 1;
+  HT2Per(RepSpec.sStartDate,RepSpec.sEndDate,tstr);
+  Header(rw,tstr,1); 
+  rw = rw + 1; 
+  HTOKF(RepSpec.flags[2],RepSpec.flags[1],tstr);
+  Header(rw,tstr,0);
+  if (nonblank(RepSpec.f2)) then begin
+    Header(rw,StringFromStringSet(358,RepSpec.f2),1); 
+    rw = rw + 1; 
+  end;
+  HTCorrection(RepSpec.flags[3],RepSpec.flags[4],tstr);
+  Header(rw,tstr,1);
+  EndHeader;
+  SetRepCol(2,50);
+  SetRepCol(3,115);
+  SetRepCol(4,160);
+  SetRepCol(5,260);
+  SetRepCol(6,360);
+  SetRepCol(7,420);
+  StartFormat(15);
+   OutString(0,0,USetStr(18841),false);
+   OutString(2,0,USetStr(18842),false);
+   OutString(3,0,USetStr(18843),false);
+   OutString(4,0,USetStr(18844),false);
+   OutString(5,0,USetStr(18845),false);
+   OutString(6,0,USetStr(18846),true);
+   OutString(7,0,USetStr(18847),true);
+   OutString(1,0,USetStr(18848),true);
+  EndFormat;
+  Gray_Divider(0,1);
+  VATIVRegUkr(RepSpec,true,totsumval,totvatval,vT2R01G,vT2R02G);
+  Gray_Divider(0,1);
+  StartFormat(15);
+   OutVal(6,0,totsumval,M4Val,true);
+   OutVal(7,0,totvatval,M4Val,true);
+   OutVal(1,0,totsumval+totvatval,M4Val,true);
+  EndFormat;
+  EndJob;
+  return;
+end;
