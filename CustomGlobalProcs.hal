@@ -36,3 +36,123 @@ function boolean MySendAsyncWebRequest(string host,longint port,boolean b3,strin
 	MySendAsyncWebRequest = res;
 return;
 end;
+
+
+
+webpublic global
+procedure WebCalcRLink()
+begin
+	record RLinkVc RHr;
+	vector longint cnter;
+	string 1 c,nul;
+	integer cter,i,pref,check;
+	boolean TrHs;
+	string 50 recname,compnr,mainkey;
+	string 50 torecname,tocompnr,tomainkey;
+	array string 50 vtags;
+	
+	
+	setcompany(1,false);
+  TrHs = true;
+  while(loopmain(RHr,1,TrHs))begin
+  
+  	if(check>1000)then begin
+  		//TrHs = false;
+  	end;
+  	
+  	if(fileexists("stop"))then begin
+  		TrHs = false;
+  	end;
+  	
+  	//check = check + 1;
+  	
+  	c = left(RHr.FromRecidStr,1);
+  	recname = "";
+  	cter = 0;
+  	if(blank(RHr.FromRecidStr))then begin
+  		cnter["BLANK"] = cnter["BLANK"] + 1;
+  	end else begin
+  		pref = asc(c) + 1;
+  		mainkey = "";
+  		compnr = mid(RHr.FromRecidStr,1,asc(c));
+  		if(pref<len(RHr.FromRecidStr))then begin
+				for(i=pref;i<len(RHr.FromRecidStr);i=i+1)begin
+						c = mid(RHr.FromRecidStr,i,1);
+						if((i+1)<len(RHr.FromRecidStr))then begin
+							mainkey = mid(RHr.FromRecidStr,i+1,len(RHr.FromRecidStr)-(i+1));
+						end;
+					if(asc(c)==0)then begin
+						i = len(RHr.FromRecidStr);
+					end else begin
+						recname = recname & c;
+					end;
+				end;
+  		end else begin
+  			cnter["BLANK"] = cnter["BLANK"] + 1;
+  		end;
+  	end;
+  	
+  	c = left(RHr.ToRecidStr,1);
+  	torecname = "";
+  	cter = 0;
+  	if(blank(RHr.ToRecidStr))then begin
+  		cnter["BLANK"] = cnter["BLANK"] + 1;
+  	end else begin
+  		pref = asc(c) + 1;
+  		tomainkey = "";
+  		tocompnr = mid(RHr.ToRecidStr,1,asc(c));
+  		if(pref<len(RHr.ToRecidStr))then begin
+				for(i=pref;i<len(RHr.ToRecidStr);i=i+1)begin
+						c = mid(RHr.ToRecidStr,i,1);
+						if((i+1)<len(RHr.ToRecidStr))then begin
+							tomainkey = mid(RHr.ToRecidStr,i+1,len(RHr.ToRecidStr)-(i+1));
+						end;
+					if(asc(c)==0)then begin
+						i = len(RHr.ToRecidStr);
+					end else begin
+						torecname = torecname & c;
+					end;
+				end;
+  		end else begin
+  			cnter["BLANK"] = cnter["BLANK"] + 1;
+  		end;
+  	end;
+  	
+  	
+  	if(nonblank(recname))then begin
+  		if(recname=="QTVC")then begin
+  			logtext(0,asc(mid(mainkey,0,1)) & asc(mid(mainkey,1,1)) & asc(mid(mainkey,3,1)) & asc(mid(mainkey,3,1)) & " ---> " &  torecname & " " & asc(mid(tomainkey,0,1)) & asc(mid(tomainkey,1,1)) & asc(mid(tomainkey,3,1)));
+  		end;
+  		if(torecname=="QTVC")then begin
+  			logtext(0,asc(mid(mainkey,0,1)) & asc(mid(mainkey,1,1)) & asc(mid(mainkey,3,1)) & asc(mid(mainkey,3,1)) & " ---> " &  torecname & " " & asc(mid(tomainkey,0,1)) & asc(mid(tomainkey,1,1)) & asc(mid(tomainkey,3,1)));
+  		end;
+  		cnter[compnr & "_" & recname] = cnter[compnr & "_" & recname] + 1;
+  	end else begin
+  		cnter["BLANK"] = cnter["BLANK"] + 1;
+  	end;
+  end;
+  
+  getvectortags(cnter,vtags);
+  for(i=0;i<vtags.length;i=i+1)begin
+  	weboutstring(vtags[i] & " ----- " & cnter[vtags[i]]);
+  	weboutstring("<BR>");
+  end;
+  
+return;
+end;
+
+
+
+global updating procedure chekQTLink(record QTVc QTr, record ActVc Actr, record RLinkVc RLr)
+begin
+	
+	    if(QTr.SerNr==-1)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 07 02 2020 y. at 11:23:14 AM
+    		if(Actr.SerNr>0)then begin
+    			recorddelete(Actr);
+    			recorddelete(RLr);
+    		end;
+    	end;// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 07 02 2020 y. at 11:23:16 AM
+
+	
+return;
+end;

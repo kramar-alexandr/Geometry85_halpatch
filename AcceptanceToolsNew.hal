@@ -33,6 +33,7 @@ external outer updating procedure OuterApprovalTaskRecordLink(record ActVc,strin
 external outer procedure OuterApprovalTaskCustomer(record ActVc,string,LongInt);
 external outer procedure OuterApprovalTaskSubject(record ActVc,string,string,Integer,string,string,val,string,string,record AcceptanceRulesVc,Boolean,string,string,Integer,var record ActVc);
 external outer updating function Boolean OuterSetLinkedRecordApprovalStatus(record ActVc);
+external procedure chekQTLink(record QTVc, record ActVc, record RLinkVc);
 
 forward updating function Boolean CreateFYIApprovalTasks(Integer,string,string,string,val,string,string,record AcceptanceRulesVc,row AcceptanceRulesVc,string,string);
 
@@ -837,6 +838,7 @@ begin
     res = InitialApprovalState(Acptr,bc1v);
     actnr = 1;
     while (ReadRecordLink(QTr,actnr,Actr,RLr)) begin
+    	chekQTLink(QTr,Actr,RLr);// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 07 02 2020 y. at 11:28:06 AM
       if (Actr.TodoFlag==kTodoFlagApproval and Actr.Invalid==0) then begin
         actusers = AddObjectToObjectList(actusers,Actr.MainPersons);
         res = ApprovalState(Actr,Acptr,res,prevstate);
