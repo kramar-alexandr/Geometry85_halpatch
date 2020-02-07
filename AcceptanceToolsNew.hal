@@ -833,24 +833,26 @@ begin
   val bc1v;
   
   res = kAcceptanceStateNotRequired;
-  if (ReadAcceptanceRules(kAcceptanceQT,QTr.CustCode,Acptr)) then begin
-    bc1v = MulRateToBase1(QTr.CurncyCode,QTr.Sum4,QTr.FrRate,QTr.ToRateB1,QTr.ToRateB2,QTr.BaseRate1,QTr.BaseRate2,DefaultCurRoundOff);  
-    res = InitialApprovalState(Acptr,bc1v);
-    actnr = 1;
-    while (ReadRecordLink(QTr,actnr,Actr,RLr)) begin
-    	chekQTLink(QTr,Actr,RLr);// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 07 02 2020 y. at 11:28:06 AM
-      if (Actr.TodoFlag==kTodoFlagApproval and Actr.Invalid==0) then begin
-        actusers = AddObjectToObjectList(actusers,Actr.MainPersons);
-        res = ApprovalState(Actr,Acptr,res,prevstate);
-      end;
-      actnr = actnr + 1;
-    end;
-    if (res==kAcceptanceStateApproved) then begin
-      NormalizeObjstr(actusers);
-      if (TestAllApprovalUsers(Acptr,res,bc1v,actusers)==false) then begin
-        res = kAcceptanceStatePending;
-      end;
-    end;
+  if(QTr.SerNr>-1)then begin
+		if (ReadAcceptanceRules(kAcceptanceQT,QTr.CustCode,Acptr)) then begin
+			bc1v = MulRateToBase1(QTr.CurncyCode,QTr.Sum4,QTr.FrRate,QTr.ToRateB1,QTr.ToRateB2,QTr.BaseRate1,QTr.BaseRate2,DefaultCurRoundOff);  
+			res = InitialApprovalState(Acptr,bc1v);
+			actnr = 1;
+			while (ReadRecordLink(QTr,actnr,Actr,RLr)) begin
+				//chekQTLink(QTr,Actr,RLr);// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 07 02 2020 y. at 11:28:06 AM
+				if (Actr.TodoFlag==kTodoFlagApproval and Actr.Invalid==0) then begin
+					actusers = AddObjectToObjectList(actusers,Actr.MainPersons);
+					res = ApprovalState(Actr,Acptr,res,prevstate);
+				end;
+				actnr = actnr + 1;
+			end;
+			if (res==kAcceptanceStateApproved) then begin
+				NormalizeObjstr(actusers);
+				if (TestAllApprovalUsers(Acptr,res,bc1v,actusers)==false) then begin
+					res = kAcceptanceStatePending;
+				end;
+			end;
+		end;
   end;
   QTApprovalStatus = res;
   return;
