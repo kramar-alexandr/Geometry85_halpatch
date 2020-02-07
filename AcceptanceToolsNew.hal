@@ -204,27 +204,29 @@ begin
   val bc1v;
   
   res = kAcceptanceStateNotRequired;
-  if (ReadAcceptanceRules(kAcceptancePO,POr.VECode,Acptr)) then begin
-    if (POr.OKFlag!=0) then begin
-      res = kAcceptanceStateApproved;
-      goto LPOApprovalStatus;
-    end;
-    bc1v = MulRateToBase1(POr.CurncyCode,POr.Sum4,POr.FrRate,POr.ToRateB1,POr.ToRateB2,POr.BaseRate1,POr.BaseRate2,DefaultCurRoundOff);  
-    res = InitialApprovalState(Acptr,bc1v);
-    actnr = 1;
-    while (ReadRecordLink(POr,actnr,Actr,RLr)) begin
-      if (Actr.TodoFlag==kTodoFlagApproval and Actr.Invalid==0) then begin
-        actusers = AddObjectToObjectList(actusers,Actr.MainPersons);
-        res = ApprovalState(Actr,Acptr,res,prevstate);
-      end;
-      actnr = actnr + 1;
-    end;
-    if (res==kAcceptanceStateApproved) then begin
-      NormalizeObjstr(actusers);
-      if (TestAllApprovalUsers(Acptr,res,bc1v,actusers)==false) then begin
-        res = kAcceptanceStatePending;
-      end;
-    end;
+  if(POr.SerNr>-1)then begin
+		if (ReadAcceptanceRules(kAcceptancePO,POr.VECode,Acptr)) then begin
+			if (POr.OKFlag!=0) then begin
+				res = kAcceptanceStateApproved;
+				goto LPOApprovalStatus;
+			end;
+			bc1v = MulRateToBase1(POr.CurncyCode,POr.Sum4,POr.FrRate,POr.ToRateB1,POr.ToRateB2,POr.BaseRate1,POr.BaseRate2,DefaultCurRoundOff);  
+			res = InitialApprovalState(Acptr,bc1v);
+			actnr = 1;
+			while (ReadRecordLink(POr,actnr,Actr,RLr)) begin
+				if (Actr.TodoFlag==kTodoFlagApproval and Actr.Invalid==0) then begin
+					actusers = AddObjectToObjectList(actusers,Actr.MainPersons);
+					res = ApprovalState(Actr,Acptr,res,prevstate);
+				end;
+				actnr = actnr + 1;
+			end;
+			if (res==kAcceptanceStateApproved) then begin
+				NormalizeObjstr(actusers);
+				if (TestAllApprovalUsers(Acptr,res,bc1v,actusers)==false) then begin
+					res = kAcceptanceStatePending;
+				end;
+			end;
+		end;
   end;
 LPOApprovalStatus:;  
   POApprovalStatus = res;
