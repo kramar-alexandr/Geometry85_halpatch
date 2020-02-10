@@ -83,47 +83,74 @@ BEGIN
   end;
   
   if (blank(QTr.ProformaOfficialSerNr)) then begin
-    switch (fieldname) begin// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 07 02 2020 y. at 4:43:13 PM
-			case "rowGP": res = false;
-			case "Invoiced": res = false;
-			case "InvDate": res = false;
-			case "SerNr": 
-				if (wnst!=1) then begin//insertmode
-					res = false;
-				end;
-				if (UserCanAction("AllowQTSerNrChange",true)==false) then begin res = false; end;
-			case "FrRate": 
-				res = AllowCurChange(QTr.CurncyCode,false);
-			case "ToRateB1": 
-				res = AllowCurChange(QTr.CurncyCode,false);
-			case "ToRateB2": 
-				res = AllowCurChange(QTr.CurncyCode,false);
-			case "BaseRate1": 
-				res = AllowCurChange(QTr.CurncyCode,true);
-			case "BaseRate2": 
-				res = AllowCurChange(QTr.CurncyCode,true);
-			case "PriceList": 
-				res = UserCanAction("ChangePrices",true);
-			case "Price": 
-				res = UserCanAction("ChangeUnitPrices",true);
-			case "vRebate": 
-				res = UserCanAction("ChangeUnitPrices",true);
-			case "Sum": 
-				res = UserCanAction("ChangeUnitPrices",true);      
-			case "Quant": 
-				MatRowGet(QTr,rownr,QTrw);
-				if (QTrw.Quant!=0) then begin
-					if (ReadFirstItem(QTrw.ArtCode,INr,false,false)) then begin
-						if (INr.ItemType==2) then begin
-							if (INr.ExplodeRec!=0) then begin
-								res = false;
-								MessageBox(20770,"");
-							end;
-						end;
-					end;
-				end;
-
-		end;// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 07 02 2020 y. at 4:43:15 PM
+    switch (fieldname) begin
+      case "rowGP": res = false;
+      case "Invoiced": res = false;
+      case "InvDate": res = false;
+      case "Invd": res = false;
+      case "RvrsVATCode": res = false;
+      case "SerNr": 
+        if (wnst!=Rs_insert) then begin//insertmode
+          res = false;
+        end;
+        if (UserCanAction("AllowQTSerNrChange",true)==false) then begin res = false; end;
+      case "FrRate": 
+        res = AllowCurChange(QTr.CurncyCode,false);
+      case "ToRateB1": 
+        res = AllowCurChange(QTr.CurncyCode,false);
+      case "ToRateB2": 
+        res = AllowCurChange(QTr.CurncyCode,false);
+      case "BaseRate1": 
+        res = AllowCurChange(QTr.CurncyCode,true);
+      case "BaseRate2": 
+        res = AllowCurChange(QTr.CurncyCode,true);
+      case "PriceList": 
+        res = UserCanAction("ChangePrices",true);
+      case "Price": 
+        res = UserCanAction("ChangeUnitPrices",true);
+      case "vRebate": 
+        res = UserCanAction("ChangeUnitPrices",true);
+      case "Spec": 
+        if (HasLocalization("PRT")) then begin
+          MatRowGet(QTr,rownr,QTrw);
+          if (nonblank(QTrw.ArtCode)) then begin
+            res = false;
+          end;
+        end else begin
+          if (UserCanAction("ChangeQTItemSpec",true)==false) then begin res = false; end;
+        end;
+      case "BranchID": 
+        res = UserCanAction("AllowQTBranchIDChange",false);
+      case "Sum": 
+        res = UserCanAction("ChangeUnitPrices",true);      
+      case "MotherArtCode": res = false;
+      case "RecipeQuant": res = false;
+      case "Recepy": res = false;
+      case "VATNr": res = HasLocalization("PRT")==false;
+      case "Addr0": res = HasLocalization("PRT")==false;
+      case "Addr1": res = HasLocalization("PRT")==false;
+      case "Addr2": res = HasLocalization("PRT")==false;
+      case "Addr3": res = HasLocalization("PRT")==false;
+      case "InvAddr3": res = HasLocalization("PRT")==false;
+      case "InvAddr4": res = HasLocalization("PRT")==false;
+      case "InvCountry": res = HasLocalization("PRT")==false;
+      case "Comment": res = UserCanAction("ChangingCommentOnQuotation",true);
+      case "Comment2": res = UserCanAction("ChangingCommentOnQuotation",true);
+      case "Comment3": res = UserCanAction("ChangingCommentOnQuotation",true);
+      case "Comment4": res = UserCanAction("ChangingCommentOnQuotation",true);
+      case "ArtCode": 
+        MatRowGet(QTr,rownr,QTrw);
+        switch (QTrw.stp) begin
+          case kInvoiceRowTypeStructuredItemComponent:
+            res = false;
+        end;
+      case "Quant": 
+        MatRowGet(QTr,rownr,QTrw);
+        switch (QTrw.stp) begin
+          case kInvoiceRowTypeStructuredItemComponent:
+            res = false;
+        end;
+    end;
   end else begin
     res = false;
     switch (fieldname) begin
