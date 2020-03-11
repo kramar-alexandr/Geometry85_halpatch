@@ -833,9 +833,10 @@ begin
           sum = GetVATPOSum(POr.SerNr,VATVIr.SerNr,porownr,false);
           sum = selectedOPrw.PInvVal - selectedOPrw.VATVal - sum;
           if (sum<=0) then begin
-            testf = false;
+            //testf = false;// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 11 03 2020 y. at 3:03:24 PM
           end;
           sum = sum + selectedOPrw.VATVal;
+          sum = selectedOPrw.PInvVal;// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 11 03 2020 y. at 3:03:23 PM
         end else begin
           qty = POrw.Quant;
           sum = GetVATVISum(OPr.SerNr);
