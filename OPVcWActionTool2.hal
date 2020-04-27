@@ -859,6 +859,7 @@ begin
       CalcSum(VATVIrw.qty,POrw.Price,POrw.PriceFactor,POrw.vRebate,t,0);
       VATVIrw.Sum = t;
       VATVIrw.Price = t;// Edit ************************** Tuesday, 24 September 2013 13:57:15
+      VATVIrw.vRebate = 100;// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 26 03 2020 y. at 10:20:10 AM
       VATVIrw.Item = POrw.ArtCode;
       VATVIrw.Comment = POrw.Spec;
       VATVIrw.VATCode = POrw.VATCode;

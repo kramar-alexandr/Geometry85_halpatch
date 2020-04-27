@@ -2205,3 +2205,52 @@ begin
   ReadRecordIdStrIVVc = BuildRecordIdStr(IVr,compnr);
   return;
 end;
+
+procedure ReadImportTagpd3Record(record PDVc PDr)
+begin
+  string 255 tstr;
+  row PDVc PDrw;
+  integer rwcnt;
+  
+  RecordNew(PDr);
+  
+  PDr.UUID = StringToUUID(ImportField); // NewAutosyncRegister
+  ImportField; // NewAutosyncRegister
+  ImportField; // NewAutosyncRegister
+  PDr.Code = ImportField;
+  PDr.PDType = StringToInt(ImportField);
+  PDr.pdays = StringToLongint(ImportField);
+  PDr.pdvrebt = StringToVal(ImportField,M4Qty);
+  PDr.pdrdays = StringToLongint(ImportField);
+  PDr.pdComment = ImportField;
+  PDr.pdCashAcc = ImportField;
+  PDr.PriceList = ImportField;
+  PDr.Installment = ImportField;
+  PDr.pdSalesAcc = ImportField;
+  PDr.pdvrebt2 = StringToVal(ImportField,M4Qty);
+  PDr.pdrdays2 = StringToLongint(ImportField);
+  PDr.BDays = StringToInt(ImportField);
+  
+  rwcnt = 0;
+  
+  while (NextImportLine(false)) begin
+    ClearRow(PDr,PDrw,1);
+    PDrw.LangCode = ImportField;
+    PDrw.Text = ImportField;
+    MatRowPut(PDr,rwcnt,PDrw);
+    rwcnt = rwcnt + 1;
+  end;
+  
+  return;
+end;
+
+
+global
+function string 120 ReadRecordIdStrpd3(Integer compnr,string thetag)
+begin
+  record PDVc PDr;
+  
+  PDr.Code = ImportField;
+  ReadRecordIdStrpd3 = BuildRecordIdStr(PDr,compnr);
+  return;
+end;
