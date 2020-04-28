@@ -1,5 +1,5 @@
 //перенесено с 6.2
-external function Integer GetProgramMode();
+//external function Integer GetProgramMode();
 external function val FindVAT(string,val,Integer,Integer);
 external function Boolean ReadFirstItem(string,var record INVc,Boolean,Boolean);
 external procedure Split2Str2(string,var string,var string,Integer);
@@ -29,6 +29,13 @@ external procedure GetFullCurncyRateText(Boolean,var string,val,val,val,val,val)
 external procedure GetFullCurncyRate (var string,Date,var val,var val,var val,var val,var val);
 
 SetLangMode(LangUkrainian,"UKR",0);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 14:05:50
+
+
+function Integer GETPROGRAMMODE()
+	
+	GETPROGRAMMODE = 0;
+return;
+end
 
 function string 255 GetRateAsText(string curncycode,Date td)
 begin
