@@ -35,7 +35,7 @@ function Integer GETPROGRAMMODE()
 	begin
 	GETPROGRAMMODE = 0;
 return;
-end
+end;
 
 function string 255 GetRateAsText(string curncycode,Date td)
 begin
