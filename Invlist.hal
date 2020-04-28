@@ -32,7 +32,7 @@ SetLangMode(LangUkrainian,"UKR",0);// Edit ************************** BPI Ukrain
 
 
 function Integer GETPROGRAMMODE()
-	
+	begin
 	GETPROGRAMMODE = 0;
 return;
 end
