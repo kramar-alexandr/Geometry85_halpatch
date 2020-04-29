@@ -269,6 +269,21 @@ begin
   return;
 end;
 
+
+global webpublic 
+updating procedure WebEasySendTurboSMS()
+begin
+  string 100 reciever;
+  string 100 text;
+  
+  reciever = WebGetArg("reciever");
+  text = WebGetArg("text");
+  
+  EasySendTurboSMS(reciever,text);
+  
+  return;
+end;
+
 global 
 updating function boolean EasySendTurboSMStoUser(string reciever, string text,var string error)
 begin
