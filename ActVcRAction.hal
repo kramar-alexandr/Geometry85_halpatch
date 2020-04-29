@@ -152,7 +152,7 @@ BEGIN
   
   
   testf = false;
-  if Actr.TodoFlag==1 then begin
+  if (Actr.TodoFlag==kTodoFlagApproval) then begin
     while (loopmain(ARr,1,testf==false)) begin
       if ARr.AcceptanceActType==Actr.ActType then begin
         testf = true;
