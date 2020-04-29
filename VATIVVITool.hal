@@ -562,7 +562,7 @@ BEGIN
 
   for (i=0; i<rwcnt; i=i+1) begin
     MatRowGet(VATVIp,i,VATVIrw);
-    if (HasLocalization("GBR")) then begin
+    if (HasLocalization("GBR") and false) then begin//  DISABLED FOR UKR Edit ************************** BPI Ukraine - KramarAlexandr - 03, 29 04 2020 y. at 9:57:37 AM
       vt = VATType(VATVIrw.VATCode);
       if (GetAccName(APb.VATBase,tstr,60)==false) then begin
         res = 20067;      
