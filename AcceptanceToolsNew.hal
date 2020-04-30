@@ -1768,6 +1768,9 @@ begin
   Actr.ActType = ApprovalActType;
   Actr.ActTypeComment = ActTyper.Comment;
   Actr.Comment = USetStr(22410);
+  
+  Actr.FromSerNr = fromsernr;// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 30 04 2020 y. at 1:36:26 PM;
+  Actr.FromFileName = fromfilename;// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 30 04 2020 y. at 1:34:09 PM
   ApprovalTaskCustomer(Actr,fromfilename,fromsernr);
 
   switch (fromfilename) begin
