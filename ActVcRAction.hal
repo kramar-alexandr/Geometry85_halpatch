@@ -228,6 +228,7 @@ BEGIN
           text = text & Ur.Name;
         end;
       end;
+      logtext(0,"======================EasySendTurboSMSEasySendTurboSMS============= " & reciever);
       EasySendTurboSMS(reciever,text);
     end;
   end;
@@ -280,7 +281,7 @@ BEGIN
   
   testf = false;
   //if (Act2r.OKFlag==0) and (Actr.OKFlag==1) then begin
-    if Actr.TodoFlag==1 then begin
+    if (Actr.TodoFlag==kTodoFlagApproval) then begin
       while (loopmain(ARr,1,testf==false)) begin
         if ARr.AcceptanceActType==Actr.ActType then begin
           testf = true;
@@ -376,6 +377,7 @@ BEGIN
             text = text & Ur.Name;
           end;
         end;
+        logtext(0,"======================EasySendTurboSMSEasySendTurboSMS============= " & reciever);
         EasySendTurboSMS(reciever,text);
       end;
     end;
