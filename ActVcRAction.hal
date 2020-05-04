@@ -46,6 +46,7 @@ external updating function val GetCreditBalanceTurboSMS(string);// Edit ********
 external updating function boolean EasySendTurboSMS(string,string);// Edit ************************** Monday, 13 February 2017 15:12:55
 external procedure ExtractObj(string,var Integer,var string);// Edit ************************** Monday, 13 February 2017 15:12:55
 external function string 255 StrReplace(string,string,string);// Edit ************************** Monday, 13 February 2017 15:12:56
+external procedure UpdateMasterWClassOnAct(string);// Edit ************************** Monday, 17 October 2016 19:05:28
 
 updating procedure LinkRecordToActivity(record ActVc Actr)
 begin
@@ -233,6 +234,7 @@ BEGIN
     end;
   end;
   
+  AllClientsRemoteAsync.UpdateMasterWClassOnAct("");
   ActVcRecordSaveAfter = res;
   RETURN;
 END;
@@ -382,7 +384,7 @@ BEGIN
       end;
     end;
   end;
-  
+  AllClientsRemoteAsync.UpdateMasterWClassOnAct("");
   gActVcRecordUpdateAfterf = false;
   ActVcRecordUpdateAfter = res;
   RETURN;

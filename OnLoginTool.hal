@@ -932,3 +932,17 @@ begin
 end;
 	// Edit End ---------------------------------------------- Edit End
 	
+	
+	
+	global procedure UpdateMasterWClassOnAct(string str)// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 04 05 2020 y. at 3:31:11 PM
+begin
+	Integer wn;
+	string 20 accessgroup;
+	
+	wn = FindWindow("MasterWClass");
+	if(wn>0)then begin
+		UpdateNamedWindow("MasterWClass");
+		updatebrowses("MasterWClass");
+	end;
+return;
+end;
