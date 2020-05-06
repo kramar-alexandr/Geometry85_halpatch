@@ -26,7 +26,6 @@ BEGIN
     end else begin
       gTRp.TransDate = CurrentDate;
     end;
-    gTRp.Comment = USetStr(36300);
     gTRp.IntYc = GetIntYc(gTRp.TransDate);
     gTRp.RegDate = CurrentDate;
     gTRp.Number = NextSerNr("TRVc",gTRp.TransDate,nrseries,false,"");
@@ -51,19 +50,19 @@ BEGIN
   record ObjBalVc CurObjBalr;
   Boolean Objbals;
   Boolean CurObjbals;
-  record NLRateBlock NLRb;
+  record NLRateBlock nlrate;
   val DiffSum;
   val totsum,d,bv;
   val temp,baserate1,baserate2;
   string 20 curncy;
   record TRVc gTRp;
   Date nild;
-  record BaseCurBlock BCb;
+  record BaseCurBlock bascur;
   Integer flushcnt;
   
   bv = blankval;
-  BlockLoad(BCb);
-  BlockLoad(NLRb);
+  BlockLoad(bascur);
+  BlockLoad(nlrate);
   if (blankdate(RepSpec.d1)) then begin
     RepSpec.d1 = CurrentDate;
   end;
@@ -81,8 +80,8 @@ BEGIN
     end;
     if (Accr.GroupAcc!=0) then begin goto L77; end;
     if (blank(Accr.Curncy)) then begin goto L77; end;
-    if (Accr.Curncy==BCb.BaseCur1) then begin goto L77; end;
-    if (Accr.Curncy==BCb.BaseCur2) then begin goto L77; end;
+    if (Accr.Curncy==bascur.BaseCur1) then begin goto L77; end;
+    if (Accr.Curncy==bascur.BaseCur2) then begin goto L77; end;
     if (Accr.AccType>=3) then begin goto L77; end;
     MockObjFromVATCode(Accr.Curncy,RU);
     Objbals = GetObjBal(Accr.AccNumber,"",ObjBalr);
@@ -95,10 +94,10 @@ BEGIN
       GetFullCurncyRate(Accr.Curncy,RepSpec.d1,fr,to1,to2,br1,br2);
       Db = MulRateToBase1(Accr.Curncy,Cb,fr,to1,to2,br1,br2,DefaultCurRoundOff);
       Diff = Db - Bb;
-      if (NLRb.Limit!=0) then begin          
+      if (nlrate.Limit!=0) then begin          
         d = Diff;
         if (d<0) then begin d = -d; end;
-        if (d<NLRb.Limit) then begin goto L40; end;
+        if (d<nlrate.Limit) then begin goto L40; end;
       end;
       DiffSum = DiffSum + Diff;        
       rwcnt = MatRowCnt(gTRp);
@@ -107,17 +106,13 @@ BEGIN
       end;
       if (Diff>=0) then begin
         AddEuroCurncyNomTrRow(gTRp,Accr.AccNumber,"","",Accr.Comment,Diff,false,true,totsum, Accr.Curncy,bv,bv,bv,baserate1,baserate2,0,bv,bv,-1,false,"","","",0);
-        if (GetAccName(NLRb.RateGainAcc,tstr,60)==false) then begin goto L40; end;
-        AddEuroTrRow(gTRp,NLRb.RateGainAcc,"","",tstr,Diff,baserate1,baserate2,false,false,totsum,false,"","","");
+        if (GetAccName(nlrate.RateGainAcc,tstr,60)==false) then begin goto L40; end;
+        AddEuroTrRow(gTRp,nlrate.RateGainAcc,"","",tstr,Diff,baserate1,baserate2,false,false,totsum,false,"","","");
       end else begin
         Diff = -Diff;
         AddEuroCurncyNomTrRow(gTRp,Accr.AccNumber,"","",Accr.Comment,Diff,false,false,totsum,Accr.Curncy,bv,bv,bv,baserate1,baserate2,0,bv,bv,-1,false,"","","",0);
-
-//        Diff2 = MulRateToBase2(BCb.BaseCur1,Diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);
-//        AddEuroCurncyNomARTrRow(gTRp,Accr.AccNumber,"","",Accr.Comment,Diff,Diff2,false,false,totsum,Accr.Curncy,bv,bv,bv,baserate1,baserate2,Diff,bv,"",-1,0,bv,nild,-1,"","","");
-        
-        if (GetAccName(NLRb.RateLossAcc,tstr,60)==false) then begin goto L40; end;
-        AddEuroTrRow(gTRp,NLRb.RateLossAcc,"","",tstr,Diff,baserate1,baserate2,false,true,totsum,false,"","","");
+        if (GetAccName(nlrate.RateLossAcc,tstr,60)==false) then begin goto L40; end;
+        AddEuroTrRow(gTRp,nlrate.RateLossAcc,"","",tstr,Diff,baserate1,baserate2,false,true,totsum,false,"","","");
       end;
 L40:;
     end;
@@ -127,33 +122,6 @@ L77:;
   SaveNLRateTrans(RepSpec.d1,gTRp,-1,flushcnt);
   RETURN;
 END;
-
-function Boolean IsNotUedARPrepayment(LongInt TransNr)
-begin
-  Boolean res;
-  record IPVc IPr;
-  row IPVc IPrw;
-  record ARPayHistVc ARPHr;
-  Boolean found;
-  Integer i,rwcnt;
-  
-  IPr.SerNr = TransNr;
-  if (ReadFirstMain(IPr,1,true)) then begin
-    rwcnt = MatRowCnt(IPr);
-    for (i=0;i<rwcnt;i=i+1) begin
-    end;
-  end;
-  if (found) then begin
-    ARPHr.SerNr = TransNr;
-    while (LoopKey("SerNr",ARPHr,1,found)) begin
-      if (ARPHr.SerNr!=TransNr) then begin found = false; end;
-      if (found) then begin
-      end;
-    end;
-  end;
-  IsNotUedARPrepayment = res;
-  return;
-end;
 
 updating procedure FindAccountRateDiffrence(string accnumber,Integer type,string basecur1,string basecur2,Date d1,val limit,LongInt nrseries,var record TRVc gTRp,var record TRVc grevTRp,var Integer flushcnt,
                                             string RateGainAcc,string RateLossAcc,val baserate1,val baserate2,Boolean basecur2f)
@@ -167,25 +135,28 @@ BEGIN
   val fr,to1,to2,br1,br2;
   val curv,basev,basevd1,d,diff,diff2;
   record AccVc Accr;
-  val totsum,bv,openv,openbasev;
+  val totsum,bv;
   string 255 tstr;
   Date td,nild;
-  record BaseCurBlock BCb;
-  record ARVc ARr;
-  record APVc APr;
-	array val sumdiff,sumdiff2;// Edit ************************** Tuesday, 11 February 2014 10:12:39
+  record BaseCurBlock bascur;
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:46:42
+	  array val sumdiff,sumdiff2;// Edit ************************** Tuesday, 11 February 2014 10:12:39
+  array string 5 acur;
   integer cui,curw;// Edit ************************** Tuesday, 11 February 2014 10:12:40
   boolean cufind;// Edit ************************** Tuesday, 11 February 2014 10:13:54
-  array string 5 acur;// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 06 12 2019 y. at 3:37:46 PM
-	record FBVc FBr;
+  record FBVc FBr;
   row FBVc FBrw;
   
-  BlockLoad(BCb);  
   
+
+	// Edit End ---------------------------------------------- Edit End
+	  BlockLoad(bascur);
   
-  curw = 0;
-  // Edit ************************** BPI Ukraine - KramarAlexandr - 05, 06 12 2019 y. at 3:38:38 PM
-	//	BEGIN
+// Edit Start ---------------------------------------------- Edit Start
+	//Wednesday, 4 December 2019 11:46:49
+	  curw = 0;
+  
   FBr.TransDate = "";
   TrHs = true;
   while(loopkey("TransSerNr",FBr,1,TrHs))begin
@@ -209,12 +180,12 @@ BEGIN
 							end;
 						end;
 						basev = FBrw.DebVal - FBrw.CredVal;
-						if (curv!=0 or (FBrw.CurncyCode!=BCb.BaseCur1 and FBrw.CurncyCode!=BCb.BaseCur1))then begin
+						if (curv!=0 or (FBrw.CurncyCode!=bascur.BaseCur1 and FBrw.CurncyCode!=bascur.BaseCur1))then begin
 							GetFullCurncyRate(FBrw.CurncyCode,d1,fr,to1,to2,br1,br2);
 							basevd1 = MulRateToBase1(FBrw.CurncyCode,curv,fr,to1,to2,br1,br2,DefaultCurRoundOff);
 							diff = basev - basevd1;
 							if (diff>=0) then begin
-								//diff2 = MulRateToBase2(BCr.BaseCur1,diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);//???// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 06 12 2019 y. at 3:43:41 PM
+								diff2 = MulRateToBase2(bascur.BaseCur1,diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);
 								cufind = false;
 								For(cui=0;cui<curw;cui=cui+1) begin
 									if(acur[cui]==FBrw.CurncyCode)then begin
@@ -231,7 +202,7 @@ BEGIN
 								end;
 							end else begin
 								diff = -diff;
-								//diff2 = MulRateToBase2(BCr.BaseCur1,diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);//???// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 06 12 2019 y. at 3:43:41 PM
+								diff2 = MulRateToBase2(bascur.BaseCur1,diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);
 								cufind = false;
 								For(cui=0;cui<curw;cui=cui+1) begin
 									if(acur[cui]==FBrw.CurncyCode)then begin
@@ -256,127 +227,82 @@ BEGIN
   
 
 	// Edit End ---------------------------------------------- Edit End
-  
-  
-  Mainr.AccNumber = accnumber;
-//  Mainr.TransDate = accnumber;
+	  Mainr.AccNumber = accnumber;
   TrHs = true;
   while (LoopMain(Mainr,1,TrHs)) begin
     if (Mainr.AccNumber!=accnumber or Mainr.TransDate>d1) then begin TrHs = false; end;// Edit ************************** Monday, 10 February 2014 18:13:39
     if (TrHs) then begin
-      testf = true;      
-/*          
-      if (testf) then begin
-        switch (Mainr.IntYc) begin
-          case OPYc://On acount ? 
-            testf = false;
-          case IPYc://On acount ? 
-            testf = false;
-          case IVYc:
-            ARr.InvoiceNr = Mainr.TransNr;
-            if (ReadFirstMain(ARr,1,true)==false) then begin
-              testf = false;
+      TRr.Number = Mainr.TransNr;
+      TRr.IntYc = Mainr.IntYc;
+      if (ReadFirstMain(TRr,2,true)) then begin
+      	//logtext(0,TRr.Number & TRr.IntYc  & "	" & TRr.Comment);
+        rwcnt = MatRowCnt(TRr);
+        for (i=0;i<rwcnt;i=i+1) begin
+          MatRowGet(TRr,i,TRrw);
+          if ((TRrw.ovst==0) and (TRrw.stp==1)) then begin
+            testf = true;
+            if (TRrw.AccNumber!=accnumber) then begin testf = false; end;
+            if (basecur2f==false) then begin
+              if (TRrw.Curncy==basecur1) then begin testf = false; end;
+              if (TRrw.Curncy==basecur2) then begin testf = false; end;
             end;
-            openv = ARr.RVal; 
-            openbasev = ARr.BookRVal; 
-          case VIYc:
-            APr.SerNr = Mainr.TransNr;
-            if (ReadFirstMain(APr,1,true)==false) then begin
-              testf = false;
-            end;
-            openv = -APr.RVal; 
-            openbasev = -APr.BookRVal; 
-        end;
-      end;
-*/                    
-      if (nonblankdate(d1)) then begin
-        if (TRr.TransDate>d1) then begin testf = false; end;
-      end;
-      if (testf) then begin
-        TRr.Number = Mainr.TransNr;
-        TRr.IntYc = Mainr.IntYc;
-        if (ReadFirstMain(TRr,2,true)) then begin
-          rwcnt = MatRowCnt(TRr);
-          for (i=0;i<rwcnt;i=i+1) begin
-            MatRowGet(TRr,i,TRrw);
-            if ((TRrw.ovst==0) and (TRrw.stp==1)) then begin
-              testf = true;
-              if (TRrw.AccNumber!=accnumber) then begin testf = false; end;
-              if (basecur2f==false) then begin
-                if (TRrw.Curncy==basecur1) then begin testf = false; end;
-                if (TRrw.Curncy==basecur2) then begin testf = false; end;
+            if (testf) then begin
+              curv = TRrw.CurDebVal - TRrw.CurCredVal;
+              if (curv==0) then begin
+                if (basecur2f) then begin
+                  curv = TRrw.DebVal2 - TRrw.CredVal2;
+                end;
               end;
-              if (testf  or (TRrw.Curncy!=BCb.BaseCur1 and TRrw.Curncy!=BCb.BaseCur1)) then begin
-                curv = TRrw.CurDebVal - TRrw.CurCredVal;
-                if (curv==0) then begin
-                  if (basecur2f) then begin
-                    curv = TRrw.DebVal2 - TRrw.CredVal2;
-                  end;
-                end;
-                if (curv!=0) then begin
-                  curv = curv - openv;
-                end;
-                basev = TRrw.DebVal - TRrw.CredVal;
-                basev = basev - openbasev;
-                if (curv!=0) then begin
-                  GetFullCurncyRate(TRrw.Curncy,d1,fr,to1,to2,br1,br2);
-                  basevd1 = MulRateToBase1(TRrw.Curncy,curv,fr,to1,to2,br1,br2,DefaultCurRoundOff);
-                  diff = basev - basevd1;
-                  if (limit!=0) then begin          
-                    d = diff;
-                    if (d<0) then begin d = -d; end;
-                    if (d<limit) then begin goto LSKIPROW; end;
-                  end;
-
-                  if (diff!=0) then begin
-                    Accr.AccNumber = accnumber;
-                    if (ReadFirstMain(Accr,1,true)) then begin
-                      trcnt = MatRowCnt(gTRp);
-                      if (trcnt>=399) then begin
-                        SaveNLRateTrans(d1,gTRp,nrseries,flushcnt);
-                        td = d1;
-                        td.month = td.month + 1;
-                        td.day = 1;
-                        SaveNLRateTrans(td,grevTRp,nrseries,flushcnt);
-                      end;
-                      if (diff>=0) then begin
-
-                        diff2 = MulRateToBase2(BCb.BaseCur1,diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);
-                        AddEuroCurncyNomARTrRow(gTRp,Accr.AccNumber,"","",Accr.Comment,diff,diff2,true,false,totsum,TRrw.Curncy,bv,bv,bv,baserate1,baserate2,0,bv,"",-1,0,bv,nild,-1,false,"","","");
-
-
-  //                      AddEuroCurncyNomTrRow(gTRp,Accr.AccNumber,"","",Accr.Comment,diff,true,true,totsum,TRrw.Curncy,bv,bv,bv,baserate1,baserate2,0,bv,bv,-1,false,"","","",0);
-  //                      AddEuroTrRow(gTRp,Accr.AccNumber,"","",Accr.Comment,diff,baserate1,baserate2,true,true,totsum,false,"","","");
-                        if (GetAccName(RateLossAcc,tstr,60)==false) then begin goto LSKIPROW; end;
-                        AddEuroTrRow(gTRp,RateLossAcc,"","",tstr,diff,baserate1,baserate2,true,true,totsum,false,"","","");
-                        if (type==1) then begin
-                          AddEuroTrRow(grevTRp,Accr.AccNumber,"","",Accr.Comment,diff,baserate1,baserate2,true,true,totsum,false,"","","");
-                          if (GetAccName(RateGainAcc,tstr,60)==false) then begin goto LSKIPROW; end;
-                          AddEuroTrRow(grevTRp,RateGainAcc,"","",tstr,diff,baserate1,baserate2,true,false,totsum,false,"","","");
-                        end;
-                      end else begin
-                        diff = -diff;
-                        diff2 = MulRateToBase2(BCb.BaseCur1,diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);
-                        AddEuroCurncyNomARTrRow(gTRp,Accr.AccNumber,"","",Accr.Comment,diff,diff2,true,true,totsum,TRrw.Curncy,bv,bv,bv,baserate1,baserate2,0,bv,"",-1,0,bv,nild,-1,false,"","","");
-                      
-  //                      AddEuroCurncyNomTrRow(gTRp,Accr.AccNumber,"","",Accr.Comment,diff,true,false,totsum,TRrw.Curncy,bv,bv,bv,baserate1,baserate2,0,bv,bv,-1,false,"","","",0);
-  //                      AddEuroTrRow(gTRp,Accr.AccNumber,"","",Accr.Comment,diff,baserate1,baserate2,true,false,totsum,false,"","","");
-                        if (GetAccName(RateGainAcc,tstr,60)==false) then begin goto LSKIPROW; end;
-                        AddEuroTrRow(gTRp,RateGainAcc,"","",tstr,diff,baserate1,baserate2,true,false,totsum,false,"","","");
-                        if (type==1) then begin
-                          AddEuroTrRow(grevTRp,Accr.AccNumber,"","",Accr.Comment,diff,baserate1,baserate2,true,false,totsum,false,"","","");
-                          if (GetAccName(RateLossAcc,tstr,60)==false) then begin goto LSKIPROW; end;
-                          AddEuroTrRow(grevTRp,RateLossAcc,"","",tstr,diff,baserate1,baserate2,true,true,totsum,false,"","","");
-                        end;
-                      end;
+              basev = TRrw.DebVal - TRrw.CredVal;
+              if (curv!=0 or (TRrw.Curncy!=bascur.BaseCur1 and TRrw.Curncy!=bascur.BaseCur1)) then begin// Edit ************************** Monday, 10 February 2014 18:15:52
+                GetFullCurncyRate(TRrw.Curncy,d1,fr,to1,to2,br1,br2);
+                basevd1 = MulRateToBase1(TRrw.Curncy,curv,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+                diff = basev - basevd1;
+                
+                if (diff!=0) then begin
+                  Accr.AccNumber = accnumber;
+                  if (ReadFirstMain(Accr,1,true)) then begin
+                    if (diff>=0) then begin
+                      diff2 = MulRateToBase2(bascur.BaseCur1,diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);
+											cufind = false;
+											For(cui=0;cui<curw;cui=cui+1) begin
+	  										if(acur[cui]==TRrw.Curncy)then begin
+	  											cufind = true;
+	  											sumdiff[cui] = sumdiff[cui] + diff;
+	  											sumdiff2[cui] = sumdiff2[cui] + diff2;
+	  										end;
+											end;
+											if(cufind==false)then begin
+												acur[curw] = TRrw.Curncy;
+												sumdiff[curw] = sumdiff[curw] + diff;
+												sumdiff2[curw] = sumdiff2[curw] + diff2;
+												curw = curw + 1;
+											end;
+                    end else begin
+                      diff = -diff;
+                      diff2 = MulRateToBase2(bascur.BaseCur1,diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);
+                      cufind = false;
+											For(cui=0;cui<curw;cui=cui+1) begin
+	  										if(acur[cui]==TRrw.Curncy)then begin
+	  											cufind = true;
+	  											sumdiff[cui] = sumdiff[cui] - diff;
+	  											sumdiff2[cui] = sumdiff2[cui] - diff2;
+	  										end;
+											end;
+											if(cufind==false)then begin
+												acur[curw] = TRrw.Curncy;
+												sumdiff[curw] = sumdiff[curw] - diff;
+												sumdiff2[curw] = sumdiff2[curw] - diff2;
+												curw = curw + 1;
+											end;
                     end;
                   end;
-
                 end;
+
               end;
             end;
-LSKIPROW:;          
           end;
+LSKIPROW:;          
         end;
       end;
     end;
@@ -413,8 +339,8 @@ END;
 
 updating procedure NLRate(record RcVc RepSpec)
 BEGIN
-  record NLRateBlock NLRb;
-  record BaseCurBlock BCb;
+  record NLRateBlock nlrate;
+  record BaseCurBlock bascur;
   val temp,baserate1,baserate2;
   Boolean TrHs;
   record NLRateVc NLRater;
@@ -430,8 +356,8 @@ BEGIN
 
   RecordNew(gTRp);
   RecordNew(grevTRp);
-  BlockLoad(NLRb);
-  BlockLoad(BCb);
+  BlockLoad(nlrate);
+  BlockLoad(bascur);
   if (blankdate(RepSpec.d1)) then begin
     RepSpec.d1 = CurrentDate;
   end;
@@ -446,13 +372,13 @@ BEGIN
     end;
     if (TrHs) then begin
       RateGainAcc = NLRater.RateGainAcc;
-      if (blank(RateGainAcc)) then begin RateGainAcc = NLRb.RateGainAcc; end;
+      if (blank(RateGainAcc)) then begin RateGainAcc = nlrate.RateGainAcc; end;
       RateLossAcc = NLRater.RateLossAcc;
-      if (blank(RateLossAcc)) then begin RateLossAcc = NLRb.RateLossAcc; end;
+      if (blank(RateLossAcc)) then begin RateLossAcc = nlrate.RateLossAcc; end;
       rwcnt = MatRowCnt(NLRater);
       for (i=0;i<rwcnt;i=i+1) begin
         MatRowGet(NLRater,i,NLRaterw);
-        FindAccountRateDiffrence(NLRaterw.AccNumber,NLRaterw.Type,BCb.BaseCur1,BCb.BaseCur2,RepSpec.d1,NLRater.Limit,NLRater.NrSeries,gTRp,grevTRp,flushcnt,RateGainAcc,RateLossAcc,baserate1,baserate2,RepSpec.flags[0]!=0);
+        FindAccountRateDiffrence(NLRaterw.AccNumber,NLRaterw.Type,bascur.BaseCur1,bascur.BaseCur2,RepSpec.d1,NLRater.Limit,NLRater.NrSeries,gTRp,grevTRp,flushcnt,RateGainAcc,RateLossAcc,baserate1,baserate2,RepSpec.flags[0]!=0);
       end;
     end;
   end;
