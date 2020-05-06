@@ -35,6 +35,7 @@ BEGIN
   VIr.SerNr = VATVIr.VINr;
   if (ReadFirstMain(VIr,1,true)) then begin
     BlockLoad(VATIVb);
+    BlockLoad(APb);
     if (APb.PostVIVATonVATCorr==0) then begin
       if (VATVIr.TransDate>=VIr.TransDate) or (VATIVb.TRforVATCorrwithDateinPast!=0) then begin
         if (UpdateTRVATVI2(VIr,VATVIr,1)==0) then begin end;
