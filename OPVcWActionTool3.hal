@@ -853,7 +853,7 @@ BEGIN
   RETURN;
 END;
 
-procedure PastePOInOPr(var record OPVc OPp,row OPVc oprp,Date tdp)
+procedure PastePOInOPr(var record OPVc OPp,var row OPVc oprp,Date tdp)
 BEGIN
   record APAccBlock APAccb;
   record RoundBlock RoundRec;
@@ -874,6 +874,8 @@ BEGIN
   record SMVc VATr;
   Integer vatcnt;
   
+  
+  
   BlockLoad(RoundRec);  
   BlockLoad(APAccb);  
   POr.SerNr = oprp.PrepayNr;
@@ -887,13 +889,13 @@ BEGIN
     if(nonblank(POr.Comment))then begin// Edit ************************** Friday, 3 November 2017 14:09:17
     	oprp.Comment = POr.Comment;
     end;
-    
 
 	// Edit End ---------------------------------------------- Edit End
 	    VEr.Code = POr.VECode;
     objstr = POr.Objects;
     if (ReadFirstMain(VEr,1,true)) then begin
       oprp.BankAcc = VEr.BankAccount;
+			oprp.VEName = VEr.Name;// Edit ************************** Monday, 6 November 2017 13:36:08
     end;
     curncycode = POr.CurncyCode;
     fr = POr.FrRate;
