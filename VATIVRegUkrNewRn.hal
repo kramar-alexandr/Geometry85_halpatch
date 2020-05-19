@@ -427,6 +427,11 @@ begin
 					end;
 				end;
 				
+/*14*/		OutString(1,0,VATIVr.SerNr,true);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 19 05 2020 y. at 5:34:19 PM
+/*15*/		OutString(1,0,StringFromSet(358,avt[ai]),true);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 19 05 2020 y. at 5:34:21 PM
+/*16*/		OutString(1,0,"16",true);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 19 05 2020 y. at 5:34:22 PM
+
+				
     EndFormat;
     seqnr = seqnr + 1;
     totsumval = totsumval + avtsumval[ai];
@@ -734,6 +739,8 @@ begin
    OutString(230,0,"11",false);
    OutString(253,0,"12",false);
    OutString(1,0,"13",true);
+   OutString(1,0,"14",true);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 19 05 2020 y. at 5:34:19 PM
+   OutString(1,0,"15",true);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 19 05 2020 y. at 5:34:21 PM
   EndFormat;
   
   /*StartFormat(15);
