@@ -86,6 +86,9 @@ BEGIN
   LongInt res;
   record IVVc IVr;
   record IPVc IPr;
+  row IPVc IPrw;// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 10 06 2020 y. at 2:02:09 PM
+	integer i,rwcnt;
+	record ORVc ORr;
   
   if (VATIVr.OKFlag!=0) then begin
     TRVATIV(VATIVr);
@@ -100,6 +103,29 @@ BEGIN
     CreateRecordLink(VATIVr,CurrentCompany,IPr,CurrentCompany);  
     CreateRecordLink(IPr,CurrentCompany,VATIVr,CurrentCompany);  
   end;
+  
+  if(VATIVr.OKFlag==1)then begin
+		if(VATIVr.IPNr>-1 and VATIVr.CUPNr>-1)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 10 06 2020 y. at 2:20:57 PM
+			IPr.SerNr = VATIVr.IPNr;
+			if(readfirstmain(IPr,1,true))then begin
+				rwcnt = matrowcnt(IPr);
+				for(i=0;i<rwcnt;i=i+1)begin
+					matrowget(IPr,i,IPrw);
+					if(IPrw.CUPNr==VATIVr.CUPNr)then begin
+						if(IPrw.OrderNr>-1)then begin
+							ORr.SerNr = IPrw.OrderNr;
+							if(readfirstmain(ORr,1,true))then begin
+								createrecordlink(ORr,currentcompany,VATIVr,currentcompany);
+								createrecordlink(VATIVr,currentcompany,ORr,currentcompany);
+							end;
+						end;
+					end;
+				end;
+			end;	
+		end;
+  end;
+  
+  
   VATIVVcRecordSaveAfter = res;
   RETURN;
 END;
@@ -142,6 +168,10 @@ global
 updating function LongInt VATIVVcRecordUpdateAfter(var record VATIVVc VATIVr,record VATIVVc VATIV2r,LongInt stat,LongInt long4)
 BEGIN
   LongInt res;
+  row IPVc IPrw;// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 10 06 2020 y. at 2:02:09 PM
+	record IPVc IPr;// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 10 06 2020 y. at 2:20:30 PM
+	integer i,rwcnt;
+	record ORVc ORr;
 
   if ((VATIVr.OKFlag!=0) and (VATIV2r.OKFlag==0)) then begin
     TRVATIV(VATIVr);
@@ -160,6 +190,29 @@ BEGIN
       InvalidateTR(VATIVYc,VATIVr.SerNr);
     end;      
   end;
+  
+  
+  if(VATIVr.OKFlag==1)then begin
+		if(VATIVr.IPNr>-1 and VATIVr.CUPNr>-1)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 10 06 2020 y. at 2:20:57 PM
+			IPr.SerNr = VATIVr.IPNr;
+			if(readfirstmain(IPr,1,true))then begin
+				rwcnt = matrowcnt(IPr);
+				for(i=0;i<rwcnt;i=i+1)begin
+					matrowget(IPr,i,IPrw);
+					if(IPrw.CUPNr==VATIVr.CUPNr)then begin
+						if(IPrw.OrderNr>-1)then begin
+							ORr.SerNr = IPrw.OrderNr;
+							if(readfirstmain(ORr,1,true))then begin
+								createrecordlink(ORr,currentcompany,VATIVr,currentcompany);
+								createrecordlink(VATIVr,currentcompany,ORr,currentcompany);
+							end;
+						end;
+					end;
+				end;
+			end;	
+		end;
+  end;
+  
   VATIVVcRecordUpdateAfter = res;
   RETURN;
 END;
