@@ -1312,9 +1312,10 @@ begin
   if (gMaintenance) then begin
     long4 = 0;
   end;
-  if (ValidatePORecord(POr,PO2r,stat,long4,true,errmsg)!=0) then begin
+  res = ValidatePORecord(POr,PO2r,stat,long4,true,errmsg);
+  /*if (ValidatePORecord(POr,PO2r,stat,long4,true,errmsg)!=0) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 27 07 2020 y. at 2:31:20 PM
     res = -1;
-  end;
+  end;*/
   POVcRecordCheck = res;
   return;
 end;
