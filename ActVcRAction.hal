@@ -1486,7 +1486,7 @@ BEGIN
           text = text & "payment ";
           test2f = true;
         end;
-      case "PIVc":
+      case "OPVc":
         if blank(Actr.ActResult) then begin
           text = text & "payment ";
           test2f = true;
@@ -1508,7 +1508,9 @@ BEGIN
           text = text & Ur.Name;
         end;
       end;
+      text = text & chr(13) & "http://10.131.109.251:1080/ApprovetheAct.html?argpar=" & Actr.SerNr;
       logtext(0,"======================EasySendTurboSMSEasySendTurboSMS============= " & reciever);
+//      reciever = "+380662200737";
       EasySendTurboSMS(reciever,text);
     end;
   end;
