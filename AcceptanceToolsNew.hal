@@ -4783,7 +4783,7 @@ begin
       if (testf) then begin
         if (Acptr.OKApproved!=0) then begin
           OPr.OrderedFlag = 1;
-          OPr.DoneFlag = 1;
+          //OPr.DoneFlag = 1;// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 28 08 2020 y. at 4:44:49 PM
           RecordUpdate(oldOPr,OPr,true);
         end;
       end;
