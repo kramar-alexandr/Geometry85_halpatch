@@ -842,9 +842,11 @@ begin
 			actnr = 1;
 			while (ReadRecordLink(QTr,actnr,Actr,RLr)) begin
 				//chekQTLink(QTr,Actr,RLr);// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 07 02 2020 y. at 11:28:06 AM
-				if (Actr.TodoFlag==kTodoFlagApproval and Actr.Invalid==0) then begin
-					actusers = AddObjectToObjectList(actusers,Actr.MainPersons);
-					res = ApprovalState(Actr,Acptr,res,prevstate);
+				if(Actr.Invalid==0)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 15 02 2021 y. at 3:17:32 PM
+					if (Actr.TodoFlag==kTodoFlagApproval and Actr.Invalid==0) then begin
+						actusers = AddObjectToObjectList(actusers,Actr.MainPersons);
+						res = ApprovalState(Actr,Acptr,res,prevstate);
+					end;
 				end;
 				actnr = actnr + 1;
 			end;
