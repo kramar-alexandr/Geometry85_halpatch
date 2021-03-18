@@ -74,6 +74,7 @@ external function Boolean FindItemVAR(string,var string,var string,var string,va
 external outer function Integer TestAcceptanceStatus(Integer);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:58:02
 external procedure GetPRName(string,var string);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:58:03
 external procedure TBBUSumup(var record TBBUVc);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 10:58:03
+remote function Integer QTTestApprovalStatus(record QTVc);// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 18 03 2021 y. at 4:18:00 PM
 
 global
 procedure QTVc_PasteInvCountry(var record QTVc QTp,string oldCountryCode)
@@ -958,7 +959,8 @@ BEGIN
   if (nonblank(QTr.PRCode)) then begin
     if ((QTr.Closed==0) and (QTr.Rejected!=1)) then begin
       testf = true;
-      err = TestAcceptanceStatus(QTr.AcceptanceStatus);
+      //err = TestAcceptanceStatus(QTr.AcceptanceStatus);
+      err = QTTestApprovalStatus(QTr);
       if (err!=0) then begin
         MessageBox(err,"");
         testf = false;
