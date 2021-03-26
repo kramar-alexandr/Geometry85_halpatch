@@ -306,7 +306,7 @@ begin
 	if(PRr.Terminated!=0)then begin
 		needtosync = false;
 	end;
-	if(PRr.PRStage!=1)then begin
+	if(PRr.PRStage!="1")then begin
 		needtosync = false;
 	end;
 	
