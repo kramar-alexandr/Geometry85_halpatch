@@ -276,9 +276,12 @@ begin
 	record PRVc PR2r;
 	integer level;
 	record CUVc CUr;
+	boolean needtosync;
 	
 	blockload(WSb);		
 	logtext(0,"WorkSectionUpdateRequest");
+	
+	needtosync = true;
 	
 	level = 1;
 	if(nonblank(PRr.MotherCode))then begin
@@ -300,8 +303,14 @@ begin
 		end;
 	end;
 	
+	if(PRr.Terminated!=0)then begin
+		needtosync = false;
+	end;
+	if(PRr.PRStage!=1)then begin
+		needtosync = false;
+	end;
 	
-	if(nonblank(PRr.PrSalesMan) and nonblank(PRr.Leader) and level==4)then begin
+	if(nonblank(PRr.PrSalesMan) and nonblank(PRr.Leader) and level==4 and needtosync)then begin
 		if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
 			CUr.Code = PRr.CustCode;
 			if(readfirstmain(CUr,1,true))then begin
