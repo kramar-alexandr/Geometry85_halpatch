@@ -1,0 +1,658 @@
+external function string 255 ReplaceCharByString(string,string,string);
+external procedure ExtractObjWithSeparator(string,string,Boolean,var Integer,var string);
+external function string 60 AddObjectToObjectList(string,string);
+external procedure TSVc_PastePRCode(var record TSVc,Integer);
+external procedure TSVc_PasteEMCode(var record TSVc,Integer);
+external function Boolean TSVc_PasteArtCode(var record TSVc,Integer,var string);
+
+
+
+procedure TSSumUp(record TSVc TSp)
+BEGIN
+  row TSVc TSrw;
+  Integer rwcnt,i;
+  
+  rwcnt = MatRowCnt(TSp);
+  TSp.Sum = blankval;
+  TSp.SumOther = blankval;
+  for (i=0;i<rwcnt;i=i+1) begin
+    MatRowGet(TSp,i,TSrw);
+    if ((TSrw.stp==1) and (TSrw.ovst==0)) then begin
+      if (TSrw.ItemType==3) then begin
+        TSp.Sum = TSp.Sum + TSrw.Qty;
+      end else begin
+        TSp.SumOther = TSp.SumOther + TSrw.Qty;
+      end;
+    end;
+  end;
+  RETURN;
+END;
+
+function string 255 prepareUsersEMails(string user)
+begin
+	record UserVc USr;
+	record WorksectionUserVc WUr;
+	integer pos;
+	string 255 tstr,res;
+	vector boolean vusers,vWSUsers;
+	vector string 255 vmails;
+	
+	
+	while(loopmain(USr,1,true))begin
+		if(nonblank(USr.emailAddr))then begin
+			WUr.eMail = USr.emailAddr;
+			if(readfirstmain(WUr,1,true))then begin
+				vmails[USr.Code] = USr.emailAddr;
+			end;
+		end;
+	end;
+	
+	
+	pos = 0;
+	ExtractObjWithSeparator(",",user,true,pos,tstr);
+	while(nonblank(tstr))begin
+		if(nonblank(tstr))then begin
+			if(nonblank(vmails[tstr]))then begin
+				if(blank(res))then begin
+					res = vmails[tstr];
+				end else begin
+					res = res & vmails[tstr];
+				end;
+			end;
+		end;
+		ExtractObjWithSeparator(",",user,true,pos,tstr);
+	end;
+	
+	prepareUsersEMails = res;
+return;
+end;
+
+global updating procedure WorkSectionUpdateReplyTask(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+begin
+		json jreply;
+		string 100 page,id,prcode,prpage;
+		record PRVc PRr;
+		record WorksectionBlock WSb;
+		string 255 getaparams,reqpage,reqaction,togashstr,HASH,tstr;
+		area request;
+		integer pos;
+		
+		blockload(WSb);	
+	
+		if(getarealength(a_reply)>100)then begin
+			jreply = ParseJsonArea(a_reply);
+			id = JSONGet(jreply,"data/id");
+			prpage = JSONGet(jreply,"data/page");
+			prpage = ReplaceCharByString(prpage,"\\","");
+			prcode = JSONGet(jreply,"data/name");
+			pos = 0;
+			ExtractObjWithSeparator(" ",prcode,true,pos,tstr);
+			PRr.Code = tstr;
+			prcode = tstr;
+			if(readfirstmain(PRr,1,true))then begin
+				PRr.WSPage_Tsk = prpage;
+				PRr.WorksectionID_Tsk = id;
+				recordstore(PRr,true);
+			end;
+		end;
+		
+		writeareatofile(a_reply,"WorkSectionUpdateReplyTask.txt",0);
+		
+return;
+end; 
+
+
+global updating procedure WorkSectionUpdateReplyProject(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+begin
+		json jreply;
+		string 100 page,id,prcode,prpage,tstr;
+		record PRVc PRr;
+		record WorksectionBlock WSb;
+		string 255 getaparams,reqpage,reqaction,togashstr,HASH;
+		area request;
+		record WorksectionUserVc WUr;
+		integer pos;
+		
+		blockload(WSb);	
+		
+	
+		if(getarealength(a_reply)>100)then begin
+			jreply = ParseJsonArea(a_reply);
+			id = JSONGet(jreply,"data/id");
+			prpage = JSONGet(jreply,"data/page");
+			prpage = ReplaceCharByString(prpage,"\\","");
+			
+			prcode = JSONGet(jreply,"data/name");
+			pos = 0;
+			ExtractObjWithSeparator(" ",prcode,true,pos,tstr);
+			PRr.Code = tstr;
+			prcode = tstr;
+			if(readfirstmain(PRr,1,true))then begin
+				PRr.WSPage_Pr = prpage;
+				PRr.WorksectionID_Pr = id;
+				recordstore(PRr,true);
+				
+				logtext(0,"prpage " & prpage);
+				logtext(0,"prcode " & prcode);
+				
+				if(nonblank(prpage))then begin
+					blockload(WSb);		
+	
+					if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
+						reqaction = "post_task";
+						reqpage = prpage;
+						page = "/api/admin/v2/?action=" & reqaction;
+						if(nonblank(reqpage))then begin
+							page = page & "&page=" & reqpage;
+						end;
+						togashstr =  reqpage & reqaction & WSb.ApiKey;
+						HASH = LowerCase(MD5String(togashstr));
+						page = page & "&hash=" & HASH;
+							logtext(0,page);
+							addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);
+							
+							addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);
+							addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);
+							
+							addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
+							//addtexttoarea("&tags=" & URLEncode(PRr.Code),request);
+							if(nonblankdate(PRr.StartDate))then begin
+								addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
+							end;
+							if(nonblankdate(PRr.EndDate))then begin
+								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
+							end;
+							
+							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
+					end;
+				end;
+			end;
+		end;		
+		writeareatofile(a_reply,"WorkSectionUpdateReply.txt",0);
+		
+return;
+end; 
+
+
+global updating procedure WorkSectionCreateFolderReply(Area a_reply,Area a_replyheader,boolean timeout)
+begin
+	
+	writeareatofile(a_reply,"WorkSectionCreateFolderReply.txt",0);
+return;
+end;
+
+global updating procedure WorkSectionUpdateReplyProjectUpdate(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+begin
+		json jreply;
+		string 100 page,id,prcode,prpage,tstr;
+		record PRVc PRr;
+		record WorksectionBlock WSb;
+		string 255 getaparams,reqpage,reqaction,togashstr,HASH;
+		area request;
+		record WorksectionUserVc WUr;
+		integer pos;
+		
+		blockload(WSb);	
+		
+	
+		if(getarealength(a_reply)>100)then begin
+			jreply = ParseJsonArea(a_reply);
+			id = JSONGet(jreply,"data/id");
+			prpage = JSONGet(jreply,"data/page");
+			prpage = ReplaceCharByString(prpage,"\\","");
+			
+			prcode = JSONGet(jreply,"data/name");
+			pos = 0;
+			ExtractObjWithSeparator(" ",prcode,true,pos,tstr);
+			PRr.Code = tstr;
+			prcode = tstr;
+			if(readfirstmain(PRr,1,true))then begin
+
+				
+				if(nonblank(prpage))then begin
+					blockload(WSb);		
+	
+					if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
+						if(blank(PRr.WSPage_Tsk))then begin
+							reqaction = "post_task";
+							reqpage = prpage;
+							page = "/api/admin/v2/?action=" & reqaction;
+							if(nonblank(reqpage))then begin
+								page = page & "&page=" & reqpage;
+							end;
+							togashstr =  reqpage & reqaction & WSb.ApiKey;
+							HASH = LowerCase(MD5String(togashstr));
+							page = page & "&hash=" & HASH;
+							logtext(0,page);
+							addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);
+							addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);
+							addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);
+							addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
+							if(nonblankdate(PRr.StartDate))then begin
+								addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
+							end;
+							if(nonblankdate(PRr.EndDate))then begin
+								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
+							end;
+							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
+						end else begin
+							reqaction = "update_task";
+							reqpage = PRr.WSPage_Tsk;
+							page = "/api/admin/v2/?action=" & reqaction;
+							if(nonblank(reqpage))then begin
+								page = page & "&page=" & reqpage;
+							end;
+							togashstr =  reqpage & reqaction & WSb.ApiKey;
+							HASH = LowerCase(MD5String(togashstr));
+							page = page & "&hash=" & HASH;
+							logtext(0,page);
+							addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);
+							addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);
+							if(nonblankdate(PRr.StartDate))then begin
+								addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
+							end;
+							if(nonblankdate(PRr.EndDate))then begin
+								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
+							end;
+							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
+
+						end;
+					end;
+				end;
+			end;
+		end;		
+		writeareatofile(a_reply,"WorkSectionUpdateReply.txt",0);
+		
+return;
+end; 
+
+//создание / обновление проекта - асинхронная процедура
+global updating procedure WorkSectionUpdateRequest(record PRVc PRr)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+begin
+	record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request;
+	record WorksectionUserVc WUr;
+	record PRVc PR2r;
+	integer level;
+	record CUVc CUr;
+	
+	blockload(WSb);		
+	logtext(0,"WorkSectionUpdateRequest");
+	
+	level = 1;
+	if(nonblank(PRr.MotherCode))then begin
+		PR2r.Code = PRr.MotherCode;
+		if(readfirstmain(PR2r,1,true))then begin
+			level = 2;
+			if(nonblank(PR2r.MotherCode))then begin
+				PR2r.Code = PR2r.MotherCode;
+				if(readfirstmain(PR2r,1,true))then begin
+					level = 3;
+					if(nonblank(PR2r.MotherCode))then begin
+						PR2r.Code = PR2r.MotherCode;
+						if(readfirstmain(PR2r,1,true))then begin
+							level = 4;
+						end;
+					end;
+				end;
+			end;
+		end;
+	end;
+	
+	
+	if(nonblank(PRr.PrSalesMan) and nonblank(PRr.Leader) and level==4)then begin
+		if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
+			CUr.Code = PRr.CustCode;
+			if(readfirstmain(CUr,1,true))then begin
+				if(nonblank(CUr.WSFolder))then begin
+					reqaction = "add_project_group";
+					reqpage = "";
+					page = "/api/admin/v2/?action=" & reqaction;
+					if(nonblank(reqpage))then begin
+						page = page & "&page=" & reqpage;
+					end;
+					togashstr = reqpage & reqaction & WSb.ApiKey;
+					HASH = LowerCase(MD5String(togashstr));
+					page = page & "&hash=" & HASH;
+					addtexttoarea("title=" & CUr.WSFolder,request);// Создание папки проекта
+					SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateFolderReply",20);
+					setareazerosize(request);
+				end;
+			end;
+			if(blank(PRr.WorksectionID_Pr))then begin//создание проекта
+					reqaction = "post_project";
+					reqpage = "";
+					page = "/api/admin/v2/?action=" & reqaction;
+					if(nonblank(reqpage))then begin
+						page = page & "&page=" & reqpage;
+					end;
+					togashstr = reqpage & reqaction & WSb.ApiKey;
+					HASH = LowerCase(MD5String(togashstr));
+					page = page & "&hash=" & HASH;
+					addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);//Название и код проекта в worksection
+					addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);//Авптор проекта
+					addtexttoarea("&email_manager=" & prepareUsersEMails(PRr.Leader),request);//менеджер
+					addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);//ответственный
+					if(nonblank(PRr.Members))then begin
+						addtexttoarea("&members=" & prepareUsersEMails(PRr.Members),request);
+					end;
+					if(nonblank(CUr.WSFolder))then begin
+						addtexttoarea("&group=" & URLEncode(CUr.WSFolder),request);
+						addtexttoarea("&folder=" & URLEncode(CUr.WSFolder),request);
+					end;
+					
+					addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
+					if(nonblankdate(PRr.StartDate))then begin
+						addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
+					end;
+					if(nonblankdate(PRr.EndDate))then begin
+						addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
+					end;
+					SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProject",20);
+			end else begin //- обновление проекта
+				reqaction = "update_project";
+				reqpage = PRr.WSPage_Pr;
+				page = "/api/admin/v2/?action=" & reqaction;
+				if(nonblank(reqpage))then begin
+					page = page & "&page=" & reqpage;
+				end;
+	
+				togashstr = reqpage & reqaction & WSb.ApiKey;
+				HASH = LowerCase(MD5String(togashstr));
+				page = page & "&hash=" & HASH;
+				addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);
+				if(nonblank(CUr.WSFolder))then begin
+					addtexttoarea("&group=" & URLEncode(CUr.WSFolder),request);
+					addtexttoarea("&folder=" & URLEncode(CUr.WSFolder),request);
+				end;
+				if(nonblank(PRr.Leader))then begin
+					addtexttoarea("&email_manager=" & prepareUsersEMails(PRr.Leader),request);//менеджер - поменять
+					addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);//ответственный
+				end;
+				if(nonblankdate(PRr.StartDate))then begin
+					addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
+				end;
+				if(nonblankdate(PRr.EndDate))then begin
+					addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
+				end;
+				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProjectUpdate",20);
+			end;
+		end;
+	end;
+		
+return;
+end; 
+
+// асинхронный ответ по обновлению пользователей
+global updating procedure WorkSectionUpdateGetUsersReply(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+begin
+		json jreply;
+		string 100 page,id,prcode,prpage;
+		record PRVc PRr;
+		record WorksectionBlock WSb;
+		string 255 getaparams,reqpage,reqaction,togashstr,HASH;
+		area request;
+		integer users,i;
+		record WorksectionUserVc WUr;
+		
+		blockload(WSb);	
+	
+		if(getarealength(a_reply)>100)then begin
+			jreply = ParseJsonArea(a_reply);
+			users = JSONCountChildren(jreply,"data");
+			for(i=0;i<users;i=i+1)begin
+				if(nonblank(JSONGet(jreply,"data/[" & i & "]/email")))then begin
+					WUr.eMail = JSONGet(jreply,"data/[" & i & "]/email");
+					WUr.id = JSONGet(jreply,"data/[" & i & "]/id");
+					WUr.first_name = JSONGet(jreply,"data/[" & i & "]/first_name");
+					WUr.last_name = JSONGet(jreply,"data/[" & i & "]/last_name");
+					WUr.name = JSONGet(jreply,"data/[" & i & "]/name");
+					WUr.title = JSONGet(jreply,"data/[" & i & "]/title");
+					WUr.avatar = JSONGet(jreply,"data/[" & i & "]/avatar");
+					WUr.group = JSONGet(jreply,"data/[" & i & "]/group");
+					WUr.department = JSONGet(jreply,"data/[" & i & "]/department");
+					WUr.role = JSONGet(jreply,"data/[" & i & "]/role");
+					recordstore(WUr,true);
+				
+				end;
+			end;
+		end;		
+		writeareatofile(a_reply,"WorkSectionUpdateGetUsersReply.txt",0);
+		
+return;
+end; 
+
+
+
+//Обновление пользователей компании - регулярная процедура
+global updating procedure WorkSectionUpdateGetUsersRequest(string arg)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+begin
+	record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request;
+	
+	blockload(WSb);		
+	logtext(0,"WorkSectionUpdateRequest");
+	if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
+		reqaction = "get_users";
+		reqpage = "";
+		page = "/api/admin/v2/?action=" & reqaction;
+		if(nonblank(reqpage))then begin
+			page = page & "&page=" & reqpage;
+		end;
+		
+		togashstr = reqpage & reqaction & WSb.ApiKey;
+		
+		HASH = LowerCase(MD5String(togashstr));
+		page = page & "&hash=" & HASH;
+		SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateGetUsersReply",20);
+	end;
+		
+return;
+end; 
+
+
+//добавление участников к проекту
+
+global updating procedure WorkSectionUpdateMembersReply(Area a_reply,Area a_replyheader,boolean timeout)
+begin
+	
+	writeareatofile(a_reply,"WorkSectionUpdateMembersReply.txt",0);
+return;
+end;
+
+global updating procedure WorkSectionUpdateMembers(record PRVc PRr, record PRVc PR2r)
+begin
+	record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request;
+	string 255 newmembers,tstr;
+	integer pos,i;
+	array string 100 members;
+	
+	logtext(0,"WorkSectionUpdateMembers");
+	
+	blockload(WSb);
+	
+	if(nonblank(PRr.Members) and PRr.Members!=PR2r.Members)then begin
+		if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
+			if(nonblank(PRr.WorksectionID_Pr))then begin//только для существующего проекта
+				pos = 0;
+				ExtractObjWithSeparator(",",PRr.Members,true,pos,tstr);
+				while(nonblank(tstr))begin
+					if(nonblank(tstr))then begin
+						if(!setinset(tstr,PR2r.Members))then begin
+							members[members.length] = tstr;
+						end;
+					end;
+					ExtractObjWithSeparator(",",PRr.Members,true,pos,tstr);
+				end;
+				
+				if(members.length>0)then begin
+					for(i=0;i<members.length;i=i+1)begin
+						reqaction = "add_project_members";
+						reqpage = PRr.WSPage_Pr;
+						page = "/api/admin/v2/?action=" & reqaction;
+						if(nonblank(reqpage))then begin
+							page = page & "&page=" & reqpage;
+						end;
+	
+						togashstr = reqpage & reqaction & WSb.ApiKey;
+	
+						HASH = LowerCase(MD5String(togashstr));
+						page = page & "&hash=" & HASH;
+						addtexttoarea("members=" & prepareUsersEMails(members[i]),request);
+						logtext(0,"members[i]  " & members[i]);
+						logtext(0,"prepareUsersEMails(members[i] " & prepareUsersEMails(members[i]));
+						SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateMembersReply",20);
+					end;
+				end;
+				
+			end;
+		end;
+	end;
+	
+return;
+end;
+
+
+//Полученіе таймшітов
+
+global updating procedure WorkSectionGetCostsMnReply(Area a_reply,Area a_replyheader,boolean timeout)
+begin
+	json jreply;
+		string 100 page,id,prcode,prpage;
+		record PRVc PRr;
+		record WorksectionBlock WSb;
+		string 255 getaparams,reqpage,reqaction,togashstr,HASH,user,project,tstr,inwarn;
+		string 50 date_added;
+		area request;
+		integer times,i,pos,rwcnt,irow,k;
+		record WorksectionUserVc WUr;
+		record Uservc USr;
+		vector string 20 vUsers;
+		record TSVc TSr;
+		row TSVc TSrw;
+		vector longint TSByUser;
+		boolean TrHs,foundf;
+		date tmpdat;
+		
+		while(loopmain(USr,1,true))begin
+			if(nonblank(USr.emailAddr))then begin
+				vUsers[USr.emailAddr] = USr.Code;
+			end;
+		end;
+		
+		blockload(WSb);	
+	
+		if(getarealength(a_reply)>100)then begin
+			jreply = ParseJsonArea(a_reply);
+			times = JSONCountChildren(jreply,"data");
+			for(i=0;i<times;i=i+1)begin
+				user = JSONGet(jreply,"data/[" & i & "]/user_from/email");
+				if(nonblank(user))then begin
+					logtext(0,"TS from user " & vUsers[user]);
+					project = JSONGet(jreply,"data/[" & i & "]/task/project/name");
+					pos = 0;
+					ExtractObjWithSeparator(" ",project,true,pos,tstr);
+					PRr.Code = tstr;
+					project = tstr;
+					if(readfirstmain(PRr,1,true))then begin
+						logtext(0,"Name " & PRr.Name);
+						logtext(0,"Text " & PRr.Desc0);
+					end;
+					if(TSByUser[vUsers[user]]<=0)then begin
+						TrHs = true;
+						foundf = false;
+						while(loopkey("ActSerNr",TSr,1,TrHs))begin
+							if(TSr.UserCode==vUsers[user])then begin
+								TSByUser[vUsers[user]] = TSr.SerNr;
+								TrHs = false;
+								foundf = true;
+							end;
+						end;
+						resetloop(TSr);
+					
+						if(foundf==false)then begin
+							recordnew(TSr);
+							USr.Code = vUsers[user];
+							readfirstmain(USr,1,true)
+							TSr.UserCode = USr.Code;
+							TSr.Comment = USr.Name;
+							TSr.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");
+							TSByUser[vUsers[user]] = TSr.SerNr;
+							recordinsert(TSr,true);
+						end;
+					end;
+					
+					TSr.SerNr = TSByUser[vUsers[user]];
+					if(readfirstmain(TSr,1,true))then begin
+						clearrow(TSr,TSrw,1);
+						k = matrowcnt(TSr);
+						date_added = JSONGet(jreply,"data/[" & i & "]/date");
+						tmpdat.year = stringtoint(left(date_added,4));
+						tmpdat.day = stringtoint(right(date_added,2));
+						tmpdat.month = stringtoint(mid(date_added,5,2));
+						TSrw.date = tmpdat;
+						TSrw.EMCode = vUsers[user];
+						matrowput(TSr,k,TSrw);
+						TSVc_PasteEMCode(TSr,k);
+						matrowget(TSr,k,TSrw);
+						TSrw.PRCode = PRr.Code;
+						matrowput(TSr,k,TSrw);
+						TSVc_PastePRCode(TSr,k);
+						matrowget(TSr,k,TSrw);
+						TSrw.ArtCode = "GENERAL";
+						matrowput(TSr,k,TSrw);
+						TSVc_PasteArtCode(TSr,k,inwarn);
+						matrowget(TSr,k,TSrw);
+						TSrw.Qty = stringtoval(JSONGet(jreply,"data/[" & i & "]/time"),m4val);
+						TSrw.Spec = JSONGet(jreply,"data/[" & i & "]/comment");
+						matrowput(TSr,k,TSrw);
+						TSSumUp(TSr);
+						recordstore(TSr,true);
+					end;
+					
+				end;
+			end;
+		end;		
+	
+	writeareatofile(a_reply,"WorkSectionGetCostsMnReply.txt",0);
+return;
+end;
+
+
+global procedure WorkSectionGetCostsMn(record RcVc RepSpec)
+begin
+	record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request;
+	string 255 newmembers,tstr;
+	integer pos,i;
+	array string 100 members;
+	
+	logtext(0,"WorkSectionGetCostsMn");
+	
+	blockload(WSb);
+	
+	if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
+		
+		reqaction = "get_costs";
+		reqpage = "";
+		page = "/api/admin/v2/?action=" & reqaction;
+		if(nonblank(reqpage))then begin
+			page = page & "&page=" & reqpage;
+		end;
+		togashstr = reqpage & reqaction & WSb.ApiKey;
+
+		HASH = LowerCase(MD5String(togashstr));
+		page = page & "&hash=" & HASH;
+		addtexttoarea("datestart=" & datetostring(RepSpec.sStartDate,"YYYY-MM-DD"),request);
+		addtexttoarea("&dateend=" & datetostring(RepSpec.sEndDate,"YYYY-MM-DD"),request);
+		SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionGetCostsMnReply",20);
+			
+	end;
+	
+return;
+end;

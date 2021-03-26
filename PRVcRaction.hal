@@ -15,6 +15,9 @@ external function Integer CountObjects(string);
 external procedure ExtractElemFromSet(string,integer,var string);
 external procedure FindClTypeforPRClass(string,var string);
 external procedure FindOTforPRClass(string,var string);
+external updating procedure WorkSectionUpdateGetUsersRequest(string);
+external updating procedure WorkSectionUpdateRequest(record PRVc);
+external updating procedure WorkSectionUpdateMembers(record PRVc,record PRVc);
 
 global
 function LongInt PRVcRecordInIndex(record PRVc PRr,string indexname)
@@ -281,7 +284,9 @@ updating function LongInt PRVcRecordSaveAfter(var record PRVc PRr,record PRVc PR
 BEGIN
   LongInt res;
   record SRBlock SRRec;
-      
+  
+  queued.WorkSectionUpdateRequest(PRr);
+  
   BlockLoad(SRRec);
   SRRec.LastPRCode = PRr.Code;
   BlockStore(SRRec);
@@ -331,11 +336,16 @@ begin
   return;
 end;
 
+
 global
 updating function LongInt PRVcRecordUpdateAfter(var record PRVc PRr,record PRVc PR2r,LongInt stat,LongInt long4)
 begin
   LongInt res;
-
+	
+	queued.WorkSectionUpdateRequest(PRr);
+	queued.WorkSectionUpdateMembers(PRr,PR2r);
+	//WorkSectionUpdateGetUsersRequest;
+	
   if (PRr.Members!=PR2r.Members) then begin
     PRUpdateTBBU(PRr);
   end;
@@ -345,6 +355,8 @@ begin
   PRVcRecordUpdateAfter = res; 
   return;
 end;
+
+
 
 procedure PRSumup(record PRVc PRp)
 BEGIN
