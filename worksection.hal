@@ -360,7 +360,7 @@ begin
 					end;
 					SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProject",20);
 			end else begin //- обновление проекта
-				reqaction = "update_project";
+				/*reqaction = "update_project";
 				reqpage = PRr.WSPage_Pr;
 				page = "/api/admin/v2/?action=" & reqaction;
 				if(nonblank(reqpage))then begin
@@ -385,7 +385,7 @@ begin
 				if(nonblankdate(PRr.EndDate))then begin
 					addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
 				end;
-				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProjectUpdate",20);
+				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProjectUpdate",20);*/
 			end;
 		end;
 	end;
@@ -546,6 +546,13 @@ begin
 		vector longint TSByUser;
 		boolean TrHs,foundf;
 		date tmpdat;
+		vector string 40 vPRCodes;
+		
+		while(loopmain(PRr,1,true))begin
+			if(nonblank(PRr.WorksectionID_Pr))then begin
+				vPRCodes[PRr.WorksectionID_Pr] = PRr.Code;
+			end;
+		end;
 		
 		while(loopmain(USr,1,true))begin
 			if(nonblank(USr.emailAddr))then begin
@@ -567,6 +574,9 @@ begin
 					ExtractObjWithSeparator(" ",project,true,pos,tstr);
 					PRr.Code = tstr;
 					project = tstr;
+					
+					PRr.Code = vPRCodes[JSONGet(jreply,"data/[" & i & "]/task/project/id")];
+					
 					if(readfirstmain(PRr,1,true))then begin
 						logtext(0,"Name " & PRr.Name);
 						logtext(0,"Text " & PRr.Desc0);
