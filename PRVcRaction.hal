@@ -16,7 +16,7 @@ external procedure ExtractElemFromSet(string,integer,var string);
 external procedure FindClTypeforPRClass(string,var string);
 external procedure FindOTforPRClass(string,var string);
 external updating procedure WorkSectionUpdateGetUsersRequest(string);
-external updating procedure WorkSectionUpdateRequest(record PRVc);
+external updating procedure WorkSectionUpdateRequest(var record PRVc);
 external updating procedure WorkSectionUpdateMembers(record PRVc,record PRVc);
 
 global
@@ -200,6 +200,14 @@ BEGIN
   PRr.Terminated = 0;
   PRr.FinishedDate = bd;
   PRr.StartDate = CurrentDate;
+  
+  PRr.WorksectionID_Pr = "";// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 05 04 2021 y. at 4:11:16 PM
+  PRr.WSPage_Pr = "";// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 05 04 2021 y. at 4:11:18 PM
+  PRr.WorksectionID_Tsk = "";// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 05 04 2021 y. at 4:11:19 PM
+  PRr.WSPage_Tsk = "";// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 05 04 2021 y. at 4:11:21 PM
+  PRr.WSSended = 0;// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 05 04 2021 y. at 4:11:22 PM
+  
+  
   PRVcRecordDuplicate = res; 
   RETURN;
 END;
@@ -272,7 +280,7 @@ global
 function LongInt PRVcRecordSave(var record PRVc PRr,record PRVc PR2r,LongInt stat,LongInt long4)
 BEGIN
   LongInt res;
-
+	  
   SetAlreadyPaid(PRr,true,PR2r,false);
   SetPRFlags(PRr);
   PRVcRecordSave = res; 
@@ -285,12 +293,14 @@ BEGIN
   LongInt res;
   record SRBlock SRRec;
   
-  queued.WorkSectionUpdateRequest(PRr);
+  
   
   BlockLoad(SRRec);
   SRRec.LastPRCode = PRr.Code;
   BlockStore(SRRec);
   AutomatedSalesOrderly("HasModExp+OK_PRVc");
+  
+  queued.WorkSectionUpdateRequest(PRr);
   PRVcRecordSaveAfter = res; 
   RETURN;
 END;
@@ -299,9 +309,13 @@ global
 function LongInt PRVcRecordUpdate(var record PRVc PRr,record PRVc PR2r,LongInt stat,LongInt long4)
 BEGIN
   LongInt res;
-
+  date bd;
+  time bt;
+	
   SetAlreadyPaid(PRr,true,PR2r,true);
   SetPRFlags(PRr);
+  
+  queued.WorkSectionUpdateRequest(PRr);// В конце процедуры!
   PRVcRecordUpdate = res; 
   RETURN;
 END;
@@ -342,7 +356,6 @@ updating function LongInt PRVcRecordUpdateAfter(var record PRVc PRr,record PRVc 
 begin
   LongInt res;
 	
-	queued.WorkSectionUpdateRequest(PRr);
 	queued.WorkSectionUpdateMembers(PRr,PR2r);
 	//WorkSectionUpdateGetUsersRequest;
 	

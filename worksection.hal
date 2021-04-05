@@ -267,7 +267,7 @@ return;
 end; 
 
 //создание / обновление проекта - асинхроннаЯ процедура
-global updating procedure WorkSectionUpdateRequest(record PRVc PRr)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+global updating procedure WorkSectionUpdateRequest(var record PRVc PRr)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
 begin
 	record WorksectionBlock WSb;
 	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
@@ -331,9 +331,11 @@ begin
 					addtexttoarea("title=" & CUr.WSFolder,request);// ‘оздание папки проекта
 					SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateFolderReply",20);
 					setareazerosize(request);
+					millisleep(1000);
 				end;
 			end;
-			if(blank(PRr.WorksectionID_Pr))then begin//создание проекта
+			if(blank(PRr.WorksectionID_Pr) and PRr.WSSended==0)then begin//создание проекта
+					PRr.WSSended = PRr.WSSended + 1;
 					reqaction = "post_project";
 					reqpage = "";
 					page = "/api/admin/v2/?action=" & reqaction;
@@ -352,7 +354,6 @@ begin
 					end;
 					if(nonblank(CUr.WSFolder))then begin
 						addtexttoarea("&group=" & URLEncode(CUr.WSFolder),request);
-						addtexttoarea("&folder=" & URLEncode(CUr.WSFolder),request);
 					end;
 					
 					addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
@@ -376,7 +377,6 @@ begin
 				page = page & "&hash=" & HASH;
 				addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);
 				if(nonblank(CUr.WSFolder))then begin
-					addtexttoarea("&group=" & URLEncode(CUr.WSFolder),request);
 					addtexttoarea("&folder=" & URLEncode(CUr.WSFolder),request);
 				end;
 				if(nonblank(PRr.Leader))then begin
