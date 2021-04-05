@@ -236,7 +236,7 @@ begin
 							end;
 							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
 						end else begin
-							reqaction = "update_task";
+							/*reqaction = "update_task";
 							reqpage = PRr.WSPage_Tsk;
 							page = "/api/admin/v2/?action=" & reqaction;
 							if(nonblank(reqpage))then begin
@@ -255,7 +255,7 @@ begin
 								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
 							end;
 							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
-
+							*/
 						end;
 					end;
 				end;
