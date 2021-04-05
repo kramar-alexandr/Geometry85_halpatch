@@ -16,7 +16,7 @@ external procedure ExtractElemFromSet(string,integer,var string);
 external procedure FindClTypeforPRClass(string,var string);
 external procedure FindOTforPRClass(string,var string);
 external updating procedure WorkSectionUpdateGetUsersRequest(string);
-external updating procedure WorkSectionUpdateRequest(var record PRVc);
+external procedure WorkSectionUpdateRequest(var record PRVc);
 external updating procedure WorkSectionUpdateMembers(record PRVc,record PRVc);
 
 global
@@ -283,6 +283,8 @@ BEGIN
 	  
   SetAlreadyPaid(PRr,true,PR2r,false);
   SetPRFlags(PRr);
+  
+  WorkSectionUpdateRequest(PRr);
   PRVcRecordSave = res; 
   RETURN;
 END;
@@ -300,7 +302,6 @@ BEGIN
   BlockStore(SRRec);
   AutomatedSalesOrderly("HasModExp+OK_PRVc");
   
-  queued.WorkSectionUpdateRequest(PRr);
   PRVcRecordSaveAfter = res; 
   RETURN;
 END;
@@ -315,7 +316,7 @@ BEGIN
   SetAlreadyPaid(PRr,true,PR2r,true);
   SetPRFlags(PRr);
   
-  queued.WorkSectionUpdateRequest(PRr);// В конце процедуры!
+  WorkSectionUpdateRequest(PRr);// В конце процедуры!
   PRVcRecordUpdate = res; 
   RETURN;
 END;

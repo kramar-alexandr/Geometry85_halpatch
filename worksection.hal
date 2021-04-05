@@ -162,6 +162,12 @@ begin
 							if(nonblankdate(PRr.EndDate))then begin
 								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
 							end;
+							if(nonblank(WSb.TagsPage))then begin
+								if(nonblank(PRr.MotherCode))then begin
+									addtexttoarea("&tags=" & URLEncode(PRr.MotherCode),request);
+								end;
+							end;
+							writeareatofile(request,"WorkSectionUpdateRequestTask.txt",0);
 							
 							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
 					end;
@@ -178,6 +184,13 @@ global updating procedure WorkSectionCreateFolderReply(Area a_reply,Area a_reply
 begin
 	
 	writeareatofile(a_reply,"WorkSectionCreateFolderReply.txt",0);
+return;
+end;
+
+global updating procedure WorkSectionCreateTagsReply(Area a_reply,Area a_replyheader,boolean timeout)
+begin
+	
+	writeareatofile(a_reply,"WorkSectionCreateTagsReply.txt",0);
 return;
 end;
 
@@ -228,12 +241,19 @@ begin
 							addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);
 							addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);
 							addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
+								
 							if(nonblankdate(PRr.StartDate))then begin
 								addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
 							end;
 							if(nonblankdate(PRr.EndDate))then begin
 								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
 							end;
+							if(nonblank(WSb.TagsPage))then begin
+								if(nonblank(PRr.MotherCode))then begin
+									addtexttoarea("&tags=" & URLEncode(PRr.MotherCode),request);
+								end;
+							end;
+							writeareatofile(request,"WorkSectionUpdateRequestTask.txt",0);
 							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
 						end else begin
 							/*reqaction = "update_task";
@@ -267,7 +287,7 @@ return;
 end; 
 
 //создание / обновление проекта - асинхронная процедура
-global updating procedure WorkSectionUpdateRequest(var record PRVc PRr)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+global procedure WorkSectionUpdateRequest(var record PRVc PRr)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
 begin
 	record WorksectionBlock WSb;
 	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
@@ -335,6 +355,25 @@ begin
 				end;
 			end;
 			if(blank(PRr.WorksectionID_Pr) and PRr.WSSended==0)then begin//создание проекта
+					if(nonblank(WSb.TagsPage))then begin
+						if(nonblank(PRr.MotherCode))then begin
+							reqaction = "add_tags";
+							reqpage = "";
+							page = "/api/admin/v2/?action=" & reqaction;
+							if(nonblank(reqpage))then begin
+								page = page & "&page=" & reqpage;
+							end;
+							togashstr = reqpage & reqaction & WSb.ApiKey;
+							HASH = LowerCase(MD5String(togashstr));
+							page = page & "&hash=" & HASH;
+							addtexttoarea("group=" & WSb.TagsPage,request);// Группа меток
+							addtexttoarea("&title=" & PRr.MotherCode,request);// Группа меток
+							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateTagsReply",20);
+							setareazerosize(request);
+							millisleep(1000);
+						end;
+					end;
+					
 					PRr.WSSended = PRr.WSSended + 1;
 					reqaction = "post_project";
 					reqpage = "";
@@ -355,7 +394,6 @@ begin
 					if(nonblank(CUr.WSFolder))then begin
 						addtexttoarea("&group=" & URLEncode(CUr.WSFolder),request);
 					end;
-					
 					addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
 					if(nonblankdate(PRr.StartDate))then begin
 						addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
