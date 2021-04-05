@@ -194,6 +194,13 @@ begin
 return;
 end;
 
+global updating procedure WorkSectionCreatePRTagsReply(Area a_reply,Area a_replyheader,boolean timeout)
+begin
+	
+	writeareatofile(a_reply,"WorkSectionCreatePRTagsReply.txt",0);
+return;
+end;
+
 global updating procedure WorkSectionUpdateReplyProjectUpdate(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
 begin
 		json jreply;
@@ -357,7 +364,8 @@ begin
 			if(blank(PRr.WorksectionID_Pr) and PRr.WSSended==0)then begin//создание проекта
 					if(nonblank(WSb.TagsPage))then begin
 						if(nonblank(PRr.MotherCode))then begin
-							reqaction = "add_tags";
+							setareazerosize(request);
+							reqaction = "add_tags";//Создание тегов задач
 							reqpage = "";
 							page = "/api/admin/v2/?action=" & reqaction;
 							if(nonblank(reqpage))then begin
@@ -371,9 +379,27 @@ begin
 							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateTagsReply",20);
 							setareazerosize(request);
 							millisleep(1000);
+							
+							/*setareazerosize(request);
+							reqaction = "add_project_tags";//Создание тегов проектов
+							reqpage = "";
+							page = "/api/admin/v2/?action=" & reqaction;
+							if(nonblank(reqpage))then begin
+								page = page & "&page=" & reqpage;
+							end;
+							togashstr = reqpage & reqaction & WSb.ApiKey;
+							HASH = LowerCase(MD5String(togashstr));
+							page = page & "&hash=" & HASH;
+							addtexttoarea("group=" & WSb.TagsPage,request);// Группа меток
+							addtexttoarea("&title=" & PRr.MotherCode,request);// Группа меток
+							writeareatofile(request,"WorkSectionCreatePRTags.txt",0);
+							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreatePRTagsReply",20);
+							setareazerosize(request);
+							millisleep(1000);*/
 						end;
 					end;
 					
+					setareazerosize(request);
 					PRr.WSSended = PRr.WSSended + 1;
 					reqaction = "post_project";
 					reqpage = "";
@@ -401,6 +427,11 @@ begin
 					if(nonblankdate(PRr.EndDate))then begin
 						addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
 					end;
+					/*if(nonblank(WSb.TagsPage))then begin
+						if(nonblank(PRr.MotherCode))then begin
+							addtexttoarea("&tags=" & URLEncode(PRr.MotherCode),request);
+						end;
+					end;*/
 					SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProject",20);
 			end else begin //- обновление проекта
 				/*reqaction = "update_project";
