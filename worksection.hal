@@ -309,6 +309,10 @@ begin
 	if(PRr.PRStage!="1")then begin
 		needtosync = false;
 	end;
+	if(PRr.Type!=1)then begin
+		needtosync = false;
+	end;
+	
 	
 	if(nonblank(PRr.PrSalesMan) and nonblank(PRr.Leader) and level==4 and needtosync)then begin
 		if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
