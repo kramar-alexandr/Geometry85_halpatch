@@ -131,10 +131,6 @@ begin
 				PRr.WSPage_Pr = prpage;
 				PRr.WorksectionID_Pr = id;
 				recordstore(PRr,true);
-				
-				logtext(0,"prpage " & prpage);
-				logtext(0,"prcode " & prcode);
-				
 				if(nonblank(prpage))then begin
 					blockload(WSb);		
 	
@@ -227,8 +223,6 @@ begin
 			PRr.Code = tstr;
 			prcode = tstr;
 			if(readfirstmain(PRr,1,true))then begin
-
-				
 				if(nonblank(prpage))then begin
 					blockload(WSb);		
 	
@@ -432,7 +426,10 @@ begin
 							addtexttoarea("&tags=" & URLEncode(PRr.MotherCode),request);
 						end;
 					end;*/
+					writeareatofile(request,"WorkSectionUpdateRequest.txt",0);
 					SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProject",20);
+					removetask("CheckSyncForProgect_" & PRr.Code);
+					NewTimedTask("CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect",PRr.Code,CurrentDate,addminutes(currenttime,10),"","");
 			end else begin //- обновление проекта
 				/*reqaction = "update_project";
 				reqpage = PRr.WSPage_Pr;
@@ -744,6 +741,30 @@ begin
 		addtexttoarea("&dateend=" & datetostring(RepSpec.sEndDate,"YYYY-MM-DD"),request);
 		SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionGetCostsMnReply",20);
 			
+	end;
+	
+return;
+end;
+
+global updating procedure CheckSyncForProgect(string param)
+begin
+	record PRVc PRr;
+	
+	if(nonblank(param))then begin
+		PRr.Code = param;
+		if(readfirstmain(PRr,1,true))then begin
+			if(PRr.WSSended==1)then begin
+				if(blank(PRr.WorksectionID_Pr))then begin
+					PRr.WSSended = 0;
+					WorkSectionUpdateRequest(PRr);
+					recordstore(PRr,true);
+				end else begin
+					if(blank(PRr.WorksectionID_Tsk))then begin
+						
+					end;
+				end;
+			end;
+		end;
 	end;
 	
 return;
