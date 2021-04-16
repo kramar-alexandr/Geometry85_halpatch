@@ -385,7 +385,7 @@ begin
 	end;
 	
 	
-	if(nonblank(PRr.PrSalesMan) and nonblank(PRr.Leader))then begin
+	if(true)then begin
 		if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
 			if(needtosync)then begin
 				CUr.Code = PRr.CustCode;
@@ -440,7 +440,11 @@ begin
 					HASH = LowerCase(MD5String(togashstr));
 					page = page & "&hash=" & HASH;
 					addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);//Название и код проекта в worksection
-					addtexttoarea("&email_user_from=" & prepareUsersEMails(currentuser),request);//Авптор проекта
+					if(nonblank(prepareUsersEMails(currentuser)))then begin
+						addtexttoarea("&email_user_from=" & prepareUsersEMails(currentuser),request);//Авптор проекта
+					end else begin
+						addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);//Авптор проекта
+					end;
 					//addtexttoarea("&email_manager=" & prepareUsersEMails(Currentuser),request);//менеджер
 					//addtexttoarea("&email_user_to="  & prepareUsersEMails(Currentuser),request);//ответственный
 					//if(nonblank(PRr.Members))then begin
