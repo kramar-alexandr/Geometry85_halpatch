@@ -16,7 +16,7 @@ external procedure ExtractElemFromSet(string,integer,var string);
 external procedure FindClTypeforPRClass(string,var string);
 external procedure FindOTforPRClass(string,var string);
 external updating procedure WorkSectionUpdateGetUsersRequest(string);
-external procedure WorkSectionUpdateRequest(var record PRVc);
+external procedure WorkSectionUpdateRequest(var record PRVc,record PRVc,boolean);
 external updating procedure WorkSectionUpdateMembers(record PRVc,record PRVc);
 
 global
@@ -284,7 +284,7 @@ BEGIN
   SetAlreadyPaid(PRr,true,PR2r,false);
   SetPRFlags(PRr);
   
-  WorkSectionUpdateRequest(PRr);
+  WorkSectionUpdateRequest(PRr,PRr,false);
   PRVcRecordSave = res; 
   RETURN;
 END;
@@ -316,7 +316,7 @@ BEGIN
   SetAlreadyPaid(PRr,true,PR2r,true);
   SetPRFlags(PRr);
   
-  WorkSectionUpdateRequest(PRr);// В конце процедуры!
+  WorkSectionUpdateRequest(PRr,PR2r,true);// В конце процедуры!
   PRVcRecordUpdate = res; 
   RETURN;
 END;
