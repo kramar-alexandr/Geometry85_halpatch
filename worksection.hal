@@ -440,13 +440,13 @@ begin
 					HASH = LowerCase(MD5String(togashstr));
 					page = page & "&hash=" & HASH;
 					addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);//Название и код проекта в worksection
-					if(nonblank(prepareUsersEMails(currentuser)))then begin
-						addtexttoarea("&email_user_from=" & prepareUsersEMails(currentuser),request);//Авптор проекта
+					if(nonblank(prepareUsersEMails(PRr.PrSalesMan)))then begin
+            addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);//Авптор проекта
 					end else begin
-						addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);//Авптор проекта
+					  addtexttoarea("&email_user_from=" & prepareUsersEMails(currentuser),request);//Авптор проекта
 					end;
-					//addtexttoarea("&email_manager=" & prepareUsersEMails(Currentuser),request);//менеджер
-					//addtexttoarea("&email_user_to="  & prepareUsersEMails(Currentuser),request);//ответственный
+					addtexttoarea("&email_manager=" & prepareUsersEMails(PRr.PrSalesMan),request);//менеджер
+					addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.PrSalesMan),request);//ответственный
 					//if(nonblank(PRr.Members))then begin
 					//	addtexttoarea("&members=" & prepareUsersEMails(Currentuser),request);
 					//end;
