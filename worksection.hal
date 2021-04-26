@@ -856,18 +856,16 @@ begin
 			times = JSONCountChildren(jreply,"data");
 			for(i=0;i<times;i=i+1)begin
 				user = JSONGet(jreply,"data/[" & i & "]/user_from/email");
-				if(nonblank(user))then begin
+				if(nonblank(user) and user=="maiia.robeiko@vmlyr.com")then begin
 					logtext(0,"TS from user " & vUsers[user]);
 					project = JSONGet(jreply,"data/[" & i & "]/task/project/name");
 					project = ReplaceCharByString(project,"\\","");
 					pos = 0;
 					ExtractObjWithSeparator(" ",project,true,pos,tstr);
 					
-					
-					
-					
 					PRr.Code = tstr;
 					project = tstr;
+					
 					
 					PRr.Code = vPRCodes[JSONGet(jreply,"data/[" & i & "]/task/project/id")];
 					if(tstr=="P/0222")then begin
@@ -888,6 +886,7 @@ begin
 					    PRr.Code = "OOF-SICK-DAY";
 					  end;
 					end;
+					logtext(0,"project - " & project & " - " & PRr.Code);
 					
 					
 					if(readfirstmain(PRr,1,true))then begin
