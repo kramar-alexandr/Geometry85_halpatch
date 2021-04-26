@@ -85,6 +85,8 @@ begin
 			prpage = JSONGet(jreply,"data/page");
 			prpage = ReplaceCharByString(prpage,"\\","");
 			prcode = JSONGet(jreply,"data/name");
+			prcode = ReplaceCharByString(prcode,"\\","");
+			
 			pos = 0;
 			ExtractObjWithSeparator(" ",prcode,true,pos,tstr);
 			PRr.Code = tstr;
@@ -122,8 +124,9 @@ begin
 			id = JSONGet(jreply,"data/id");
 			prpage = JSONGet(jreply,"data/page");
 			prpage = ReplaceCharByString(prpage,"\\","");
-			
 			prcode = JSONGet(jreply,"data/name");
+			prcode = ReplaceCharByString(prcode,"\\","");
+			
 			pos = 0;
 			ExtractObjWithSeparator(" ",prcode,true,pos,tstr);
 			PRr.Code = tstr;
@@ -254,8 +257,9 @@ begin
 			id = JSONGet(jreply,"data/id");
 			prpage = JSONGet(jreply,"data/page");
 			prpage = ReplaceCharByString(prpage,"\\","");
-			
 			prcode = JSONGet(jreply,"data/name");
+			prcode = ReplaceCharByString(prcode,"\\","");
+			
 			pos = 0;
 			ExtractObjWithSeparator(" ",prcode,true,pos,tstr);
 			PRr.Code = tstr;
@@ -824,6 +828,7 @@ begin
 		record WorksectionUserVc WUr;
 		record Uservc USr;
 		vector string 20 vUsers;
+		vector string 20 vUsersSalesGroup;
 		record TSVc TSr;
 		row TSVc TSrw;
 		vector longint TSByUser;
@@ -840,11 +845,12 @@ begin
 		while(loopmain(USr,1,true))begin
 			if(nonblank(USr.emailAddr))then begin
 				vUsers[USr.emailAddr] = USr.Code;
+				vUsersSalesGroup[USr.emailAddr] = USr.SalesGroup;
 			end;
 		end;
 		
 		blockload(WSb);	
-	
+	  writeareatofile(a_reply,"WorkSectionGetCostsMnReply_Reply.txt",0);
 		if(getarealength(a_reply)>100)then begin
 			jreply = ParseJsonArea(a_reply);
 			times = JSONCountChildren(jreply,"data");
@@ -853,17 +859,43 @@ begin
 				if(nonblank(user))then begin
 					logtext(0,"TS from user " & vUsers[user]);
 					project = JSONGet(jreply,"data/[" & i & "]/task/project/name");
+					project = ReplaceCharByString(project,"\\","");
 					pos = 0;
 					ExtractObjWithSeparator(" ",project,true,pos,tstr);
+					
+					
+					
+					
 					PRr.Code = tstr;
 					project = tstr;
 					
 					PRr.Code = vPRCodes[JSONGet(jreply,"data/[" & i & "]/task/project/id")];
+					if(tstr=="P/0222")then begin
+					  PRr.Code = "OOF-VACATION";
+					  if(vUsersSalesGroup[user]=="BAT")then begin
+					    PRr.Code = "OOF-VACATION-DAY";
+					  end;
+					end;
+					if(tstr=="P/0407_VMLYR_Public_holidays")then begin
+					  PRr.Code = "OOF-HOLDAYS";
+					  if(vUsersSalesGroup[user]=="BAT")then begin
+					    PRr.Code = "OOF-HOLIDAYS";
+					  end;
+					end;
+					if(tstr=="P/0408_VMLYR_Sick_days")then begin
+					  PRr.Code = "OOF-SICK";
+					  if(vUsersSalesGroup[user]=="BAT")then begin
+					    PRr.Code = "OOF-SICK-DAY";
+					  end;
+					end;
+					
 					
 					if(readfirstmain(PRr,1,true))then begin
 						logtext(0,"Name " & PRr.Name);
 						logtext(0,"Text " & PRr.Desc0);
-					end;
+					end else begin
+					  
+					end;  
 					if(TSByUser[vUsers[user]]<=0)then begin
 						TrHs = true;
 						foundf = false;
@@ -952,6 +984,8 @@ begin
 		page = page & "&hash=" & HASH;
 		addtexttoarea("datestart=" & datetostring(RepSpec.sStartDate,"YYYY-MM-DD"),request);
 		addtexttoarea("&dateend=" & datetostring(RepSpec.sEndDate,"YYYY-MM-DD"),request);
+		writeareatofile(request,"WorkSectionGetCostsMn_request.txt",0);
+		logtext(0,page);
 		SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionGetCostsMnReply",20);
 			
 	end;
