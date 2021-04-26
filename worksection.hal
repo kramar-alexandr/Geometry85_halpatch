@@ -942,6 +942,9 @@ begin
 						matrowget(TSr,k,TSrw);
 						TSrw.Qty = stringtoval(JSONGet(jreply,"data/[" & i & "]/time"),m4val);
 						TSrw.Spec = JSONGet(jreply,"data/[" & i & "]/comment");
+						if(blank(TSrw.Spec))then begin
+						  TSrw.Spec = project;
+						end;
 						matrowput(TSr,k,TSrw);
 						TSSumUp(TSr);
 						recordstore(TSr,true);
