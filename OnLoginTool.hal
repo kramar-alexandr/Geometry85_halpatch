@@ -173,7 +173,7 @@ begin
   string 20 curuser;
   string 255 tstr,supervisor;
   Boolean TrHr; // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:45:17
-  Integer rwcnt; // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:45:18
+  Integer rwcnt,i; // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:45:18
   row TSVc TSrw; // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:45:18
   Integer pos;
 
@@ -214,9 +214,13 @@ SetLangMode(LangUkrainian,"UKR",0); // 62  // Edit ************************** BP
                 goto LCheckForceTimeEntry;
               end;
               td = TSr.RegDate;
-							rwcnt=MatRowCnt(TSr);// 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:45:29
-							MatRowGet(TSr,rwcnt-1,TSrw);// 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:45:30
-							td = TSrw.date;// 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:45:30
+							rwcnt = MatRowCnt(TSr);// 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:45:29
+							for(i=0;i<rwcnt;i=i+1)begin
+							  MatRowGet(TSr,i,TSrw);
+							  if(td<TSrw.date)then begin
+							    td = TSrw.date;
+							  end;
+							end;
             end else begin
 							goto LCheckForceTimeEntry;// 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:45:31
             end;

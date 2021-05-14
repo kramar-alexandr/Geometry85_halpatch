@@ -947,6 +947,7 @@ begin
 						end;
 						matrowput(TSr,k,TSrw);
 						TSSumUp(TSr);
+						SortRows(TSr,"date",true);
 						recordstore(TSr,true);
 					end;
 					
