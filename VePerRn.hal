@@ -49,6 +49,8 @@ external procedure HTCustClassType(string,var string);
 external function Boolean SetInSet2(string,string);
 external procedure ClassTypef(string,string,var Boolean);
 
+SetLangMode(LangUkrainian,"UKR",0);
+
 procedure VEPer_PrintTotals(record RcVc RepSpec,Boolean custout,Boolean printf,
                             val balp,val totgain,val totloss,val SumDebet,val SumCredit)
 BEGIN
@@ -217,6 +219,7 @@ LVendHeadtoFile:;
       OutString(0,0,USetStr(3184),false);
       OutString(65,0,USetStr(2435),false);
       OutString(115,0,USetStr(2436),false);
+			OutString(240,0,"Посилання",false);
       OutStringAdjust(3,0,USetStr(4190),true,M4Val);
       OutStringAdjust(4,0,USetStr(4191),true,M4Val);
       if (HasMultiCurrency) then begin
@@ -234,6 +237,7 @@ LVendHeadtoFile:;
       OutString(0,0,USetStr(3184),false);
       OutString(65,0,USetStr(2435),false);
       OutString(115,0,USetStr(2436),false);
+			OutString(240,0,"Посилання",false);
       OutStringAdjust(3,0,USetStr(4190),true,M4Val);
       OutStringAdjust(4,0,USetStr(4191),true,M4Val);
       if (HasMultiCurrency) then begin
@@ -320,7 +324,6 @@ begin
           custout = true;
         end;
       end;
-
 //Trace("v=" & v," cuscurval=" & cuscurval);                   
 //Trace(""," OPrsr.TransType=" & OPrsr.TransType);                   
 

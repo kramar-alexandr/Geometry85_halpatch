@@ -292,6 +292,7 @@ begin
     OutString(6,0,"Тип",false);//200
     OutString(7,0,"Док.",false);//200
     OutString(4,0,USetStr(4004),false);//200
+		OutString(315,0,"Посилання",false); //Edit **********************************************Vas-P
     OutString(400,0,USetStr(4005),true);//400
     OutString(440,0,UsetStr(6007),false);//430// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 05 12 2019 y. at 3:50:34 PM
 
@@ -327,6 +328,7 @@ begin
     OutString(55,0,USetStr(4003),false);
     OutString(105,0,USetStr(4007),false);
     OutString(165,0,USetStr(4004),false);
+		OutString(240,0,"Посилання",false); //Edit **********************************************Vas-P 20.05.2021
     OutStringAdjust(5,0,USetStr(2356),true,M4Val);
     OutStringAdjust(6,0,USetStr(2328),true,M4Val);
     OutStringAdjust(7,0,USetStr(2329),true,M4Val);
@@ -359,6 +361,7 @@ SetRepCol(5,90);// Edit ************************** Monday, 24 December 2012 16:3
     OutString(150,0,USetStr(2504),false);
     OutString(250,0,USetStr(3523),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 September 2019 14:05:36
     OutString(350,0,USetStr(3550),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 September 2019 14:05:36
+		OutString(450,0,"Посилання",false);
     EndFormat;
     Gray_Divider(0,1);
   end;
@@ -556,6 +559,7 @@ SetRepCol(5,90);// Edit ************************** Monday, 24 December 2012 16:3
           OutString(6,0,VIr.DocumentType,false);//200// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 1 October 2018 18:46:04
     			OutString(7,0,VIr.DocumentsFlag,false);//200// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 1 October 2018 18:46:05
           OutStringOvst(4,0,VIr.VEName,false,VIr.Invalid);
+					OutString(315,0,Vir.RefStr,false); //Edit **********************************************Vas-P 20.05.2021
           OutValOvstBiDi(400,0,iv,M4Val,true,VIr.Invalid,445);
           OutStringOvst(415,0,VIr.CurncyCode,false,VIr.Invalid);
           OutStringOvst(450,0,VIr.OKPersons,false,VIr.Invalid);
@@ -573,6 +577,7 @@ SetRepCol(5,90);// Edit ************************** Monday, 24 December 2012 16:3
 					OutDateOvst(90,0,VIr.TransDate,false,VIr.Invalid);// Edit ************************** Monday, 24 December 2012 16:27:47
           OutStringOvst(105,0,VIr.InvoiceNr,false,VIr.Invalid);
           OutStringOvst(165,0,VIr.VEName,false,VIr.Invalid);
+					OutString(240,0,Vir.RefStr,false); //Edit **********************************************Vas-P 20.05.2021
           OutValOvstBiDi(5,0,vatval,M4Val,true,VIr.Invalid,5);
           OutValOvstBiDi(6,0,ivnovat,M4Val,true,VIr.Invalid,6);
           OutValOvstBiDi(7,0,iv,M4Val,true,VIr.Invalid,7);
@@ -703,6 +708,7 @@ SetRepCol(5,90);// Edit ************************** Monday, 24 December 2012 16:3
                 OutStringOvst(250,0,VIrw.Item,false,VIr.Invalid);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 September 2019 14:04:21
                 OutStringOvst(300,0,INr.Name,false,VIr.Invalid);// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 05 12 2019 y. at 3:53:38 PM
                 OutStringOvst(350,0,VIrw.PRCode,false,VIr.Invalid);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 September 2019 14:04:22
+								OutString(450,0,Vir.RefStr,false); //Edit **********************************************Vas-P 20.05.2021
                 if (VIr.InvType==kInvoiceTypeCredit or VIr.InvType==kInvoiceTypeCreditSpecialSales) then begin
                   OutValOvstBiDi(400,0,-VIrw.Sum,M4Val,true,VIr.Invalid,440);
                 OutStringOvst(350,0,VIrw.PRCode,false,VIr.Invalid);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 September 2019 14:04:22
