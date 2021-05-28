@@ -341,7 +341,6 @@ BEGIN
       end;
       VIr.SerNr = aInvoiceNr[i];
       readfirstmain(VIr,1,true);
-      logtext(0,VIr.SerNr);
 			OutString(370,0,VIr.RefStr,false);
       if (RepSpec.flags[14]!=0) then begin
         OutVal(390,0,aRVAT[i],M4Val,true);
