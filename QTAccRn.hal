@@ -112,7 +112,7 @@ BEGIN
 		OutString(395,0,"Заплан.відвант.",false);	//Edit **********************************************Vas-P 24.05.2021
 		OutString(430,0,"Відвантаж.",false); //Edit **********************************************Vas-P 24.05.2021
 		OutString(450,0,"Номер Акту",false);	//Edit **********************************************Vas-P 24.05.2021
-		OutString(480,0,"Дата сплаты Акту",false);//Edit **********************************************Vas-P 27.05.2021
+		OutString(480,0,"Дата сплати Акту",false);//Edit **********************************************Vas-P 27.05.2021
     OutStringAdjustBiDi(1,0,USetStr(11009),true,M4Val,520);
   EndFormat;
   Black_Divider(0,1);
@@ -216,7 +216,7 @@ BEGIN
 			 //Edit **********************************************Vas-P 24.05.2021
 			 StartFormat(15);
 			 OutLongInt(0,"DblQuote",QTr.SerNr,false);
-			 OutString(35,0,QTr.CustCode,false);
+			 OutString(35,"DblCUVc",QTr.CustCode,false);
 			 OutString(70,0,QTr.Addr0,false);
 			 OutString(150,0,QTr.SalesMan,false);
 			 OutDate(240,0,QTr.QTDate,true);
@@ -240,7 +240,7 @@ BEGIN
 				// end;
 				if(testfIV)then begin
 					OutDate(430,0,IVr.InvDate,false);
-					OutString(450,0,IVr.SerNr,false);
+					OutString(450,"DblIVVc",IVr.SerNr,false);
 					OutDate(480,0,IVr.PayDate,false);
 				end;
 			 end;

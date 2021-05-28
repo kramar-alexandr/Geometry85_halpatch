@@ -264,7 +264,7 @@ BEGIN
 END;
 
 global
-procedure APSrList(record RcVc RepSpec,record CUVc VEp,record VIVc VIr,val ARSSum,val ARSOnAccBal,val ARSOnAccBalb1,val ARSIntSum,val s0,val s1,val s16,val s31,val s61,val s91,val s121,val s151,
+procedure APSrList(record RcVc RepSpec,record CUVc VEp,val ARSSum,val ARSOnAccBal,val ARSOnAccBalb1,val ARSIntSum,val s0,val s1,val s16,val s31,val s61,val s91,val s121,val s151,
                    Array Integer aRwtype,Array LongInt aInvoiceNr,Array string aRecNr,Array LongInt alatedays,Array LongInt aRemndr,
                    Array Date aInvDate,Array Date aDueDate,Array val aIntVal,Array val aRVal,Array val aRVAT,Array val aSum4,
                    Array string aVEInvNo,Array string aCurncyCode,Integer acnt,
@@ -283,8 +283,8 @@ BEGIN
   record AgedBlock Ab;
   array val avonacc2;
   array val avonacc3;
+  record VIVc VIr;
   
-
   BlockLoad(Ab);
   BeginCurncyTotals(curcnt);
   AddCurncyTotalsToTotalCurncyTotals(aonacccur,aonaccv1,avonacc2,avonacc3,onacccurcnt,acur,av1,av2,av3,curcnt);
@@ -339,6 +339,9 @@ BEGIN
           OutLongInt(340,0,alatedays[i],true);      
         end;
       end;
+      VIr.SerNr = aInvoiceNr[i];
+      readfirstmain(VIr,1,true);
+      logtext(0,VIr.SerNr);
 			OutString(370,0,VIr.RefStr,false);
       if (RepSpec.flags[14]!=0) then begin
         OutVal(390,0,aRVAT[i],M4Val,true);
@@ -380,9 +383,6 @@ BEGIN
       OutString(0,0,VEp.Phone,false);
       OutString(120,0,VEp.Fax,false);
       OutString(240,0,VEp.SalesMan,false);
-			// OutString(370,0,VIr.SerNr,false);
-			OutString(370,0,VIr.RefStr,false);
-			// OutString(370,0,VEp.InvAddr0,false);
       EndFormat;
       printedcuf = true;
     end;
@@ -487,11 +487,8 @@ BEGIN
   APr.SerNr = 0;
   APr.VECode = VEp.Code;
   TrHs = true;
-	logtext(0,VEp.Code & " - " & APr.VECode);
   while (LoopKey("VECode",APr,2,TrHs)) begin
     testf = true;
-		logtext(0,VIr.SerNr & " - " & APr.SerNr);
-		logtext(0,VEp.Code & " - " & APr.VECode);
     if (TrHs) then begin
       if (VEp.Code!=APr.VECode) then begin TrHs = false; end;
     end;
@@ -590,11 +587,9 @@ BEGIN
             end;
         end;
       end;
-			logtext(0,"here123");
     end;
 L20OneAPSFormOpen:;
   end;
-	logtext(0,"here1234");
   VendAged(VEp,ARSARSum,ARSsact,ARSs0,ARSs1,ARSs16,ARSs31,ARSs61,ARSs91,ARSs121,ARSs151);
   ARSARSum = ARSARSum + ARSOnAccBal;
   ARSs0 = ARSs0 + ARSOnAccBal;
@@ -616,7 +611,7 @@ L20OneAPSFormOpen:;
                        ARSs0,ARSs1,ARSs16,ARSs31,ARSs61,ARSs91,ARSs121,ARSs151,aRwtype,aInvoiceNr,alatedays,aRemndr,aInvDate,aDueDate,aIntVal,aRVal,aRVAT,aSum4,aDebVal,aVEInvNo,aCurncyCode,acnt); 
 //        UpdateVEBal(VEp->Code,&ARSr.ARSum,&CurrentDate); is it needed        
       case 1: 
-        APSrList(RepSpec,VEp,VIr,ARSSum,ARSOnAccBal,ARSOnAccBalb1,ARSIntSum,ARSs0,ARSs1,ARSs16,ARSs31,ARSs61,ARSs91,ARSs121,ARSs151,aRwtype,aInvoiceNr,aRecNr,alatedays,aRemndr,aInvDate,aDueDate,aIntVal,aRVal,aRVAT,aSum4,aVEInvNo,aCurncyCode,acnt,acur,av1,curcnt); 
+        APSrList(RepSpec,VEp,ARSSum,ARSOnAccBal,ARSOnAccBalb1,ARSIntSum,ARSs0,ARSs1,ARSs16,ARSs31,ARSs61,ARSs91,ARSs121,ARSs151,aRwtype,aInvoiceNr,aRecNr,alatedays,aRemndr,aInvDate,aDueDate,aIntVal,aRVal,aRVAT,aSum4,aVEInvNo,aCurncyCode,acnt,acur,av1,curcnt); 
     end;
   end;
   balpb1 = balpb1 + ARSOnAccBalb1;
