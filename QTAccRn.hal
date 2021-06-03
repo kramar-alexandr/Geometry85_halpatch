@@ -13,7 +13,7 @@ BEGIN
   Record QTVc QTr;
 	Record IVVc IVr;
   Boolean TrHs,TrHs2, testf, testfIV;
-  integer rw,i;
+  integer rw,i,j,rwcnt;
   LongInt fromqt;
   LongInt toqt;
   LongInt decdays,totdaysr, totdaysa;
@@ -169,6 +169,11 @@ BEGIN
      if (DateInRange(QTr.RejectDate,RepSpec.sStartDate,RepSpec.sEndDate)==false) then begin 
        testf = false;
      end;
+		 if(nonblank(RepSpec.f12))then begin	//Edit **********************************************Vas-P 03/06/2021
+			 if(RepSpec.f12<>QTr.PRCode)then begin
+		 		 testf = false;
+		 	 end;
+		 end;
       if (testf) then begin 
         iv = QTr.Sum1;   
         rs = MULRATETOBASE1(QTr.CurncyCode,iv,QTr.FrRate,QTr.ToRateB1,QTr.ToRateB2,QTr.BaseRate1,QTr.BaseRate2,DefaultCurRoundOff);
@@ -308,7 +313,6 @@ BEGIN
     OutString(0,0,USetStr(11024),false);
     OutStringAdjustBiDi(120,0,totgp,true,M4Val,160);
   EndFormat;
-  EndJob;
   
  RETURN; 
  END;
