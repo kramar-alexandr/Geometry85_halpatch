@@ -260,7 +260,6 @@ BEGIN
 								IPr.SerNr = IPrsr.TransNr;
 								if(ReadFirstMain(IPr,1,true))then begin
 									OutDate(480,0,IPr.TransDate,false);
-									logtext(0,IPr.TransDate);
 								end;
 							end;
 						end;
