@@ -12,8 +12,12 @@ procedure QTAccRn(record RcVc RepSpec)
 BEGIN
   Record QTVc QTr;
 	Record IVVc IVr;
-  Boolean TrHs,TrHs2, testf, testfIV;
-  integer rw,i,j,rwcnt;
+	record IVVc theIVr;
+	Record IPrsVc IPrsr;
+	record IPVc IPr;
+	row IPVc IPrw;
+  Boolean TrHs,TrHs2,TrHs3,testf, testfIV,testf3;
+  integer rw,i,j,rwcnt,rwcnt2;
   LongInt fromqt;
   LongInt toqt;
   LongInt decdays,totdaysr, totdaysa;
@@ -246,12 +250,29 @@ BEGIN
 				if(testfIV)then begin
 					OutDate(430,0,IVr.InvDate,false);
 					OutString(450,"DblIVVc",IVr.SerNr,false);
-					OutDate(480,0,IVr.PayDate,false);
+					//Edit **********************************************Vas-P 04/06/2021
+					TrHs3 = true;
+					IPrsr.IVNr = IVr.SerNr;
+					while(LoopKey("IVKey",IPrsr,1,TrHs3))begin
+						if(IPrsr.IVNr<>IVr.SerNr)then begin TrHs3 = false; end;
+						if(TrHs3) then begin
+							if(IPrsr.TransType==kIPrsTransTypeReceipt)then begin
+								IPr.SerNr = IPrsr.TransNr;
+								if(ReadFirstMain(IPr,1,true))then begin
+									OutDate(480,0,IPr.TransDate,false);
+									logtext(0,IPr.TransDate);
+								end;
+							end;
+						end;
+					end;
+					resetloop(IPrsr);
+					//Edit **********************************************Vas-P 04/06/2021
 				end;
 			 end;
 			 resetloop(IVr);
 			 OutStringAdjustBiDi(1,0,rs,true,M4Val,520);
 			 EndFormat;
+
 			 //Edit **********************************************Vas-P 24.05.2021
       end; // testf 
     end; // TrHs
@@ -313,7 +334,7 @@ BEGIN
     OutString(0,0,USetStr(11024),false);
     OutStringAdjustBiDi(120,0,totgp,true,M4Val,160);
   EndFormat;
-  
+  EndJob;
  RETURN; 
  END;
 #endif
