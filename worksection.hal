@@ -1047,7 +1047,8 @@ begin
           if(PRr.WSSended==2)then begin
             PRr.WSSended = 1;
             recordstore(PRr,true);
-            queued.WorkSectionUpdateRequest(PRr,PRr,true)
+            logtext(0,"Project will be closed " & PRr.Code);
+            queued.WorkSectionUpdateRequest(PRr,PRr,true);
             millisleep(100);
           end;
         end;
