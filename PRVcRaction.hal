@@ -284,7 +284,7 @@ BEGIN
   SetAlreadyPaid(PRr,true,PR2r,false);
   SetPRFlags(PRr);
   
-  WorkSectionUpdateRequest(PRr,PRr,false);
+  queued.WorkSectionUpdateRequest(PRr,PRr,false);
   PRVcRecordSave = res; 
   RETURN;
 END;
@@ -316,7 +316,7 @@ BEGIN
   SetAlreadyPaid(PRr,true,PR2r,true);
   SetPRFlags(PRr);
   
-  WorkSectionUpdateRequest(PRr,PR2r,true);// В конце процедуры!
+  queued.WorkSectionUpdateRequest(PRr,PR2r,true);// В конце процедуры!
   PRVcRecordUpdate = res; 
   RETURN;
 END;

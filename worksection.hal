@@ -708,7 +708,7 @@ begin
 				writeareatofile(request,"webUNsubscribe.txt",1);
 				millisleep(500);
 			
-				/*setareazerosize(request);
+				setareazerosize(request);
 				reqaction = "delete_project_members";
 				reqpage = PRr.WSPage_Pr;
 				page = "/api/admin/v2/?action=" & reqaction;
@@ -721,9 +721,9 @@ begin
 				addtexttoarea("members=" & prepareUsersEMails(anewMembers[i]),request);
 				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"add_project_members",20);
 				addtexttoarea(chr(13) & chr(10),request);
-				writeareatofile(request,"add_project_members.txt",1);
+				writeareatofile(request,"delete_project_members.txt",1);
 
-				millisleep(500);*/
+				millisleep(500);
 			end;
 		end;
 	end;
