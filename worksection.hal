@@ -340,7 +340,7 @@ begin
 	boolean needtosync,needtoclose;
 	
 	blockload(WSb);		
-	logtext(0,"WorkSectionUpdateRequest");
+	logtext(0,"WorkSectionUpdateRequest " & PRr.Code & " updatef " & updatef);
 	needtosync = true;
 	level = 1;
 	if(nonblank(PRr.MotherCode))then begin
