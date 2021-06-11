@@ -824,7 +824,7 @@ begin
 		string 255 getaparams,reqpage,reqaction,togashstr,HASH,user,project,tstr,inwarn;
 		string 50 date_added;
 		area request;
-		integer times,i,pos,rwcnt,irow,k;
+		integer times,i,pos,rwcnt,irow,k,j;
 		record WorksectionUserVc WUr;
 		record Uservc USr;
 		vector string 20 vUsers;
@@ -832,9 +832,16 @@ begin
 		record TSVc TSr;
 		row TSVc TSrw;
 		vector longint TSByUser;
-		boolean TrHs,foundf;
+		boolean TrHs,foundf,testf;
 		date tmpdat;
 		vector string 40 vPRCodes;
+		vector boolean vTaskUsed;
+		area repsp;
+		record RcVc RepSpec;
+		
+		addfiletoarea("repsp",repsp,0);
+		
+		RepSpec.f1 = gettabtextfromarea(0,0,repsp);
 		
 		while(loopmain(PRr,1,true))begin
 			if(nonblank(PRr.WorksectionID_Pr))then begin
@@ -857,100 +864,113 @@ begin
 			for(i=0;i<times;i=i+1)begin
 				user = JSONGet(jreply,"data/[" & i & "]/user_from/email");
 				if(nonblank(user)/* and user=="maiia.robeiko@vmlyr.com"*/)then begin
-					logtext(0,"TS from user " & vUsers[user]);
-					project = JSONGet(jreply,"data/[" & i & "]/task/project/name");
-					project = ReplaceCharByString(project,"\\","");
-					pos = 0;
-					ExtractObjWithSeparator(" ",project,true,pos,tstr);
-					
-					PRr.Code = tstr;
-					project = tstr;
-					
-					
-					PRr.Code = vPRCodes[JSONGet(jreply,"data/[" & i & "]/task/project/id")];
-					if(tstr=="P/0222")then begin
-					  PRr.Code = "OOF-VACATION";
-					  if(vUsersSalesGroup[user]=="BAT")then begin
-					    PRr.Code = "OOF-VACATION-DAY";
-					  end;
+				  testf = true;
+				  if(nonblank(RepSpec.f1) and RepSpec.f1!=user)then begin testf = false; end;
+				  if(testf)then begin
+            logtext(0,"TS from user " & vUsers[user]);
+            project = JSONGet(jreply,"data/[" & i & "]/task/project/name");
+            project = ReplaceCharByString(project,"\\","");
+            pos = 0;
+            ExtractObjWithSeparator(" ",project,true,pos,tstr);
+          
+            PRr.Code = tstr;
+            project = tstr;
+          
+          
+            PRr.Code = vPRCodes[JSONGet(jreply,"data/[" & i & "]/task/project/id")];
+            if(tstr=="P/0222")then begin
+              PRr.Code = "OOF-VACATION";
+              if(vUsersSalesGroup[user]=="BAT")then begin
+                PRr.Code = "OOF-VACATION-DAY";
+              end;
+            end;
+            if(tstr=="P/0407_VMLYR_Public_holidays")then begin
+              PRr.Code = "OOF-HOLDAYS";
+              if(vUsersSalesGroup[user]=="BAT")then begin
+                PRr.Code = "OOF-HOLIDAYS";
+              end;
+            end;
+            if(tstr=="P/0408_VMLYR_Sick_days")then begin
+              PRr.Code = "OOF-SICK";
+              if(vUsersSalesGroup[user]=="BAT")then begin
+                PRr.Code = "OOF-SICK-DAY";
+              end;
+            end;
+            logtext(0,"project - " & project & " - " & PRr.Code);
+          
+          
+            if(readfirstmain(PRr,1,true))then begin
+              logtext(0,"Name " & PRr.Name);
+              logtext(0,"Text " & PRr.Desc0);
+            end else begin
+            
+            end;  
+            if(TSByUser[vUsers[user]]<=0)then begin
+              TrHs = true;
+              foundf = false;
+              while(loopkey("ActSerNr",TSr,1,TrHs))begin
+                if(TSr.UserCode==vUsers[user])then begin
+                  TSByUser[vUsers[user]] = TSr.SerNr;
+                  rwcnt = matrowcnt(TSr);
+                  for(j=0;j<rwcnt;j=j+1)begin
+                    matrowget(TSr,j,TSrw);
+                    if(nonblank(TSrw.WSTaskId))then begin
+                      vTaskUsed[TSrw.WSTaskId] = true;
+                    end;
+                  end;
+                  TrHs = false;
+                  foundf = true;
+                end;
+              end;
+              resetloop(TSr);
+          
+              if(foundf==false)then begin
+                recordnew(TSr);
+                USr.Code = vUsers[user];
+                readfirstmain(USr,1,true)
+                TSr.UserCode = USr.Code;
+                TSr.Comment = USr.Name;
+                TSr.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");
+                TSByUser[vUsers[user]] = TSr.SerNr;
+                recordinsert(TSr,true);
+              end;
+            end;
+          
+            TSr.SerNr = TSByUser[vUsers[user]];
+            if(vTaskUsed[JSONGet(jreply,"data/[" & i & "]/id")]==false)then begin
+              if(readfirstmain(TSr,1,true))then begin
+                clearrow(TSr,TSrw,1);
+                k = matrowcnt(TSr);
+                date_added = JSONGet(jreply,"data/[" & i & "]/date");
+                tmpdat.year = stringtoint(left(date_added,4));
+                tmpdat.day = stringtoint(right(date_added,2));
+                tmpdat.month = stringtoint(mid(date_added,5,2));
+                TSrw.date = tmpdat;
+                TSrw.EMCode = vUsers[user];
+                matrowput(TSr,k,TSrw);
+                TSVc_PasteEMCode(TSr,k);
+                matrowget(TSr,k,TSrw);
+                TSrw.PRCode = PRr.Code;
+                matrowput(TSr,k,TSrw);
+                TSVc_PastePRCode(TSr,k);
+                matrowget(TSr,k,TSrw);
+                TSrw.ArtCode = "GENERAL";
+                matrowput(TSr,k,TSrw);
+                TSVc_PasteArtCode(TSr,k,inwarn);
+                matrowget(TSr,k,TSrw);
+                TSrw.Qty = stringtoval(JSONGet(jreply,"data/[" & i & "]/time"),m4val);
+                TSrw.Spec = JSONGet(jreply,"data/[" & i & "]/comment");
+                TSrw.WSTaskId = JSONGet(jreply,"data/[" & i & "]/id");
+                if(blank(TSrw.Spec))then begin
+                  TSrw.Spec = project;
+                end;
+                matrowput(TSr,k,TSrw);
+                TSSumUp(TSr);
+                SortRows(TSr,"date",true);
+                recordstore(TSr,true);
+              end;
+            end;
 					end;
-					if(tstr=="P/0407_VMLYR_Public_holidays")then begin
-					  PRr.Code = "OOF-HOLDAYS";
-					  if(vUsersSalesGroup[user]=="BAT")then begin
-					    PRr.Code = "OOF-HOLIDAYS";
-					  end;
-					end;
-					if(tstr=="P/0408_VMLYR_Sick_days")then begin
-					  PRr.Code = "OOF-SICK";
-					  if(vUsersSalesGroup[user]=="BAT")then begin
-					    PRr.Code = "OOF-SICK-DAY";
-					  end;
-					end;
-					logtext(0,"project - " & project & " - " & PRr.Code);
-					
-					
-					if(readfirstmain(PRr,1,true))then begin
-						logtext(0,"Name " & PRr.Name);
-						logtext(0,"Text " & PRr.Desc0);
-					end else begin
-					  
-					end;  
-					if(TSByUser[vUsers[user]]<=0)then begin
-						TrHs = true;
-						foundf = false;
-						while(loopkey("ActSerNr",TSr,1,TrHs))begin
-							if(TSr.UserCode==vUsers[user])then begin
-								TSByUser[vUsers[user]] = TSr.SerNr;
-								TrHs = false;
-								foundf = true;
-							end;
-						end;
-						resetloop(TSr);
-					
-						if(foundf==false)then begin
-							recordnew(TSr);
-							USr.Code = vUsers[user];
-							readfirstmain(USr,1,true)
-							TSr.UserCode = USr.Code;
-							TSr.Comment = USr.Name;
-							TSr.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");
-							TSByUser[vUsers[user]] = TSr.SerNr;
-							recordinsert(TSr,true);
-						end;
-					end;
-					
-					TSr.SerNr = TSByUser[vUsers[user]];
-					if(readfirstmain(TSr,1,true))then begin
-						clearrow(TSr,TSrw,1);
-						k = matrowcnt(TSr);
-						date_added = JSONGet(jreply,"data/[" & i & "]/date");
-						tmpdat.year = stringtoint(left(date_added,4));
-						tmpdat.day = stringtoint(right(date_added,2));
-						tmpdat.month = stringtoint(mid(date_added,5,2));
-						TSrw.date = tmpdat;
-						TSrw.EMCode = vUsers[user];
-						matrowput(TSr,k,TSrw);
-						TSVc_PasteEMCode(TSr,k);
-						matrowget(TSr,k,TSrw);
-						TSrw.PRCode = PRr.Code;
-						matrowput(TSr,k,TSrw);
-						TSVc_PastePRCode(TSr,k);
-						matrowget(TSr,k,TSrw);
-						TSrw.ArtCode = "GENERAL";
-						matrowput(TSr,k,TSrw);
-						TSVc_PasteArtCode(TSr,k,inwarn);
-						matrowget(TSr,k,TSrw);
-						TSrw.Qty = stringtoval(JSONGet(jreply,"data/[" & i & "]/time"),m4val);
-						TSrw.Spec = JSONGet(jreply,"data/[" & i & "]/comment");
-						if(blank(TSrw.Spec))then begin
-						  TSrw.Spec = project;
-						end;
-						matrowput(TSr,k,TSrw);
-						TSSumUp(TSr);
-						SortRows(TSr,"date",true);
-						recordstore(TSr,true);
-					end;
-					
 				end;
 			end;
 		end;		
@@ -968,6 +988,7 @@ begin
 	string 255 newmembers,tstr;
 	integer pos,i;
 	array string 100 members;
+	area repsp;
 	
 	logtext(0,"WorkSectionGetCostsMn");
 	
@@ -987,6 +1008,9 @@ begin
 		page = page & "&hash=" & HASH;
 		addtexttoarea("datestart=" & datetostring(RepSpec.sStartDate,"YYYY-MM-DD"),request);
 		addtexttoarea("&dateend=" & datetostring(RepSpec.sEndDate,"YYYY-MM-DD"),request);
+		writeareatofile(request,"WorkSectionGetCostsMn_request.txt",0);
+		addtexttoarea(RepSpec.f1,repsp);
+		writeareatofile(repsp,"repsp",0);
 		writeareatofile(request,"WorkSectionGetCostsMn_request.txt",0);
 		logtext(0,page);
 		SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionGetCostsMnReply",20);
@@ -1020,7 +1044,7 @@ begin
 return;
 end;
 
-global updating procedure WorkSectionGetCostsMnReply(record RcVc RepSpec)
+global updating procedure WorkSectionGetCostsMnReplyMn(record RcVc RepSpec)
 begin
 	json jreply;
 		string 100 page,id,prcode,prpage;
