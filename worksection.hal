@@ -5,6 +5,7 @@ external procedure TSVc_PastePRCode(var record TSVc,Integer);
 external procedure TSVc_PasteEMCode(var record TSVc,Integer);
 external function Boolean TSVc_PasteArtCode(var record TSVc,Integer,var string);
 forward procedure WorkSectionUpdateMembers(record PRVc,record PRVc);
+external function string 255 MonthName(Date);
 
 
 procedure TSSumUp(record TSVc TSp)
@@ -833,7 +834,7 @@ begin
 		row TSVc TSrw;
 		vector longint TSByUser;
 		boolean TrHs,foundf,testf;
-		date tmpdat;
+		date tmpdat,temptsdate;
 		vector string 40 vPRCodes;
 		vector boolean vTaskUsed;
 		area repsp;
@@ -866,6 +867,7 @@ begin
 				if(nonblank(user)/* and user=="maiia.robeiko@vmlyr.com"*/)then begin
 				  testf = true;
 				  if(nonblank(RepSpec.f1) and RepSpec.f1!=user)then begin testf = false; end;
+				  if(blank(vUsers[user]))then begin testf = false; end;
 				  if(testf)then begin
             logtext(0,"TS from user " & vUsers[user]);
             project = JSONGet(jreply,"data/[" & i & "]/task/project/name");
@@ -905,12 +907,25 @@ begin
             end else begin
             
             end;  
-            if(TSByUser[vUsers[user]]<=0)then begin
+            
+            date_added = JSONGet(jreply,"data/[" & i & "]/date");
+            tmpdat.year = stringtoint(left(date_added,4));
+            tmpdat.day = stringtoint(right(date_added,2));
+            tmpdat.month = stringtoint(mid(date_added,5,2));
+            tmpdat.day = 1;
+            
+            if(TSByUser[vUsers[user] & ";;;" & tmpdat]<=0)then begin
               TrHs = true;
               foundf = false;
+              TSr.SerNr = -1;
               while(loopkey("ActSerNr",TSr,1,TrHs))begin
-                if(TSr.UserCode==vUsers[user])then begin
-                  TSByUser[vUsers[user]] = TSr.SerNr;
+                temptsdate = TSr.RegDate;
+                temptsdate.day = 1;
+                if(TSr.UserCode==vUsers[user] and temptsdate==tmpdat)then begin
+                  TSByUser[vUsers[user] & ";;;" & tmpdat] = TSr.SerNr;
+                  logtext(0,vUsers[user] & ";;;" & tmpdat);
+                  logtext(0,"TSByUser[vUsers[user] ;;; tmpdat] = TSr.SerNr; " & TSByUser[vUsers[user] & ";;;" & tmpdat]);
+                  
                   rwcnt = matrowcnt(TSr);
                   for(j=0;j<rwcnt;j=j+1)begin
                     matrowget(TSr,j,TSrw);
@@ -929,14 +944,15 @@ begin
                 USr.Code = vUsers[user];
                 readfirstmain(USr,1,true)
                 TSr.UserCode = USr.Code;
-                TSr.Comment = USr.Name;
+                TSr.Comment = USr.Name & " " & MonthName(tmpdat) & " " & GetYear(tmpdat);
+                TSr.RegDate = tmpdat;
                 TSr.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");
-                TSByUser[vUsers[user]] = TSr.SerNr;
+                TSByUser[vUsers[user] & ";;;" & tmpdat] = TSr.SerNr;
                 recordinsert(TSr,true);
               end;
             end;
           
-            TSr.SerNr = TSByUser[vUsers[user]];
+            TSr.SerNr = TSByUser[vUsers[user] & ";;;" & tmpdat];
             if(vTaskUsed[JSONGet(jreply,"data/[" & i & "]/id")]==false)then begin
               if(readfirstmain(TSr,1,true))then begin
                 clearrow(TSr,TSrw,1);
@@ -968,6 +984,7 @@ begin
                 TSSumUp(TSr);
                 SortRows(TSr,"date",true);
                 recordstore(TSr,true);
+                logtext(0,"Update TS =============================== " & TSr.SerNr);
               end;
             end;
 					end;
@@ -1079,5 +1096,30 @@ begin
       end;
 		end;
 		
+return;
+end;
+
+
+global webpublic updating procedure WebImporteMails()
+begin
+  record UserVc USr;
+  area auser;
+  integer i;
+  string 50 user,mail;
+  
+  addfiletoarea("Users.txt",auser,false);
+  for (i=0;i<(countlinesinarea(auser));i=i+1) begin 
+    user = GetTabTextFromArea(i,0,auser);
+    mail = GetTabTextFromArea(i,1,auser);
+    if(nonblank(mail))then begin
+      USr.Code = user;
+      if(readfirstmain(USr,1,true))then begin
+        USr.emailAddr = mail;
+        recordstore(USr,true);
+        logtext(0,USr.Code & "   " & mail);
+      end;
+    end;
+  end;   
+  
 return;
 end;
