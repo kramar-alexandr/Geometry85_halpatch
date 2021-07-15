@@ -329,16 +329,17 @@ return;
 end; 
 
 //создание / обновление проекта - асинхронная процедура
-global procedure WorkSectionUpdateRequest(var record PRVc PRr,record PRVc oldPRr,boolean updatef)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+global updating procedure WorkSectionUpdateRequest(var record PRVc PRr,record PRVc oldPRr,boolean updatef)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
 begin
 	record WorksectionBlock WSb;
 	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
 	area request;
 	record WorksectionUserVc WUr;
+	record WSPVc WSPr;
 	record PRVc PR2r;
 	integer level;
 	record CUVc CUr;
-	boolean needtosync,needtoclose;
+	boolean needtosync,needtoclose,testf;
 	
 	blockload(WSb);		
 	logtext(0,"WorkSectionUpdateRequest " & PRr.Code & " updatef " & updatef);
@@ -413,6 +414,15 @@ begin
 				end;
 			end;
 			if(blank(PRr.WorksectionID_Pr) and PRr.WSSended==0 and needtosync)then begin//создание проекта
+				testf = true;
+				WSPr.PRCode = PRr.Code;
+				if(readfirstmain(WSPr,1,true))then begin
+					testf = false;
+				end;
+				if(testf)then begin
+					recordnew(WSPr);
+					WSPr.PRCode = PRr.Code;
+					recordstore(WSPr,true);
 					if(nonblank(WSb.TagsPage))then begin
 						if(nonblank(PRr.MotherCode))then begin
 							setareazerosize(request);
@@ -446,9 +456,9 @@ begin
 					page = page & "&hash=" & HASH;
 					addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);//Название и код проекта в worksection
 					if(nonblank(prepareUsersEMails(PRr.PrSalesMan)))then begin
-            addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);//Авптор проекта
+						addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);//Автор проекта
 					end else begin
-					  addtexttoarea("&email_user_from=" & prepareUsersEMails(currentuser),request);//Авптор проекта
+						addtexttoarea("&email_user_from=" & prepareUsersEMails(currentuser),request);//Автор проекта
 					end;
 					addtexttoarea("&email_manager=" & prepareUsersEMails(PRr.PrSalesMan),request);//менеджер
 					addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.PrSalesMan),request);//ответственный
@@ -474,6 +484,7 @@ begin
 					SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProject",20);
 					removetask("CheckSyncForProgect_" & PRr.Code);
 					NewTimedTask("CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect",PRr.Code,CurrentDate,addminutes(currenttime,10),"","");
+				end;
 			end else begin
 			
 			end;
@@ -1163,6 +1174,74 @@ begin
       page = page & "&hash=" & HASH;			
       SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WebCloseWSProcectsReply",20);
     end;
+  
+return;
+end;
+
+
+//Edit **********************************************Vas-P	15/07/2021
+global updating procedure Callback(Area a_reply,Area a_replyheader,boolean timeout)
+begin
+  json jreply;
+  area temparea;
+	integer times,i,pos;
+	string 255 project,id,tstr,tsti;
+	record WSPVc WSPr;
+	
+  addtexttoarea(chr(13) & chr(10),temparea);
+	writeareatofile(temparea,"WorkSectionProjects.txt",1);
+  writeareatofile(a_reply,"WorkSectionProjects.txt",1);
+	
+	if(getarealength(a_reply)>100)then begin
+		jreply = ParseJsonArea(a_reply);
+		times = JSONCountChildren(jreply,"data");
+		for(i=0;i<times;i=i+1)begin
+			project = JSONGet(jreply,"data/[" & i & "]/name");
+			project = ReplaceCharByString(project,"\\","");
+			
+			pos = 0;
+			ExtractObjWithSeparator(" ",project,true,pos,tstr);
+			
+			id = JSONGet(jreply,"data/[" & i & "]/id");
+			id = ReplaceCharByString(id,"\\","");
+
+			pos = 0;
+			ExtractObjWithSeparator(" ",id,true,pos,tsti);
+			
+			recordnew(WSPr);
+			WSPr.PRCode = tstr;
+			WSPr.WSID = tsti;
+			recordstore(WSPr,true);
+		end;
+	end;
+
+return;
+end;
+
+//Edit **********************************************Vas-P	15/07/2021
+global updating procedure UpdWSPMn(record RcVc RepSpec)
+begin
+  record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request;
+	string 255 newmembers,tstr;
+	integer pos,i;
+	array string 100 members;
+	area repsp;
+	
+	logtext(0,"UpdWSPMn");
+	
+	blockload(WSb);
+	
+	reqaction = "get_projects";
+	page = "/api/admin/v2/?action=" & reqaction;
+	if(nonblank(reqpage))then begin
+		page = page & "&page=" & reqpage;
+	end;
+	togashstr = reqpage & reqaction & WSb.ApiKey;
+	HASH = LowerCase(MD5String(togashstr));
+	page = page & "&hash=" & HASH & "&filter=active";			
+	SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"Callback",20);
   
 return;
 end;
