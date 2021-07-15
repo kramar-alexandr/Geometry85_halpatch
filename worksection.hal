@@ -1123,3 +1123,46 @@ begin
   
 return;
 end;
+
+
+global updating procedure WebCloseWSProcectsReply(Area a_reply,Area a_replyheader,boolean timeout)
+begin
+  area temparea;
+  
+  addtexttoarea(chr(13) & chr(10),temparea);
+  writeareatofile(temparea,"ManualClosedProjects",1);
+  writeareatofile(a_reply,"ManualClosedProjects",1);
+return;
+end;
+
+global webpublic procedure WebCloseWSProjects()
+begin
+  
+  record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request;
+	string 255 newmembers,tstr;
+	integer pos,i;
+	array string 100 members;
+	area repsp;
+	
+	logtext(0,"WebCloseWSProjects");
+	
+	blockload(WSb);
+	
+		
+    reqpage = "/project/" & webgetarg("project") & "/";
+    if(nonblank(reqpage))then begin
+      reqaction = "close_project";
+      page = "/api/admin/v2/?action=" & reqaction;
+      if(nonblank(reqpage))then begin
+        page = page & "&page=" & reqpage;
+      end;
+      togashstr = reqpage & reqaction & WSb.ApiKey;
+      HASH = LowerCase(MD5String(togashstr));
+      page = page & "&hash=" & HASH;			
+      SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WebCloseWSProcectsReply",20);
+    end;
+  
+return;
+end;
