@@ -1180,13 +1180,76 @@ end;
 
 
 //Edit **********************************************Vas-P	15/07/2021
-global updating procedure Callback(Area a_reply,Area a_replyheader,boolean timeout)
+global updating procedure TaskCallback(Area a_reply,Area a_replyheader,boolean timeout)
 begin
   json jreply;
   area temparea;
 	integer times,i,pos;
-	string 255 project,id,tstr,tsti;
+	string 255 task,tstr,wsid,prpage,tpage,prcode;
 	record WSPVc WSPr;
+	record PRVc PRr;
+	
+	logtext(0,"TaskCallback");
+	
+  addtexttoarea(chr(13) & chr(10),temparea);
+	writeareatofile(temparea,"TaskCallback.txt",1);
+  writeareatofile(a_reply,"TaskCallback.txt",1);
+	
+	if(getarealength(a_reply)>100)then begin
+		jreply = ParseJsonArea(a_reply);
+		times = JSONCountChildren(jreply,"data");
+		for(i=0;i<times;i=i+1)begin
+			task = JSONGet(jreply,"data/[" & i & "]/id");
+			task = ReplaceCharByString(task,"\\","");
+			
+			wsid = JSONGet(jreply,"data/[" & i & "]/project/id");
+			wsid = ReplaceCharByString(wsid,"\\","");
+			
+			prcode = JSONGet(jreply,"data/[" & i & "]/project/name");
+			prcode = ReplaceCharByString(prcode,"\\","");
+			
+			pos = 0;
+			ExtractObjWithSeparator(" ",prcode,true,pos,tstr);
+			
+			prpage = JSONGet(jreply,"data/[" & i & "]/project/page");
+			prpage = ReplaceCharByString(prpage,"\\","");
+			
+			tpage	= JSONGet(jreply,"data/[" & i & "]/page");
+			tpage	= ReplaceCharByString(tpage,"\\","");			
+			
+			WSPr.WSID = wsid;
+			if(readfirstkey("WSID",WSPr,1,true))then begin
+				WSPr.TaskID = task;
+				recordstore(WSPr,true);
+			end;
+			
+			PRr.Code = tstr;
+			if(readfirstmain(PRr,1,true))then begin
+				logtext(0,PRr.Code);
+				PRr.WorksectionID_Pr = wsid;
+				PRr.WSPage_Pr = prpage;
+				PRr.WorksectionID_Tsk =	task;
+				PRr.WSPage_Tsk =	tpage;
+				recordstore(PRr,true);
+			end;
+		end;
+	end;
+
+return;
+end;
+
+//Edit **********************************************Vas-P	15/07/2021
+global updating procedure Callback(Area a_reply,Area a_replyheader,boolean timeout)
+begin
+  json jreply;
+  area temparea,request;
+	integer times,i,pos;
+	string 255 project,wsid,tstr;
+	record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	record WSPVc WSPr;
+	
+	logtext(0,"Callback");
 	
   addtexttoarea(chr(13) & chr(10),temparea);
 	writeareatofile(temparea,"WorkSectionProjects.txt",1);
@@ -1202,18 +1265,28 @@ begin
 			pos = 0;
 			ExtractObjWithSeparator(" ",project,true,pos,tstr);
 			
-			id = JSONGet(jreply,"data/[" & i & "]/id");
-			id = ReplaceCharByString(id,"\\","");
-
-			pos = 0;
-			ExtractObjWithSeparator(" ",id,true,pos,tsti);
+			wsid = JSONGet(jreply,"data/[" & i & "]/id");
+			wsid = ReplaceCharByString(wsid,"\\","");
 			
 			recordnew(WSPr);
 			WSPr.PRCode = tstr;
-			WSPr.WSID = tsti;
+			WSPr.WSID = wsid;
 			recordstore(WSPr,true);
 		end;
 	end;
+	
+	blockload(WSb);
+	
+	reqaction = "get_all_tasks";
+	page = "/api/admin/v2/?action=" & reqaction;
+	if(nonblank(reqpage))then begin
+		page = page & "&page=" & reqpage;
+	end;
+	togashstr = reqpage & reqaction & WSb.ApiKey;
+	HASH = LowerCase(MD5String(togashstr));
+	page = page & "&hash=" & HASH & "&filter=active";			
+  SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"TaskCallback",20);
+	
 
 return;
 end;
@@ -1242,6 +1315,85 @@ begin
 	HASH = LowerCase(MD5String(togashstr));
 	page = page & "&hash=" & HASH & "&filter=active";			
 	SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"Callback",20);
+
+return;
+end;
+
+
+//Edit **********************************************Vas-P	15/07/2021
+global updating procedure ProjectCallback(Area a_reply,Area a_replyheader,boolean timeout)
+begin
+  json jreply;
+  area temparea;
+	integer times,i,pos;
+	string 255 project,wsid,tstr;
+	record WSPVc WSPr;
+	vector string 100 vblank;
+	array string 100 ablank;
+	
+	logtext(0,"ProjectCallback");
+	
+  addtexttoarea(chr(13) & chr(10),temparea);
+	writeareatofile(temparea,"ProjectCallback.txt",1);
+  writeareatofile(a_reply,"ProjectCallback.txt",1);
+	
+	if(getarealength(a_reply)>100)then begin
+		jreply = ParseJsonArea(a_reply);
+		times = JSONCountChildren(jreply,"data");
+		for(i=0;i<times;i=i+1)begin
+			project = JSONGet(jreply,"data/[" & i & "]/name");
+			project = ReplaceCharByString(project,"\\","");
+			
+			pos = 0;
+			ExtractObjWithSeparator(" ",project,true,pos,tstr);
+			
+			wsid = JSONGet(jreply,"data/[" & i & "]/id");
+			wsid = ReplaceCharByString(wsid,"\\","");
+
+			vblank[tstr] = wsid;
+		end;
+	end;
+
+
+	while(loopmain(WSPr,1,true)) begin
+		if(blank(WSPr.WSID))then begin
+			if(nonblank(vblank[WSPr.PRCode]))then begin
+				WSPr.WSID = vblank[WSPr.PRCode];
+				recordstore(WSPr,true);
+			end else begin
+				// Отправить на повтор 
+			end;
+		end;
+	end;
+	
+	
+return;
+end;
+
+//Edit **********************************************Vas-P	15/07/2021
+global updating procedure CheckWSPMn(record RcVc RepSpec)
+begin
+  record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request;
+	string 255 newmembers,tstr;
+	integer pos,i;
+	array string 100 members;
+	area repsp;
+	
+	logtext(0,"CheckWSPMn");
+	
+	blockload(WSb);
+	
+	reqaction = "get_projects";
+	page = "/api/admin/v2/?action=" & reqaction;
+	if(nonblank(reqpage))then begin
+		page = page & "&page=" & reqpage;
+	end;
+	togashstr = reqpage & reqaction & WSb.ApiKey;
+	HASH = LowerCase(MD5String(togashstr));
+	page = page & "&hash=" & HASH & "&filter=active";			
+	SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"ProjectCallback",20);
   
 return;
 end;
