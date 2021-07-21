@@ -417,7 +417,7 @@ begin
 				testf = true;
 				WSPr.PRCode = PRr.Code;
 				if(readfirstmain(WSPr,1,true))then begin
-					testf = false;
+					//testf = false;
 				end;
 				if(testf)then begin
 					recordnew(WSPr);
