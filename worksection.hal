@@ -1048,6 +1048,190 @@ begin
 return;
 end;
 
+
+global updating procedure WorkSectionGetHolidaysMn(record RcVc RepSpec)
+begin
+	record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH,prcode,inwarn,project;
+	area request,reply;
+	string 255 newmembers,tstr,usermail,dayname,dayreason;
+	integer pos,i,users,j,days,k,rwcnt,l;
+	array string 100 members;
+	area repsp;
+	json jreply;
+	record UserVc USr;
+	vector string 50 vUsers,vUsersSalesGroup;
+	date cd,tmpdat,temptsdate;
+	vector longint TSByUser;
+	boolean TrHs,foundf,testf;
+	record TSVc TSr;
+	row TSVc TSrw;
+	vector boolean vTaskUsed;
+	record PRVc PRr;
+	
+	
+	logtext(0,"WorkSectionGetHolidaysMn");
+	
+	blockload(WSb);
+	
+	if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
+		
+		reqaction = "get_workdays";
+		reqpage = "";
+		page = "/api/admin/v2/?action=" & reqaction;
+		if(nonblank(reqpage))then begin
+			page = page & "&page=" & reqpage;
+		end;
+		togashstr = reqpage & reqaction & WSb.ApiKey;
+
+		HASH = LowerCase(MD5String(togashstr));
+		page = page & "&hash=" & HASH;
+		addtexttoarea("datestart=" & datetostring(RepSpec.sStartDate,"YYYY-MM-DD"),request);
+		addtexttoarea("&dateend=" & datetostring(RepSpec.sEndDate,"YYYY-MM-DD"),request);
+		writeareatofile(request,"WorkSectionGetHolidaysMn_request.txt",0);
+		addtexttoarea(RepSpec.f1,repsp);
+		writeareatofile(repsp,"repsp",0);
+		writeareatofile(request,"WorkSectionGetHolidaysMn_request.txt",0);
+		logtext(0,page);
+		//SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionGetCostsMnReply",20);
+		SendWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",false,request,reply,25);
+		
+		writeareatofile(reply,"WorkSectionGetHolidaysMn_reply.txt",0);
+			
+	  if(getarealength(reply)>500)then begin
+	    
+	    while(loopmain(USr,1,true))begin
+        if(nonblank(USr.emailAddr))then begin
+          vUsers[USr.emailAddr] = USr.Code;
+          vUsersSalesGroup[USr.emailAddr] = USr.SalesGroup;
+        end;
+      end;
+	    
+		  jreply = ParseJsonArea(reply);  
+		  users = JSONCountChildren(jreply,"data");
+		  logtext(0,"users " & users);
+		  for(i=0;i<users;i=i+1)begin
+		    usermail = JSONGetChildNAME(jreply,"data",i);
+		    if(nonblank(usermail))then begin
+          days = JSONCountChildren(jreply,"data/" & usermail);
+          for(j=0;j<days;j=j+1)begin
+            dayname = JSONGetChildNAME(jreply,"data/" & usermail,j);
+            cd.year = stringtoint(left(dayname,4));
+            cd.day = stringtoint(right(dayname,2));
+            cd.month = stringtoint(mid(dayname,5,2));
+            dayreason = JSONGet(jreply,"data/" & usermail & "/" & dayname);
+            logtext(0,usermail & "   " & dayname & "   " & dayreason);
+            if(cd>=RepSpec.sStartDate and cd<=RepSpec.sEndDate and (dayreason=="illday" or dayreason=="holiday"))then begin
+              logtext(0,"--- " & usermail & "   " & dayname & "   " & dayreason);
+              tmpdat = cd;
+              tmpdat.day = 1;
+              
+              if(TSByUser[vUsers[usermail] & ";;;" & tmpdat]<=0)then begin
+                TrHs = true;
+                foundf = false;
+                TSr.SerNr = -1;
+                while(loopkey("ActSerNr",TSr,1,TrHs))begin
+                  temptsdate = TSr.RegDate;
+                  temptsdate.day = 1;
+                  if(TSr.UserCode==vUsers[usermail] and temptsdate==tmpdat)then begin
+                    TSByUser[vUsers[usermail] & ";;;" & tmpdat] = TSr.SerNr;
+                    logtext(0,vUsers[usermail] & ";;;" & tmpdat);
+                    logtext(0,"TSByUser[vUsers[user] ;;; tmpdat] = TSr.SerNr; " & TSByUser[vUsers[usermail] & ";;;" & tmpdat]);
+                  
+                    rwcnt = matrowcnt(TSr);
+                    for(l=0;l<rwcnt;l=l+1)begin
+                      matrowget(TSr,l,TSrw);
+                      if(nonblank(TSrw.WSTaskId))then begin
+                        vTaskUsed[TSrw.WSTaskId] = true;
+                      end;
+                    end;
+                    TrHs = false;
+                    foundf = true;
+                  end;
+                end;
+                resetloop(TSr);
+          
+                if(foundf==false)then begin
+                  recordnew(TSr);
+                  USr.Code = vUsers[usermail];
+                  readfirstmain(USr,1,true)
+                  TSr.UserCode = USr.Code;
+                  TSr.Comment = USr.Name & " " & MonthName(tmpdat) & " " & GetYear(tmpdat);
+                  TSr.RegDate = tmpdat;
+                  TSr.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");
+                  TSByUser[vUsers[usermail] & ";;;" & tmpdat] = TSr.SerNr;
+                  recordinsert(TSr,true);
+                end;
+              end;
+          
+              TSr.SerNr = TSByUser[vUsers[usermail] & ";;;" & tmpdat];
+              if(vTaskUsed[dayname & ";" & dayreason]==false)then begin
+                if(readfirstmain(TSr,1,true))then begin
+                  clearrow(TSr,TSrw,1);
+                  k = matrowcnt(TSr);
+                  TSrw.date = cd;
+                  TSrw.EMCode = vUsers[usermail];
+                  matrowput(TSr,k,TSrw);
+                  TSVc_PasteEMCode(TSr,k);
+                  matrowget(TSr,k,TSrw);
+                  
+                  if(dayreason=="holiday")then begin
+                    prcode = "OOF-VACATION";
+                    if(vUsersSalesGroup[usermail]=="BAT")then begin
+                      prcode = "OOF-VACATION-DAY";
+                    end;
+                  end;
+                  /*if(tstr=="P/0407_VMLYR_Public_holidays")then begin
+                    PRr.Code = "OOF-HOLDAYS";
+                    if(vUsersSalesGroup[user]=="BAT")then begin
+                      PRr.Code = "OOF-HOLIDAYS";
+                    end;
+                  end;*/
+                  if(dayreason=="illday")then begin
+                    prcode = "OOF-SICK";
+                    if(vUsersSalesGroup[usermail]=="BAT")then begin
+                      prcode = "OOF-SICK-DAY";
+                    end;
+                  end;
+                  PRr.Code = prcode;
+                  readfirstmain(PRr,1,true);
+                  project = PRr.Name;
+                  
+                  TSrw.PRCode = prcode;//!!!!!!!!!!!!!!
+                  matrowput(TSr,k,TSrw);
+                  TSVc_PastePRCode(TSr,k);
+                  matrowget(TSr,k,TSrw);
+                  TSrw.ArtCode = "GENERAL";
+                  matrowput(TSr,k,TSrw);
+                  TSVc_PasteArtCode(TSr,k,inwarn);
+                  matrowget(TSr,k,TSrw);
+                  TSrw.Qty = 8;
+                  TSrw.Spec = project;
+                  TSrw.WSTaskId = dayname & ";" & dayreason;
+                  if(blank(TSrw.Spec))then begin
+                    TSrw.Spec = project;
+                  end;
+                  matrowput(TSr,k,TSrw);
+                  TSSumUp(TSr);
+                  SortRows(TSr,"date",true);
+                  recordstore(TSr,true);
+                  logtext(0,"Update TS =============================== " & TSr.SerNr);
+                end;
+              end;
+              
+            end;
+          end;
+		    end;
+		  end;
+		
+		end;
+	end;
+	
+return;
+end;
+
+
+
 global updating procedure CheckSyncForProgect(string param)
 begin
 	record PRVc PRr;
