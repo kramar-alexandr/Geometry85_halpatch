@@ -1652,3 +1652,47 @@ begin
   
 return;
 end;
+
+
+
+global updating procedure closeNextProjectinWS()
+begin
+  json jreply;
+		string 100 page,id,prcode,prpage;
+		record PRVc PRr;
+		record WorksectionBlock WSb;
+		string 255 getaparams,reqpage,reqaction,togashstr,HASH,user,project,tstr,inwarn;
+		string 50 date_added;
+		area request;
+		integer times,i,pos,rwcnt,irow,k;
+		record WorksectionUserVc WUr;
+		record Uservc USr;
+		vector string 20 vUsers;
+		vector string 20 vUsersSalesGroup;
+		record TSVc TSr;
+		row TSVc TSrw;
+		vector longint TSByUser;
+		boolean TrHs,foundf;
+		date tmpdat;
+		vector string 40 vPRCodes;
+		area atoclose;
+		
+		addfiletoarea("closenextprojects.txt",atoclose,false);
+		
+		for(i=0;i<countlinesinarea(atoclose);i=i+1)begin
+		  PRr.Code = GetLineFromArea(atoclose,i);
+		  if(readfirstmain(PRr,1,true))then begin
+		    if(nonblank(PRr.WorksectionID_Pr))then begin
+          if(PRr.Terminated==1 or PRr.Terminated==3)then begin
+            PRr.WSSended = 1;
+            recordstore(PRr,true);
+            logtext(0,"Project will be closed " & PRr.Code);
+            queued.WorkSectionUpdateRequest(PRr,PRr,true);
+            millisleep(100);
+          end;
+        end;
+		  end;
+		end;
+		
+return;
+end;
