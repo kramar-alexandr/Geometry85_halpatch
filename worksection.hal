@@ -436,7 +436,9 @@ begin
 							HASH = LowerCase(MD5String(togashstr));
 							page = page & "&hash=" & HASH;
 							addtexttoarea("group=" & WSb.TagsPage,request);// Группа меток
-							addtexttoarea("&title=" & PRr.MotherCode,request);// Группа меток
+							addtexttoarea("&title=" & URLEncode(PRr.MotherCode),request);// Группа меток
+							writeareatofile(request,"WS_add_tags.txt",0);
+							logtext(0,"page  " & page);
 							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateTagsReply",20);
 							setareazerosize(request);
 							millisleep(1000);
@@ -516,7 +518,7 @@ begin
 							HASH = LowerCase(MD5String(togashstr));
 							page = page & "&hash=" & HASH;
 							addtexttoarea("group=" & WSb.TagsPage,request);// Группа меток
-							addtexttoarea("&title=" & PRr.MotherCode,request);// Группа меток
+							addtexttoarea("&title=" & URLEncode(PRr.MotherCode),request);// Группа меток
 							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateTagsReply",20);
 							setareazerosize(request);
 							millisleep(1000);
@@ -531,8 +533,8 @@ begin
 							togashstr = reqpage & reqaction & WSb.ApiKey;
 							HASH = LowerCase(MD5String(togashstr));
 							page = page & "&hash=" & HASH;
-							addtexttoarea("plus=" & PRr.MotherCode,request);// Добавить новый тег
-							addtexttoarea("&minus=" & oldPRr.MotherCode,request);// Удалить старый тег
+							addtexttoarea("plus=" & URLEncode(PRr.MotherCode),request);// Добавить новый тег
+							addtexttoarea("&minus=" & URLEncode(oldPRr.MotherCode),request);// Удалить старый тег
 							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateTagsReply",20);
 							setareazerosize(request);
 							millisleep(1000);
