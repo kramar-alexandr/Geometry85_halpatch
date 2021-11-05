@@ -113,6 +113,8 @@ procedure FindAssets(record DepVc Depr,record RcVc RepSpec)
 begin
   record AT2UnitVc ATr;
   record AT2Vc AT2r;
+  record AT2TakeVc AT2Taker;
+  row AT2TakeVc AT2Takerw;
   record RentINVc RentINr;
   Boolean TrHs, testf,firstf;
   val dprv,nbv;
@@ -120,6 +122,16 @@ begin
   string 255 tstr;
   val purchval;
   string 5 fcl,tcl;// 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 15:44:50
+  vector string 20 atmov;
+  integer i,rwcnt;
+  
+  while(loopmain(AT2Taker,1,true))begin
+    rwcnt = matrowcnt(AT2Taker);
+    for(i=0;i<rwcnt;i=i+1)begin
+      matrowget(AT2Taker,i,AT2Takerw);
+      atmov[AT2Takerw.InventoryNr] = AT2Taker.SerNr;
+    end;
+  end;
   
   TrHs = true; 
   firstf = true; 
@@ -183,6 +195,8 @@ begin
         if (firstf) then begin
           StartFormat(15);
           OutString(0,0,USetStr(13710),false);
+          OutString(35,0,USetStr(13117),false);
+          
           OutString(60,0,Depr.Code,false);
           OutString(90,0,Depr.Comment,false);
           EndFormat;
@@ -191,6 +205,8 @@ begin
           OutString(80,0,USetStr(13703),false);
           OutString(280,0,USetStr(13704),true);
           OutString(340,0,USetStr(13705),true);
+          OutString(390,0,USetStr(13103),true);
+          
           OutString(410,0,USetStr(13706),true);
           OutString(1,0,USetStr(13707),true);
           EndFormat;  
@@ -199,12 +215,16 @@ begin
         end;
         StartFormat(15);
         OutString(0,"DblAT2UnitVc",ATr.InventoryNr,false);
+        OutString(35,0,ATr.RespPerson,false);
         OutString(80,0,ATr.Description,false);
         OutVal(280,0,purchval*ATr.Quantity,M40Val,true);
         FindDepr(ATr,RepSpec,dprv);
         dprv = dprv + ATr.InitDeprVal1;
         OutVal(340,0,dprv,M40Val,true);
         nbv = ATr.Quantity*purchval - dprv;
+        
+        OutString(390,"DblAT2TakeVc",atmov[ATr.InventoryNr],true);
+        
         OutVal(410,0,nbv,M40Val,true);
         OutString(1,0,ATr.PurchaseDate,true);
         EndFormat;    
