@@ -122,7 +122,7 @@ begin
   string 255 tstr;
   val purchval;
   string 5 fcl,tcl;// 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 15:44:50
-  vector string 20 atmov;
+  vector string 20 atmov,atuser;
   integer i,rwcnt;
   
   while(loopmain(AT2Taker,1,true))begin
@@ -130,6 +130,7 @@ begin
     for(i=0;i<rwcnt;i=i+1)begin
       matrowget(AT2Taker,i,AT2Takerw);
       atmov[AT2Takerw.InventoryNr] = AT2Taker.SerNr;
+      atuser[AT2Takerw.InventoryNr] = AT2Takerw.LoanPerson;
     end;
   end;
   
@@ -215,7 +216,7 @@ begin
         end;
         StartFormat(15);
         OutString(0,"DblAT2UnitVc",ATr.InventoryNr,false);
-        OutString(35,0,ATr.RespPerson,false);
+        OutString(35,0,atuser[ATr.InventoryNr],false);
         OutString(80,0,ATr.Description,false);
         OutVal(280,0,purchval*ATr.Quantity,M40Val,true);
         FindDepr(ATr,RepSpec,dprv);
