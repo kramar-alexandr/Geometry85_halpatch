@@ -137,8 +137,9 @@ begin
     StartFormat(15);
     OutString(0,0,USetStr(4942),false);
     OutString(60,0,USetStr(4943),false);
-	 OutString(100,0,USetStr(4862),false);// SAV 2011_08_18// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
-    OutString(180,0,USetStr(4944),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
+	  OutString(100,0,USetStr(4862),false);// SAV 2011_08_18// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
+    OutString(150,0,USetStr(9214),false);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 11:20:13 AM
+    OutString(220,0,USetStr(4944),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
     OutString(1,0,USetStr(4947),true);
     EndFormat;
   end;
@@ -146,7 +147,7 @@ begin
     StartFormat(15);
     OutString(0,0,USetStr(4942),false);
     OutString(130,0,USetStr(4943),false);
-	 OutString(300,0,USetStr(4862),false);// SAV 2011_08_18// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:31
+	  OutString(300,0,USetStr(4862),false);// SAV 2011_08_18// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:31
     EndFormat;
   end;
   POr.SerNr = afr;
@@ -221,8 +222,9 @@ begin
           StartFormat(15);
           OutLongInt(0,"DblPOVc",POr.SerNr,false);
           OutDate(60,0,POr.TransDate,false);
-			 OutString(100,"dblPRVc",POr.PRCode,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:52
-          OutString(180,0,POr.Addr0,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:53
+			    OutString(100,"dblPRVc",POr.PRCode,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:52
+          OutString(150,0,POr.Reference,false);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 11:21:16 AM
+          OutString(220,0,POr.Addr0,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:53
           OutVal(440,0,iv,M4Val,true);
           OutString(445,0,POr.CurncyCode,false);
           EndFormat;
@@ -303,8 +305,9 @@ begin
     StartFormat(15);
     OutString(0,0,USetStr(4942),false);
     OutString(60,0,USetStr(4943),false);
-	 OutString(100,0,USetStr(4862),false);// SAV 2011_08_18
-    OutString(180,0,USetStr(4944),false);
+	  OutString(100,0,USetStr(4862),false);// SAV 2011_08_18
+	  OutString(150,0,USetStr(9214),false);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 11:22:32 AM
+    OutString(220,0,USetStr(4944),false);
     OutString(1,0,USetStr(4947),true);
     EndFormat;
   end;
@@ -394,8 +397,9 @@ begin
           StartFormat(15);
           OutLongInt(0,"DblPOVc",POr.SerNr,false);
           OutDate(60,0,POr.TransDate,false);
-			 OutString(100,"dblPRVc",POr.PRCode,false);
-          OutString(180,0,POr.Addr0,false);
+			    OutString(100,"dblPRVc",POr.PRCode,false);
+			    OutString(150,0,POr.Reference,false);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 11:22:32 AM
+          OutString(220,0,POr.Addr0,false);
           OutVal(440,0,iv,M4Val,true);
           OutString(445,0,POr.CurncyCode,false);
 			 // RHr.RecidStr = GetRecordLink(POr);
