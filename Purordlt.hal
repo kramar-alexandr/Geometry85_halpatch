@@ -8,6 +8,7 @@ external procedure HTCustClass(string,var string);
 external procedure HTCustClassType(string,var string);
 external function Boolean SetInSet2(string,string);
 external procedure ClassTypef(string,string,var Boolean);
+external function Boolean FindStringInString(string,string);
 
 
 
@@ -138,8 +139,8 @@ begin
     OutString(0,0,USetStr(4942),false);
     OutString(60,0,USetStr(4943),false);
     OutString(100,0,USetStr(9214),false);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 11:20:13 AM
-	  OutString(150,0,USetStr(4862),false);// SAV 2011_08_18// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
-    OutString(220,0,USetStr(4944),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
+	  OutString(180,0,USetStr(4862),false);// SAV 2011_08_18// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
+    OutString(230,0,USetStr(4944),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:27
     OutString(1,0,USetStr(4947),true);
     EndFormat;
   end;
@@ -170,6 +171,11 @@ begin
 	//Wednesday, 4 December 2019 11:02:36
 			if (nonblank(RepSpec.f6) and (RepSpec.f6<>POr.PRCode)) then begin
          testf = false;
+      end;
+      if(nonblank(RepSpec.f10))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 12:37:39 PM
+        if(!FindStringInString(POr.Reference,RepSpec.f10))then begin
+          testf = false;
+        end;
       end;
 
 	// Edit End ---------------------------------------------- Edit End
@@ -223,8 +229,8 @@ begin
           OutLongInt(0,"DblPOVc",POr.SerNr,false);
           OutDate(60,0,POr.TransDate,false);
 			    OutString(100,0,POr.Reference,false);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 11:21:16 AM
-			    OutString(150,"dblPRVc",POr.PRCode,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:52
-          OutString(220,0,POr.Addr0,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:53
+			    OutString(180,"dblPRVc",POr.PRCode,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:52
+          OutString(230,0,POr.Addr0,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:02:53
           OutVal(440,0,iv,M4Val,true);
           OutString(445,0,POr.CurncyCode,false);
           EndFormat;
@@ -306,8 +312,8 @@ begin
     OutString(0,0,USetStr(4942),false);
     OutString(60,0,USetStr(4943),false);
 	  OutString(100,0,USetStr(9214),false);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 11:22:32 AM
-	  OutString(150,0,USetStr(4862),false);// SAV 2011_08_18
-    OutString(220,0,USetStr(4944),false);
+	  OutString(180,0,USetStr(4862),false);// SAV 2011_08_18
+    OutString(230,0,USetStr(4944),false);
     OutString(1,0,USetStr(4947),true);
     EndFormat;
   end;
@@ -331,6 +337,11 @@ begin
     end;
     if (TrHs) then begin
       testf = true;
+      if(nonblank(RepSpec.f10))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 12:37:39 PM
+        if(!FindStringInString(POr.Reference,RepSpec.f10))then begin
+          testf = false;
+        end;
+      end;
       if (nonblank(RepSpec.f2) and (RepSpec.f2<>POr.VECode)) then begin
          testf = false;
       end;
@@ -398,8 +409,8 @@ begin
           OutLongInt(0,"DblPOVc",POr.SerNr,false);
           OutDate(60,0,POr.TransDate,false);
 			    OutString(100,0,POr.Reference,false);// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 11:22:32 AM
-			    OutString(150,"dblPRVc",POr.PRCode,false);
-          OutString(220,0,POr.Addr0,false);
+			    OutString(180,"dblPRVc",POr.PRCode,false);
+          OutString(230,0,POr.Addr0,false);
           OutVal(440,0,iv,M4Val,true);
           OutString(445,0,POr.CurncyCode,false);
 			 // RHr.RecidStr = GetRecordLink(POr);
