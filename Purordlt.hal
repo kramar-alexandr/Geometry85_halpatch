@@ -87,9 +87,9 @@ begin
   Boolean TrHs;
   val iv;
   val TotSum;
-  Boolean testf;
+  Boolean testf,revert;
   LongInt afr,ato;
-  string 255 tstr;
+  string 255 tstr,searchstr;
   Integer rw;
   array val av1;
   array val av2;
@@ -173,8 +173,20 @@ begin
          testf = false;
       end;
       if(nonblank(RepSpec.f10))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 12:37:39 PM
-        if(!FindStringInString(POr.Reference,RepSpec.f10))then begin
-          testf = false;
+        revert = false;
+        searchstr = RepSpec.f10;
+        if(left(RepSpec.f10,1)=="!")then begin
+          revert = true;
+          searchstr = right(RepSpec.f10,len(RepSpec.f10)-1);
+        end;
+        if(revert==false)then begin
+          if(!FindStringInString(POr.Reference,searchstr))then begin
+            testf = false;
+          end;
+        end else begin
+          if(FindStringInString(POr.Reference,searchstr))then begin
+            testf = false;
+          end;
         end;
       end;
 
@@ -259,7 +271,7 @@ begin
   Boolean TrHs;
   val iv;
   val TotSum;
-  Boolean testf;
+  Boolean testf,revert;
   LongInt afr,ato;
   string 255 tstr;
   Integer rw;
@@ -269,7 +281,7 @@ begin
   array string 20 acur;
   Integer curcnt;
 	record RHistVc RHr;
-	string 255 rlink;
+	string 255 rlink,searchstr;
   rw = 1;
   afr = FirstInRange(RepSpec.f1,30);
   ato = LastInRange(RepSpec.f1,30);
@@ -338,8 +350,20 @@ begin
     if (TrHs) then begin
       testf = true;
       if(nonblank(RepSpec.f10))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - 02, 07 12 2021 y. at 12:37:39 PM
-        if(!FindStringInString(POr.Reference,RepSpec.f10))then begin
-          testf = false;
+        revert = false;
+        searchstr = RepSpec.f10;
+        if(left(RepSpec.f10,1)=="!")then begin
+          revert = true;
+          searchstr = right(RepSpec.f10,len(RepSpec.f10)-1);
+        end;
+        if(revert==false)then begin
+          if(!FindStringInString(POr.Reference,searchstr))then begin
+            testf = false;
+          end;
+        end else begin
+          if(FindStringInString(POr.Reference,searchstr))then begin
+            testf = false;
+          end;
         end;
       end;
       if (nonblank(RepSpec.f2) and (RepSpec.f2<>POr.VECode)) then begin
