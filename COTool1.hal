@@ -315,8 +315,8 @@ begin
       ClearRow(IVp,IVrw,1);
       IVrw.Spec = tstr;
       IVrw.TaxTemplateCode = COrw.TaxTemplateCode;
-      UnpackRowFieldMatrix(COrw,"TaxMatrix",TMr);
-      PackRowFieldMatrix(IVrw,"TaxMatrix",TMr);
+      //UnpackRowFieldMatrix(COrw,"TaxMatrix",TMr);
+      //PackRowFieldMatrix(IVrw,"TaxMatrix",TMr);
       RowCalculateTaxMatrix_IVVc(IVp,rownr,IVrw);
       MatRowPut(IVp,rownr,IVrw);
       rownr = rownr + 1;

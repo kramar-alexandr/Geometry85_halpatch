@@ -964,7 +964,7 @@ LkInvoiceRowTypeNormal_MakeTrans:;
           ftxt = tstr;
         end;
         if (CheckTTRPerRow("VIVc",viraccno,rwotxt,dc1,taccnumber,0)) then begin end;
-        UnpackRowFieldMatrix(VIrw,"TaxMatrix",TMr);// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 27 01 2020 y. at 11:26:12 AM
+        //UnpackRowFieldMatrix(VIrw,"TaxMatrix",TMr);// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 27 01 2020 y. at 11:26:12 AM
         vatcodes = TaxTemplateVATCodeOnTRRows(TMr,VIrw.VATCode);
         if (vt==kVATTypeReversed) then begin rvrsvatcode = vatcodes; vatcodes = ""; end;
         if (HasLocalization("GBR")) then begin

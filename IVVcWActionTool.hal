@@ -692,7 +692,7 @@ done below
 //      curitemname = IVrw.Spec;
 //      if (GetItemNameStr(1,curitemname,IVr.LangCode,INr.Name,INr.Code)) then begin end;
     IVrw.Spec = curitemname;
-    PackRowFieldMatrix(IVrw,"TaxMatrix",TMr);
+    //PackRowFieldMatrix(IVrw,"TaxMatrix",TMr);
     MatRowPut(IVr,rownr,IVrw);
     if (INr.ExplodeRec!=0 and IVrw.Quant!=blankval) then begin
       if (nonblank(IVrw.Recepy)) then begin
@@ -1494,7 +1494,7 @@ begin
                             exportflag,calcprice,IVp.TransDate,IVp.TransTime,IVp.CustCode,true,dummyf,IVp.PayDeal,
                             tax2code,tax2prc,IVp.Region,location,itemtaxtemplatecode)) then begin
         IVrw.TaxTemplateCode = FillupTaxMatrix(0,IVp.BranchID,IVp.CustCode,IVp.CustCat,IVp.DelAddrCode,itemtaxtemplatecode,TMr);
-        PackRowFieldMatrix(IVrw,"TaxMatrix",TMr);
+        //PackRowFieldMatrix(IVrw,"TaxMatrix",TMr);
         MatRowPut(IVp,i,IVrw);
         RowCalculateTaxMatrix_IVVc(IVp,i,IVrw);
         MatRowPut(IVp,i,IVrw);

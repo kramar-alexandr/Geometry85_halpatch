@@ -92,10 +92,10 @@ LkInvoiceRowTypeNormal:;
           VIrw.Sum = ct;
         end else begin
           if (nonblank(VIp.VATVal)) then begin
-            UnpackFieldMatrix(VIp,"TaxMatrix",TMr);
+            //UnpackFieldMatrix(VIp,"TaxMatrix",TMr);// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 08 12 2021 y. at 1:02:21 PM
             t = CalculateTotalVATFromTaxMatrix(TMr,1);
             if (t!=0) then begin
-              t = VIp.VATVal - CalculateTotalVATFromTaxMatrix(TMr,1);
+              //t = VIp.VATVal - CalculateTotalVATFromTaxMatrix(TMr,1);// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 08 12 2021 y. at 1:02:22 PM
             end else begin
               t = blankval;
             end;

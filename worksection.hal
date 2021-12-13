@@ -6,6 +6,8 @@ external procedure TSVc_PasteEMCode(var record TSVc,Integer);
 external function Boolean TSVc_PasteArtCode(var record TSVc,Integer,var string);
 forward procedure WorkSectionUpdateMembers(record PRVc,record PRVc);
 external function string 255 MonthName(Date);
+external function boolean MySendAsyncWebRequest(string,longint,integer,boolean,string,string,string,string,area,string,integer);
+external function boolean MySendWebRequest(string,longint,longint,boolean,string,string,string,string,boolean,area,var area,integer);
 
 
 procedure TSSumUp(record TSVc TSp)
@@ -168,7 +170,7 @@ begin
 							end;
 							writeareatofile(request,"WorkSectionUpdateRequestTask.txt",0);
 							
-							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
+							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
 					end;
 				end;
 			end;
@@ -296,7 +298,7 @@ begin
 								end;
 							end;
 							writeareatofile(request,"WorkSectionUpdateRequestTask.txt",0);
-							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
+							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
 						end else begin
 							/*reqaction = "update_task";
 							reqpage = PRr.WSPage_Tsk;
@@ -316,7 +318,7 @@ begin
 							if(nonblankdate(PRr.EndDate))then begin
 								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
 							end;
-							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
+							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
 							*/
 						end;
 					end;
@@ -407,7 +409,7 @@ begin
 						HASH = LowerCase(MD5String(togashstr));
 						page = page & "&hash=" & HASH;
 						addtexttoarea("title=" & CUr.WSFolder,request);// Создание папки проекта
-						SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateFolderReply",20);
+						MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateFolderReply",20);
 						setareazerosize(request);
 						millisleep(1000);
 					end;
@@ -439,7 +441,7 @@ begin
 							addtexttoarea("&title=" & URLEncode(PRr.MotherCode),request);// Группа меток
 							writeareatofile(request,"WS_add_tags.txt",0);
 							logtext(0,"page  " & page);
-							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateTagsReply",20);
+							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateTagsReply",20);
 							setareazerosize(request);
 							millisleep(1000);
 						end;
@@ -483,7 +485,7 @@ begin
 						end;
 					end;*/
 					writeareatofile(request,"WorkSectionUpdateRequest.txt",0);
-					SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProject",20);
+					MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProject",20);
 					removetask("CheckSyncForProgect_" & PRr.Code);
 					NewTimedTask("CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect",PRr.Code,CurrentDate,addminutes(currenttime,10),"","");
 				end;
@@ -501,7 +503,7 @@ begin
 				togashstr = reqpage & reqaction & WSb.ApiKey;
 				HASH = LowerCase(MD5String(togashstr));
 				page = page & "&hash=" & HASH;
-				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCloseProjectReply",20);
+				MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCloseProjectReply",20);
 			end;
 			if(nonblank(PRr.WorksectionID_Pr) and PRr.WSSended==1)then begin
 				if(updatef and needtoclose==false)then begin
@@ -519,7 +521,7 @@ begin
 							page = page & "&hash=" & HASH;
 							addtexttoarea("group=" & WSb.TagsPage,request);// Группа меток
 							addtexttoarea("&title=" & URLEncode(PRr.MotherCode),request);// Группа меток
-							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateTagsReply",20);
+							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateTagsReply",20);
 							setareazerosize(request);
 							millisleep(1000);
 						
@@ -535,7 +537,7 @@ begin
 							page = page & "&hash=" & HASH;
 							addtexttoarea("plus=" & URLEncode(PRr.MotherCode),request);// Добавить новый тег
 							addtexttoarea("&minus=" & URLEncode(oldPRr.MotherCode),request);// Удалить старый тег
-							SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateTagsReply",20);
+							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateTagsReply",20);
 							setareazerosize(request);
 							millisleep(1000);
 						
@@ -570,7 +572,7 @@ begin
 				if(nonblankdate(PRr.EndDate))then begin
 					addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
 				end;
-				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProjectUpdate",20);*/
+				MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProjectUpdate",20);*/
 		end;
 	end;
 		
@@ -635,7 +637,7 @@ begin
 		togashstr = reqpage & reqaction & WSb.ApiKey;
 		HASH = LowerCase(MD5String(togashstr));
 		page = page & "&hash=" & HASH;
-		SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateGetUsersReply",20);
+		MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateGetUsersReply",20);
 	end;
 		
 return;
@@ -717,7 +719,7 @@ begin
 				HASH = LowerCase(MD5String(togashstr));
 				page = page & "&hash=" & HASH;
 				addtexttoarea("email_user=" & prepareUsersEMails(aoldMembers[i]),request);
-				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"unsubscribe",20);
+				MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"unsubscribe",20);
 				addtexttoarea(chr(13) & chr(10),request);
 				writeareatofile(request,"webUNsubscribe.txt",1);
 				millisleep(500);
@@ -733,7 +735,7 @@ begin
 				HASH = LowerCase(MD5String(togashstr));
 				page = page & "&hash=" & HASH;
 				addtexttoarea("members=" & prepareUsersEMails(anewMembers[i]),request);
-				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"add_project_members",20);
+				MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"add_project_members",20);
 				addtexttoarea(chr(13) & chr(10),request);
 				writeareatofile(request,"delete_project_members.txt",1);
 
@@ -756,7 +758,7 @@ begin
 				HASH = LowerCase(MD5String(togashstr));
 				page = page & "&hash=" & HASH;
 				addtexttoarea("email_user=" & prepareUsersEMails(anewMembers[i]),request);
-				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"subscribe",20);
+				MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"subscribe",20);
 				addtexttoarea(chr(13) & chr(10),request);
 				writeareatofile(request,"websubscribe.txt",1);
 
@@ -773,7 +775,7 @@ begin
 				HASH = LowerCase(MD5String(togashstr));
 				page = page & "&hash=" & HASH;
 				addtexttoarea("members=" & prepareUsersEMails(anewMembers[i]),request);
-				SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"add_project_members",20);
+				MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"add_project_members",20);
 				addtexttoarea(chr(13) & chr(10),request);
 				writeareatofile(request,"add_project_members.txt",1);
 
@@ -815,7 +817,7 @@ begin
 						addtexttoarea("members=" & prepareUsersEMails(members[i]),request);
 						logtext(0,"members[i]  " & members[i]);
 						logtext(0,"prepareUsersEMails(members[i] " & prepareUsersEMails(members[i]));
-						SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateMembersReply",20);
+						MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateMembersReply",20);
 					end;
 				end;
 				
@@ -957,6 +959,7 @@ begin
                 USr.Code = vUsers[user];
                 readfirstmain(USr,1,true)
                 TSr.UserCode = USr.Code;
+                TSr.SalesGroup = USr.SalesGroup;
                 TSr.Comment = USr.Name & " " & MonthName(tmpdat) & " " & GetYear(tmpdat);
                 TSr.RegDate = tmpdat;
                 TSr.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");
@@ -1043,7 +1046,7 @@ begin
 		writeareatofile(repsp,"repsp",0);
 		writeareatofile(request,"WorkSectionGetCostsMn_request.txt",0);
 		logtext(0,page);
-		SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionGetCostsMnReply",20);
+		MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionGetCostsMnReply",20);
 			
 	end;
 	
@@ -1095,8 +1098,8 @@ begin
 		writeareatofile(repsp,"repsp",0);
 		writeareatofile(request,"WorkSectionGetHolidaysMn_request.txt",0);
 		logtext(0,page);
-		//SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionGetCostsMnReply",20);
-		SendWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",false,request,reply,25);
+		//MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionGetCostsMnReply",20);
+		mySENDWEBREQUEST(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",false,request,reply,25);
 		
 		writeareatofile(reply,"WorkSectionGetHolidaysMn_reply.txt",0);
 			
@@ -1174,6 +1177,7 @@ begin
                   USr.Code = vUsers[usermail];
                   readfirstmain(USr,1,true)
                   TSr.UserCode = USr.Code;
+                  TSr.SalesGroup = USr.SalesGroup;
                   TSr.Comment = USr.Name & " " & MonthName(tmpdat) & " " & GetYear(tmpdat);
                   TSr.RegDate = tmpdat;
                   TSr.SerNr = NextSerNr("TSVc",TSr.RegDate,-1,false,"");
@@ -1429,7 +1433,7 @@ begin
       togashstr = reqpage & reqaction & WSb.ApiKey;
       HASH = LowerCase(MD5String(togashstr));
       page = page & "&hash=" & HASH;			
-      SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WebCloseWSProcectsReply",20);
+      MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WebCloseWSProcectsReply",20);
     end;
   
 return;
@@ -1542,7 +1546,7 @@ begin
 	togashstr = reqpage & reqaction & WSb.ApiKey;
 	HASH = LowerCase(MD5String(togashstr));
 	page = page & "&hash=" & HASH & "&filter=active";			
-  SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"TaskCallback",20);
+  MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"TaskCallback",20);
 	
 
 return;
@@ -1571,7 +1575,7 @@ begin
 	togashstr = reqpage & reqaction & WSb.ApiKey;
 	HASH = LowerCase(MD5String(togashstr));
 	page = page & "&hash=" & HASH & "&filter=active";			
-	SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"Callback",20);
+	MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"Callback",20);
 
 return;
 end;
@@ -1650,7 +1654,27 @@ begin
 	togashstr = reqpage & reqaction & WSb.ApiKey;
 	HASH = LowerCase(MD5String(togashstr));
 	page = page & "&hash=" & HASH & "&filter=active";			
-	SendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"ProjectCallback",20);
+	MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"ProjectCallback",20);
+  
+return;
+end;
+
+global updating procedure FillSalesGroupTOTsMn(record RcVc RepSpec)
+begin
+  record TSVc TSr;
+  record UserVc USr;
+  
+  while(loopmain(TSr,1,true))begin
+    if(blank(TSr.SalesGroup))then begin
+      USr.Code = TSr.UserCode;
+      if(readfirstmain(TSr,1,true))then begin
+        if(nonblank(TSr.SalesGroup))then begin
+          TSr.SalesGroup = USr.SalesGroup;
+          recordstore(TSr,true);
+        end;
+      end;
+    end;
+  end;
   
 return;
 end;

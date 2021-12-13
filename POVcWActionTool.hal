@@ -840,7 +840,7 @@ calculated above and CalcSum2 does not take into account Discount Calculation
       res = 0;
       PUrw.TaxTemplateCode = POrw.TaxTemplateCode;
       //UnpackRowFieldMatrix(POrw,"TaxMatrix",TMr);// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 27 01 2020 y. at 11:26:41 AM
-      PackRowFieldMatrix(PUrw,"TaxMatrix",TMr);
+      //PackRowFieldMatrix(PUrw,"TaxMatrix",TMr);
       MatRowPut(PUp,nrwcnt,PUrw);
       RowCalculateTaxMatrix_PUVc(PUp,nrwcnt,PUrw,0);
       MatRowPut(PUp,nrwcnt,PUrw);     
@@ -1273,7 +1273,7 @@ begin
 //                  newVIrw.Price = (newVIrw.Sum/(100-newVIrw.vRebate))*100;
 //                  newVIrw.Price = Round(newVIrw.Price/newVIrw.qty,SetRoundModeD(2));
                   //UnpackRowFieldMatrix(VIrw,"TaxMatrix",TMr);// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 27 01 2020 y. at 11:26:51 AM
-                  PackRowFieldMatrix(newVIrw,"TaxMatrix",TMr);
+                  //PackRowFieldMatrix(newVIrw,"TaxMatrix",TMr);
                   RowCalculateTaxMatrix_VIVc(theVIp,srw,newVIrw,0);
                   MatRowPut(theVIp,srw,newVIrw);
                   srw = srw + 1;
@@ -1365,7 +1365,7 @@ begin
         VIrw.AccNumber = GetItemCostAcc(INr,POp.VECode);
         VIrw.VATCode = VATCode;        
         VIrw.TaxTemplateCode = taxtemplatecode;        
-        PackRowFieldMatrix(VIrw,"TaxMatrix",TMr);
+        //PackRowFieldMatrix(VIrw,"TaxMatrix",TMr);
         RowCalculateTaxMatrix_VIVc(VIp,MatRowCnt(VIp),VIrw,0);
         MatRowPut(VIp,MatRowCnt(VIp),VIrw);
       end;
@@ -1693,7 +1693,7 @@ L33PastePOInVI2:;
         VIrw.VATCode = POrw.VATCode;
         VIrw.TaxTemplateCode = POrw.TaxTemplateCode;
         //UnpackRowFieldMatrix(POrw,"TaxMatrix",TMr);// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 27 01 2020 y. at 11:27:00 AM
-        PackRowFieldMatrix(VIrw,"TaxMatrix",TMr);
+        //PackRowFieldMatrix(VIrw,"TaxMatrix",TMr);
         VIrw.Sum = blankval;
         VIrw.OrdRow = -2; // Row comes from Order, but is not connected to a specific row 
         if (TransferItems!=0) then begin
@@ -1818,7 +1818,7 @@ done in the end, round off
         if (TransferItems==2) then begin
           VIrw.TaxTemplateCode = POrw.TaxTemplateCode;
           //UnpackRowFieldMatrix(POrw,"TaxMatrix",TMr);// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 27 01 2020 y. at 11:27:05 AM
-          PackRowFieldMatrix(VIrw,"TaxMatrix",TMr);
+          //PackRowFieldMatrix(VIrw,"TaxMatrix",TMr);
           MatRowPut(VIp,line,VIrw);
           RowCalculateTaxMatrix_VIVc(VIp,line,VIrw,0);
           MatRowPut(VIp,line,VIrw);
@@ -1904,8 +1904,8 @@ L44PastePOInVI2:;
     VIp.PayVal = VIp.PayVal + VIp.CalcVATVal + VIp.TAX1Sum;
   end;
   if (CYb.UseTaxTemplatesforTaxCalc!=0) then begin
-    UnpackFieldMatrix(VIp,"TaxMatrix",TMr);
-    VIp.PayVal = VIp.PayVal + CalculateTotalVATFromTaxMatrix(TMr,POp.InclVAT);
+    //UnpackFieldMatrix(VIp,"TaxMatrix",TMr);// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 08 12 2021 y. at 1:02:28 PM
+    //VIp.PayVal = VIp.PayVal + CalculateTotalVATFromTaxMatrix(TMr,POp.InclVAT);// Edit ************************** BPI Ukraine - KramarAlexandr - 03, 08 12 2021 y. at 1:02:29 PM
   end;
   VISumup(VIp,p);
   if (p!=0) then begin
