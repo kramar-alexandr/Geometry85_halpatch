@@ -63,6 +63,8 @@ begin
   longint pos1,pos2;
   boolean res;
   
+  logtext(0,"AuthTurboSMS");
+  
   BlockLoad(SMSb);
   SetAreaZeroSize(mainRequest);
   SetAreaZeroSize(replyarea);
@@ -72,8 +74,8 @@ begin
   host = SMSb.Host;
   page = SMSb.Page;
   
-  Addtexttoarea("POST " & page & " HTTP" & Chr(47) & "1.1" & chr(13) & chr(10),mainRequest);
- 	AddTextToArea("host: " & host & chr(13) & chr(10),mainRequest);
+  //Addtexttoarea("POST " & page & " HTTP" & Chr(47) & "1.1" & chr(13) & chr(10),mainRequest);
+ 	//AddTextToArea("host: " & host & chr(13) & chr(10),mainRequest);
   
   AddTextToArea("SOAPAction: http:" & Chr(47) & Chr(47) & host & page & Chr(47) & "Auth" & chr(13) & chr(10),mainRequest);
   AddTextToArea(chr(13) & chr(10),mainRequest);
@@ -115,6 +117,7 @@ begin
   SetAreaZeroSize(mainRequest);
   AddTextToArea(CurrentDate & " " & CurrentTime & " AuthTurboSMS - " & response & chr(13) & chr(10),mainRequest);
   writeareatofile(mainRequest,"TurboSMS.log",1);
+  writeareatofile(replyarea,"TurboSMSReply.log",1);
   
   AuthTurboSMS = res;
   return;
@@ -137,8 +140,8 @@ begin
   host = SMSb.Host;
   page = SMSb.Page;
   
-  Addtexttoarea("POST " & page & " HTTP" & Chr(47) & "1.1" & chr(13) & chr(10),mainRequest);
- 	AddTextToArea("host: " & host & chr(13) & chr(10),mainRequest);
+  //Addtexttoarea("POST " & page & " HTTP" & Chr(47) & "1.1" & chr(13) & chr(10),mainRequest);
+ 	//AddTextToArea("host: " & host & chr(13) & chr(10),mainRequest);
   AddTextToArea("Cookie: PHPSESSID=" & cookie & ";" & chr(13) & chr(10),mainRequest);
   AddTextToArea("SOAPAction: http:" & Chr(47) & Chr(47) & host & page & Chr(47) & "GetCreditBalance" & chr(13) & chr(10),mainRequest);
   AddTextToArea(chr(13) & chr(10),mainRequest);
@@ -200,8 +203,8 @@ begin
   page = SMSb.Page;
   sign = SMSb.Sign;
   
-  Addtexttoarea("POST " & page & " HTTP" & Chr(47) & "1.1" & chr(13) & chr(10),mainRequest);
- 	AddTextToArea("host: " & host & chr(13) & chr(10),mainRequest);
+  //Addtexttoarea("POST " & page & " HTTP" & Chr(47) & "1.1" & chr(13) & chr(10),mainRequest);
+ 	//AddTextToArea("host: " & host & chr(13) & chr(10),mainRequest);
   AddTextToArea("Cookie: PHPSESSID=" & cookie & ";" & chr(13) & chr(10),mainRequest);
   AddTextToArea("SOAPAction: http:" & Chr(47) & Chr(47) & host & page & Chr(47) & "SendSMS" & chr(13) & chr(10),mainRequest);
   AddTextToArea(chr(13) & chr(10),mainRequest);
