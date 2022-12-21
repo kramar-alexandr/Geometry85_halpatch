@@ -1440,6 +1440,46 @@ return;
 end;
 
 
+global updating procedure CloaseByCodeWSMn()
+begin
+  array string 20 ids;
+  record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request;
+	string 255 newmembers,tstr;
+	integer pos,i;
+	array string 100 members;
+	area repsp;
+  
+  blockload(WSb);
+  
+  
+  ids[ids.length] = "266234";
+  ids[ids.length] = "266664";
+  ids[ids.length] = "266399";
+  ids[ids.length] = "266109";
+  ids[ids.length] = "266344";
+  
+  for(i=0;i<ids.length;i=i+1)begin
+    reqpage = "/project/" & ids[i] & "/";
+    if(nonblank(reqpage))then begin
+      reqaction = "close_project";
+      page = "/api/admin/v2/?action=" & reqaction;
+      if(nonblank(reqpage))then begin
+        page = page & "&page=" & reqpage;
+      end;
+      togashstr = reqpage & reqaction & WSb.ApiKey;
+      HASH = LowerCase(MD5String(togashstr));
+      page = page & "&hash=" & HASH;
+      logtext(0,page);			
+      //MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WebCloseWSProcectsReply",20);
+    end;
+  end;
+  
+return;
+end;
+
+
 //Edit **********************************************Vas-P	15/07/2021
 global updating procedure TaskCallback(Area a_reply,Area a_replyheader,boolean timeout)
 begin
