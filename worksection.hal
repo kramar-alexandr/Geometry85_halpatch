@@ -875,7 +875,7 @@ begin
 		area repsp;
 		record RcVc RepSpec;
 		
-		addfiletoarea("repsp",repsp,0);
+		addfiletoarea("WSLOG/repsp",repsp,0);
 		
 		RepSpec.f1 = gettabtextfromarea(0,0,repsp);
 		
