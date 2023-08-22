@@ -1810,3 +1810,12 @@ begin
 		
 return;
 end;
+
+
+global updating procedure closeNextProjectinWSMn(record RcVc RepSPec)
+begin
+  
+  closeNextProjectinWS;
+  
+return;
+end;
