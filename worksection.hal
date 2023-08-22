@@ -1787,10 +1787,14 @@ begin
 		vector string 40 vPRCodes;
 		area atoclose;
 		
+		logtext(0,"closeNextProjectinWS");
+		
 		addfiletoarea("closenextprojects.txt",atoclose,false);
 		
+		logtext(0,"countlinesinarea(atoclose) " & countlinesinarea(atoclose));
 		for(i=0;i<countlinesinarea(atoclose);i=i+1)begin
 		  PRr.Code = GetLineFromArea(atoclose,i);
+		  logtext(0,"PRr.Code " & PRr.Code);
 		  if(readfirstmain(PRr,1,true))then begin
 		    if(nonblank(PRr.WorksectionID_Pr))then begin
           if(PRr.Terminated==1 or PRr.Terminated==3)then begin
