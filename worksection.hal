@@ -210,6 +210,7 @@ end;
 
 global updating procedure WorkSectionCloseProjectReply(Area a_reply,Area a_replyheader,boolean timeout)
 begin
+  logtext(0,"WorkSectionCloseProjectReply");
   LogTextToFile("WorkSectionCloseProjectReply","WSLOG/WorkSectionCloseProjectReply.txt");	
 	addtexttoarea("----------------" & chr(13) & chr(10),a_reply);
 	writeareatofile(a_reply,"WSLOG/WorkSectionCloseProjectReply.txt",1);
@@ -404,6 +405,10 @@ begin
 		needtosync = true;
 	end;
 	
+	logtext(0,"updatef " & updatef);
+	logtext(0,"needtoclose " & needtoclose);
+  logtext(0,"PRr.WorksectionID_Pr " & PRr.WorksectionID_Pr);
+  logtext(0,"PRr.WSSended " & PRr.WSSended);
 	
 	if(true)then begin
 		if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
@@ -506,6 +511,7 @@ begin
 			end else begin
 			
 			end;
+			
 			if(needtoclose and nonblank(PRr.WorksectionID_Pr) and PRr.WSSended==1)then begin
 				PRr.WSSended = PRr.WSSended + 1;
 				reqpage = PRr.WSPage_Pr;
@@ -517,6 +523,7 @@ begin
 				togashstr = reqpage & reqaction & WSb.ApiKey;
 				HASH = LowerCase(MD5String(togashstr));
 				page = page & "&hash=" & HASH;
+				logtext(0,"Sends project to closing " & PRr.Code);
 				MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCloseProjectReply",20);
 			end;
 			if(nonblank(PRr.WorksectionID_Pr) and PRr.WSSended==1)then begin
