@@ -1794,6 +1794,7 @@ begin
 		logtext(0,"countlinesinarea(atoclose) " & countlinesinarea(atoclose));
 		for(i=0;i<countlinesinarea(atoclose);i=i+1)begin
 		  PRr.Code = GetLineFromArea(atoclose,i);
+		  PRr.Code = trim(PRr.Code);
 		  logtext(0,"PRr.Code " & PRr.Code);
 		  if(readfirstmain(PRr,1,true))then begin
 		    if(nonblank(PRr.WorksectionID_Pr))then begin
