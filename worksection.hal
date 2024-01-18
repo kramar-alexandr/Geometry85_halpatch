@@ -8,6 +8,7 @@ forward procedure WorkSectionUpdateMembers(record PRVc,record PRVc);
 external function string 255 MonthName(Date);
 external function boolean MySendAsyncWebRequest(string,longint,integer,boolean,string,string,string,string,area,string,integer);
 external function boolean MySendWebRequest(string,longint,longint,boolean,string,string,string,string,boolean,area,var area,integer);
+external function roundmode SetRoundModeD(Integer);
 
 
 procedure TSSumUp(record TSVc TSp)
@@ -858,6 +859,42 @@ end;
 
 //Полученіе таймшітов
 
+function boolean stringistime(string timestr)
+begin
+  boolean res;
+  integer i;
+  
+  for(i=0;i<len(timestr);i=i+1)begin
+    if(mid(timestr,i,1)==":")then begin
+      res = true;
+    end;
+  end;
+  
+  stringistime = res;
+return;
+end;
+
+function val timetohrs(string timestr)
+begin
+  val res,min;
+  time gettime;
+  
+  gettime = stringtotime(timestr);
+  
+  res = gethour(gettime);
+  
+  min = getminute(gettime);
+  min = min / 60;
+  
+  res = res + min;
+  
+  res = round(res,SetRoundModeD(2));
+  
+  timetohrs = res;
+return;
+end;
+
+
 global updating procedure WorkSectionGetCostsMnReply(Area a_reply,Area a_replyheader,boolean timeout)
 begin
 	json jreply;
@@ -865,7 +902,7 @@ begin
 		record PRVc PRr;
 		record WorksectionBlock WSb;
 		string 255 getaparams,reqpage,reqaction,togashstr,HASH,user,project,tstr,inwarn;
-		string 50 date_added;
+		string 50 date_added,timestr;
 		area request;
 		integer times,i,pos,rwcnt,irow,k,j;
 		record WorksectionUserVc WUr;
@@ -943,7 +980,6 @@ begin
             end;
             logtext(0,"project - " & project & " - " & PRr.Code);
           
-          
             if(readfirstmain(PRr,1,true))then begin
               logtext(0,"Name " & PRr.Name);
               logtext(0,"Text " & PRr.Desc0);
@@ -1018,7 +1054,13 @@ begin
                 matrowput(TSr,k,TSrw);
                 TSVc_PasteArtCode(TSr,k,inwarn);
                 matrowget(TSr,k,TSrw);
-                TSrw.Qty = stringtoval(JSONGet(jreply,"data/[" & i & "]/time"),m4val);
+                timestr = JSONGet(jreply,"data/[" & i & "]/time");
+                if(stringistime(timestr))then begin
+                  TSrw.Qty = timetohrs(timestr);
+                end else begin
+                  TSrw.Qty = stringtoval(timestr,m4val);
+                end;
+                
                 TSrw.Spec = JSONGet(jreply,"data/[" & i & "]/comment");
                 TSrw.WSTaskId = JSONGet(jreply,"data/[" & i & "]/id");
                 if(blank(TSrw.Spec))then begin
@@ -1492,11 +1534,185 @@ begin
   blockload(WSb);
   
   
-  ids[ids.length] = "266234";
-  ids[ids.length] = "266664";
-  ids[ids.length] = "266399";
-  ids[ids.length] = "266109";
-  ids[ids.length] = "266344";
+  ids[ids.length] = "271721";
+ids[ids.length] = "271725";
+ids[ids.length] = "271729";
+ids[ids.length] = "271733";
+ids[ids.length] = "271737";
+ids[ids.length] = "271741";
+ids[ids.length] = "271745";
+ids[ids.length] = "271749";
+ids[ids.length] = "271753";
+ids[ids.length] = "271757";
+ids[ids.length] = "271761";
+ids[ids.length] = "271765";
+ids[ids.length] = "271769";
+ids[ids.length] = "271773";
+ids[ids.length] = "271777";
+ids[ids.length] = "271781";
+ids[ids.length] = "271785";
+ids[ids.length] = "271789";
+ids[ids.length] = "271793";
+ids[ids.length] = "271797";
+ids[ids.length] = "271801";
+ids[ids.length] = "271805";
+ids[ids.length] = "271809";
+ids[ids.length] = "271813";
+ids[ids.length] = "271817";
+ids[ids.length] = "271821";
+ids[ids.length] = "271825";
+ids[ids.length] = "271829";
+ids[ids.length] = "271833";
+ids[ids.length] = "271837";
+ids[ids.length] = "271841";
+ids[ids.length] = "271845";
+ids[ids.length] = "271849";
+ids[ids.length] = "271853";
+ids[ids.length] = "271857";
+ids[ids.length] = "271861";
+ids[ids.length] = "271865";
+ids[ids.length] = "271869";
+ids[ids.length] = "271873";
+ids[ids.length] = "271877";
+ids[ids.length] = "271881";
+ids[ids.length] = "271885";
+ids[ids.length] = "271889";
+ids[ids.length] = "271893";
+ids[ids.length] = "271897";
+ids[ids.length] = "271901";
+ids[ids.length] = "271905";
+ids[ids.length] = "271909";
+ids[ids.length] = "271913";
+ids[ids.length] = "271917";
+ids[ids.length] = "271921";
+ids[ids.length] = "271925";
+ids[ids.length] = "271929";
+ids[ids.length] = "271933";
+ids[ids.length] = "271937";
+ids[ids.length] = "271941";
+ids[ids.length] = "271945";
+ids[ids.length] = "271949";
+ids[ids.length] = "271953";
+ids[ids.length] = "271957";
+ids[ids.length] = "271961";
+ids[ids.length] = "271965";
+ids[ids.length] = "271969";
+ids[ids.length] = "271973";
+ids[ids.length] = "271977";
+ids[ids.length] = "271981";
+ids[ids.length] = "271985";
+ids[ids.length] = "271989";
+ids[ids.length] = "271993";
+ids[ids.length] = "271997";
+ids[ids.length] = "272001";
+ids[ids.length] = "272005";
+ids[ids.length] = "272009";
+ids[ids.length] = "272013";
+ids[ids.length] = "272017";
+ids[ids.length] = "272021";
+ids[ids.length] = "272025";
+ids[ids.length] = "272029";
+ids[ids.length] = "272033";
+ids[ids.length] = "272037";
+ids[ids.length] = "272041";
+ids[ids.length] = "272045";
+ids[ids.length] = "272049";
+ids[ids.length] = "272053";
+ids[ids.length] = "272057";
+ids[ids.length] = "272061";
+ids[ids.length] = "272065";
+ids[ids.length] = "272069";
+ids[ids.length] = "272073";
+ids[ids.length] = "272077";
+ids[ids.length] = "272081";
+ids[ids.length] = "272085";
+ids[ids.length] = "272089";
+ids[ids.length] = "272093";
+ids[ids.length] = "272097";
+ids[ids.length] = "272101";
+ids[ids.length] = "272105";
+ids[ids.length] = "272109";
+ids[ids.length] = "272113";
+ids[ids.length] = "272117";
+ids[ids.length] = "272121";
+ids[ids.length] = "272125";
+ids[ids.length] = "272129";
+ids[ids.length] = "272133";
+ids[ids.length] = "272137";
+ids[ids.length] = "272141";
+ids[ids.length] = "272145";
+ids[ids.length] = "272149";
+ids[ids.length] = "272153";
+ids[ids.length] = "272157";
+ids[ids.length] = "272161";
+ids[ids.length] = "272165";
+ids[ids.length] = "272169";
+ids[ids.length] = "272173";
+ids[ids.length] = "272177";
+ids[ids.length] = "272181";
+ids[ids.length] = "272185";
+ids[ids.length] = "272189";
+ids[ids.length] = "272193";
+ids[ids.length] = "272197";
+ids[ids.length] = "272201";
+ids[ids.length] = "272205";
+ids[ids.length] = "272209";
+ids[ids.length] = "272213";
+ids[ids.length] = "272217";
+ids[ids.length] = "272221";
+ids[ids.length] = "272225";
+ids[ids.length] = "272229";
+ids[ids.length] = "272233";
+ids[ids.length] = "272237";
+ids[ids.length] = "272241";
+ids[ids.length] = "272245";
+ids[ids.length] = "272249";
+ids[ids.length] = "272253";
+ids[ids.length] = "272257";
+ids[ids.length] = "272261";
+ids[ids.length] = "272265";
+ids[ids.length] = "272269";
+ids[ids.length] = "272273";
+ids[ids.length] = "272277";
+ids[ids.length] = "272281";
+ids[ids.length] = "272285";
+ids[ids.length] = "272289";
+ids[ids.length] = "272293";
+ids[ids.length] = "272297";
+ids[ids.length] = "272301";
+ids[ids.length] = "272305";
+ids[ids.length] = "272309";
+ids[ids.length] = "272313";
+ids[ids.length] = "272317";
+ids[ids.length] = "272321";
+ids[ids.length] = "272325";
+ids[ids.length] = "272329";
+ids[ids.length] = "272333";
+ids[ids.length] = "272337";
+ids[ids.length] = "272341";
+ids[ids.length] = "272345";
+ids[ids.length] = "272349";
+ids[ids.length] = "272353";
+ids[ids.length] = "272357";
+ids[ids.length] = "272361";
+ids[ids.length] = "272365";
+ids[ids.length] = "272369";
+ids[ids.length] = "272373";
+ids[ids.length] = "272377";
+ids[ids.length] = "272381";
+ids[ids.length] = "272385";
+ids[ids.length] = "272389";
+ids[ids.length] = "272393";
+ids[ids.length] = "272397";
+ids[ids.length] = "272401";
+ids[ids.length] = "272405";
+ids[ids.length] = "272409";
+ids[ids.length] = "272413";
+ids[ids.length] = "272417";
+ids[ids.length] = "272421";
+ids[ids.length] = "272425";
+ids[ids.length] = "272429";
+ids[ids.length] = "272433";
   
   for(i=0;i<ids.length;i=i+1)begin
     reqpage = "/project/" & ids[i] & "/";
@@ -1509,8 +1725,9 @@ begin
       togashstr = reqpage & reqaction & WSb.ApiKey;
       HASH = LowerCase(MD5String(togashstr));
       page = page & "&hash=" & HASH;
-      logtext(0,page);			
-      //MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WebCloseWSProcectsReply",20);
+      logtext(0,page);
+      millisleep(1000);			
+      MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WebCloseWSProcectsReply",20);
     end;
   end;
   
