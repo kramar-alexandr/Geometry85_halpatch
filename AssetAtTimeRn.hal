@@ -243,10 +243,10 @@ begin
     Gray_Divider(0,1);
     StartFormat(15);
     OutString(0,0,USetStr(13708),false);
-    OutVal(280,0,tpurch,M40Val,true);
-    OutVal(340,0,tdepr,M40Val,true);
+    OutVal(280,0,tpurch,M45Val,true);
+    OutVal(340,0,tdepr,M45Val,true);
     tnbv = tpurch - tdepr;
-    OutVal(410,0,tnbv,M40Val,true);
+    OutVal(410,0,tnbv,M45Val,true);
     EndFormat;    
   end;
   return;
