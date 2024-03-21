@@ -9,6 +9,8 @@ external function Boolean CheckifAT2UnitSold(string,Date);
 // Edit Start ---------------------------------------------- Edit Start
 	//Wednesday, 4 December 2019 15:44:47
 	// 62
+SetLangMode(LangUkrainian,"UKR",0);
+
 function Boolean CheckAssetCatMatchArray(string category,string AT2Class,string fcl,string tcl)
 BEGIN
   record AT2Vc ATCatr;
