@@ -202,6 +202,8 @@ begin
           StartFormat(15);
           OutString(0,0,USetStr(13702),false);
           OutString(35,0,USetStr(13117),false);
+          OutString(35,0,USetStr(13710),false);
+          OutString(35,0,"",false);
           OutString(40,0,"Серійний №",false);
           OutString(60,0,"№ Контракту",false);
           OutString(80,0,USetStr(13703),false);
