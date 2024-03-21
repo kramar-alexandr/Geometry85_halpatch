@@ -208,6 +208,7 @@ begin
           OutString(35,0,"",false);
           OutString(40,0,"Серійний №",false);
           OutString(60,0,"№ Контракту",false);
+          OutString(60,0,"Клас НА",false);
           OutString(80,0,USetStr(13703),false);
           OutString(280,0,USetStr(13704),true);
           OutString(340,0,USetStr(13705),true);
@@ -226,6 +227,7 @@ begin
         OutString(90,0,Depr.Comment,false);
         OutString(40,0,ATr.SerialNr,false);
         OutString(60,0,ATr.ContractNr,false);
+        OutString(60,0,ATr.AT2Class,false);
         OutString(80,0,ATr.Description,false);
         OutVal(280,0,purchval*ATr.Quantity,M45Val,true);
         FindDepr(ATr,RepSpec,dprv);
