@@ -218,18 +218,20 @@ begin
         StartFormat(15);
         OutString(0,"DblAT2UnitVc",ATr.InventoryNr,false);
         OutString(35,0,atuser[ATr.InventoryNr],false);
+        OutString(60,0,Depr.Code,false);
+        OutString(90,0,Depr.Comment,false);
         OutString(40,0,ATr.SerialNr,false);
         OutString(60,0,ATr.ContractNr,false);
         OutString(80,0,ATr.Description,false);
-        OutVal(280,0,purchval*ATr.Quantity,M40Val,true);
+        OutVal(280,0,purchval*ATr.Quantity,M45Val,true);
         FindDepr(ATr,RepSpec,dprv);
         dprv = dprv + ATr.InitDeprVal1;
-        OutVal(340,0,dprv,M40Val,true);
+        OutVal(340,0,dprv,M45Val,true);
         nbv = ATr.Quantity*purchval - dprv;
         
         OutString(390,"DblAT2TakeVc",atmov[ATr.InventoryNr],true);
         
-        OutVal(410,0,nbv,M40Val,true);
+        OutVal(410,0,nbv,M45Val,true);
         OutString(1,0,ATr.PurchaseDate,true);
         EndFormat;    
         tpurch = tpurch + ATr.Quantity*purchval;
