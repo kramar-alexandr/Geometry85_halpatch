@@ -196,13 +196,14 @@ begin
         if (firstf) then begin
           StartFormat(15);
           OutString(0,0,USetStr(13710),false);
-          OutString(35,0,USetStr(13117),false);
-          
           OutString(60,0,Depr.Code,false);
           OutString(90,0,Depr.Comment,false);
           EndFormat;
           StartFormat(15);
           OutString(0,0,USetStr(13702),false);
+          OutString(35,0,USetStr(13117),false);
+          OutString(40,0,"Серійний №",false);
+          OutString(60,0,"№ Контракту",false);
           OutString(80,0,USetStr(13703),false);
           OutString(280,0,USetStr(13704),true);
           OutString(340,0,USetStr(13705),true);
@@ -217,6 +218,8 @@ begin
         StartFormat(15);
         OutString(0,"DblAT2UnitVc",ATr.InventoryNr,false);
         OutString(35,0,atuser[ATr.InventoryNr],false);
+        OutString(40,0,ATr.SerialNr,false);
+        OutString(60,0,ATr.ContractNr,false);
         OutString(80,0,ATr.Description,false);
         OutVal(280,0,purchval*ATr.Quantity,M40Val,true);
         FindDepr(ATr,RepSpec,dprv);
