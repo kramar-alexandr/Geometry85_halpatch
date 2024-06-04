@@ -109,7 +109,6 @@ begin
 return;
 end; 
 
-
 global updating procedure WorkSectionUpdateReplyProject(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
 begin
 		json jreply;
@@ -344,6 +343,140 @@ begin
 return;
 end; 
 
+
+function string 100 getgroupid(string code)
+begin
+  record WorksectionFoldersVc WSFr;
+  string 100 res;
+    
+    res = code;
+    WSFr.Name = code;
+    if(readfirstkey("Name",WSFr,1,true))then begin
+      //res = WSFr.Id;
+    end;
+    
+    logtext(0,"getgroupid = " & res);
+
+  getgroupid = res;
+return;
+end;
+
+
+global updating function boolean CheckWSPOnServer(var record PRVc PRr)
+begin
+  record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request,response;
+	string 255 newmembers,tstr,project,wsid,prpage;
+	integer pos,i,times;
+	array string 100 members;
+	boolean res;
+	json jreply,jreply2;
+	
+	res = false;
+	
+	logtext(0,"CheckWSPOnServer");
+	
+	blockload(WSb);
+	
+	reqaction = "get_projects";
+	page = "/api/admin/v2/?action=" & reqaction;
+	togashstr = reqaction & WSb.ApiKey;
+	HASH = LowerCase(MD5String(togashstr));
+	page = page & "&hash=" & HASH & "&filter=active";			
+	MySendWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",false,request,response,20);
+  
+  jreply = ParseJsonArea(response);
+  if(JSONGET(jreply,"status")=="ok")then begin
+    logtext(0,"status ok");
+
+    res = true;
+    times = JSONCountChildren(jreply,"data");
+		for(i=0;i<times;i=i+1)begin
+			project = JSONGet(jreply,"data/[" & i & "]/name");
+			if(left(project,len(PRr.Code))==PRr.Code)then begin
+			  logtext(0,"find project " & project);
+
+        wsid = JSONGet(jreply,"data/[" & i & "]/id");
+        wsid = ReplaceCharByString(wsid,"\\","");
+        prpage = JSONGet(jreply,"data/[" & i & "]/page");
+			  prpage = ReplaceCharByString(prpage,"\\","");
+			  
+			  PRr.WorksectionID_Pr = wsid;
+				PRr.WSPage_Pr = prpage;
+				PRr.WSSended = 1;
+				logtext(0,"wsid " & wsid);
+				logtext(0,"prpage " & prpage);
+				
+				res = false;
+				recordstore(PRr,true);
+			  i = times;
+				
+				
+				setareazerosize(request);
+				setareazerosize(response);
+				reqaction = "get_tasks";
+				reqpage = prpage;
+				page = "/api/admin/v2/?action=" & reqaction;
+				if(nonblank(reqpage))then begin
+					page = page & "&page=" & reqpage;
+				end;
+				togashstr = reqpage & reqaction & WSb.ApiKey;
+				HASH = LowerCase(MD5String(togashstr));
+				page = page & "&hash=" & HASH;
+				MySendWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",false,request,response,20);
+				jreply2 = ParseJsonArea(response);
+				if(nonblank(JSONGet(jreply2,"data/[0]/id")))then begin
+				  wsid = JSONGet(jreply2,"data/[0]/id");
+          wsid = ReplaceCharByString(wsid,"\\","");
+          prpage = JSONGet(jreply2,"data/[0]/page");
+          prpage = ReplaceCharByString(prpage,"\\","");
+          PRr.WorksectionID_Tsk = wsid;
+          PRr.WSPage_Tsk = prpage;
+          recordstore(PRr,true);
+				end else begin
+				  setareazerosize(request);
+				  reqaction = "post_task";
+          reqpage = prpage;
+          page = "/api/admin/v2/?action=" & reqaction;
+          if(nonblank(reqpage))then begin
+            page = page & "&page=" & reqpage;
+          end;
+          togashstr =  reqpage & reqaction & WSb.ApiKey;
+          HASH = LowerCase(MD5String(togashstr));
+          page = page & "&hash=" & HASH;
+          addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);							
+          addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);
+          addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);
+          addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
+          //addtexttoarea("&tags=" & URLEncode(PRr.Code),request);
+          if(nonblankdate(PRr.StartDate))then begin
+            addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
+          end;
+          if(nonblankdate(PRr.EndDate))then begin
+            addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
+          end;
+          if(nonblank(WSb.TagsPage))then begin
+            if(nonblank(PRr.MotherCode))then begin
+              addtexttoarea("&tags=" & URLEncode(PRr.MotherCode),request);
+            end;
+          end;
+          LogTextToFile("WorkSectionUpdateReplyProject req","WSLOG/WorkSectionUpdateRequestTask.txt");
+          writeareatofile(request,"WSLOG/WorkSectionUpdateRequestTask.txt",1);
+          MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
+				end;
+				writeareatofile(response,"hansa.log",1);
+				
+				
+			end;
+		end;
+  end;
+  
+  CheckWSPOnServer = res;
+return;
+end;
+
+//CheckWSPOnServer
 //создание / обновление проекта - асинхронная процедура
 global updating procedure WorkSectionUpdateRequest(var record PRVc PRr,record PRVc oldPRr,boolean updatef)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
 begin
@@ -413,27 +546,36 @@ begin
 	
 	if(true)then begin
 		if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
-			if(needtosync)then begin
-				CUr.Code = PRr.CustCode;
-				if(readfirstmain(CUr,1,true))then begin
-					if(nonblank(CUr.WSFolder))then begin
-						reqaction = "add_project_group";
-						reqpage = "";
-						page = "/api/admin/v2/?action=" & reqaction;
-						if(nonblank(reqpage))then begin
-							page = page & "&page=" & reqpage;
-						end;
-						togashstr = reqpage & reqaction & WSb.ApiKey;
-						HASH = LowerCase(MD5String(togashstr));
-						page = page & "&hash=" & HASH;
-						addtexttoarea("title=" & CUr.WSFolder,request);// Создание папки проекта
-						MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateFolderReply",20);
-						setareazerosize(request);
-						millisleep(1000);
-					end;
-				end;
-			end;
-			if(blank(PRr.WorksectionID_Pr) and PRr.WSSended==0 and needtosync)then begin//создание проекта
+		  if(needtosync and blank(PRr.WorksectionID_Pr))then begin
+        needtosync = CheckWSPOnServer(PRr);
+        if(needtosync==false and blank(PRr.WorksectionID_Pr))then begin
+          removetask("CheckSyncForProgect_" & PRr.Code);
+					NewTimedTask("CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect",PRr.Code,CurrentDate,addminutes(currenttime,10),"","");
+        end;
+		  end;
+		  logtext(0,"needtosync " & needtosync);
+
+		  //needtosync = false;
+		  if(blank(PRr.WorksectionID_Pr) and PRr.WSSended==0 and needtosync)then begin//создание проекта
+        CUr.Code = PRr.CustCode;
+        if(readfirstmain(CUr,1,true))then begin
+          if(nonblank(CUr.WSFolder))then begin
+            reqaction = "add_project_group";
+            reqpage = "";
+            page = "/api/admin/v2/?action=" & reqaction;
+            if(nonblank(reqpage))then begin
+              page = page & "&page=" & reqpage;
+            end;
+            togashstr = reqpage & reqaction & WSb.ApiKey;
+            HASH = LowerCase(MD5String(togashstr));
+            page = page & "&hash=" & HASH;
+            addtexttoarea("title=" & CUr.WSFolder,request);// Создание папки проекта
+            MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionCreateFolderReply",20);
+            setareazerosize(request);
+            millisleep(1000);
+          end;
+        end;
+          
 				testf = true;
 				WSPr.PRCode = PRr.Code;
 				if(readfirstmain(WSPr,1,true))then begin
@@ -488,10 +630,10 @@ begin
 					//if(nonblank(PRr.Members))then begin
 					//	addtexttoarea("&members=" & prepareUsersEMails(Currentuser),request);
 					//end;
-					if(nonblank(CUr.WSFolder))then begin
-						addtexttoarea("&company=" & URLEncode(CUr.WSFolder),request);
-					end;
 					addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
+					if(nonblank(CUr.WSFolder))then begin
+						addtexttoarea("&company=" & URLEncode(getgroupid(CUr.WSFolder)),request);
+					end;
 					if(nonblankdate(PRr.StartDate))then begin
 						addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
 					end;
@@ -562,44 +704,45 @@ begin
 							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateTagsReply",20);
 							setareazerosize(request);
 							millisleep(1000);
-						
-						
 						end;
 					end;
 				end;
 			end;
-			
-				 //- обновление проекта
-				/*reqaction = "update_project";
-				reqpage = PRr.WSPage_Pr;
-				page = "/api/admin/v2/?action=" & reqaction;
-				if(nonblank(reqpage))then begin
-					page = page & "&page=" & reqpage;
-				end;
-	
-				togashstr = reqpage & reqaction & WSb.ApiKey;
-				HASH = LowerCase(MD5String(togashstr));
-				page = page & "&hash=" & HASH;
-				addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);
-				if(nonblank(CUr.WSFolder))then begin
-					addtexttoarea("&folder=" & URLEncode(CUr.WSFolder),request);
-				end;
-				if(nonblank(PRr.Leader))then begin
-					addtexttoarea("&email_manager=" & prepareUsersEMails(PRr.Leader),request);//менеджер - поменять
-					addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);//ответственный
-				end;
-				if(nonblankdate(PRr.StartDate))then begin
-					addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
-				end;
-				if(nonblankdate(PRr.EndDate))then begin
-					addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
-				end;
-				MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProjectUpdate",20);*/
 		end;
 	end;
 		
 return;
 end; 
+
+
+// асинхронный ответ по обновлению папок
+global updating procedure WorkSectionUpdateFoldersRequestReply(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+begin
+		json jreply;
+		string 100 page,id,prcode,prpage;
+		record PRVc PRr;
+		record WorksectionFoldersVc WSFr;
+		string 255 getaparams,reqpage,reqaction,togashstr,HASH;
+		area request;
+		integer folders,i;
+			
+		if(getarealength(a_reply)>100)then begin
+			jreply = ParseJsonArea(a_reply);
+			folders = JSONCountChildren(jreply,"data");
+			for(i=0;i<folders;i=i+1)begin
+				if(nonblank(JSONGet(jreply,"data/[" & i & "]/id")))then begin
+					WSFr.Id = JSONGet(jreply,"data/[" & i & "]/id");
+					WSFr.Name = JSONGet(jreply,"data/[" & i & "]/title");
+					recordstore(WSFr,true);
+				end;
+			end;
+		end;	
+		LogTextToFile("WorkSectionUpdateRequest","WSLOG/WorkSectionUpdateFoldersRequestReply.txt");		
+		writeareatofile(a_reply,"WSLOG/WorkSectionUpdateFoldersRequestReply.txt",1);
+		
+return;
+end; 
+
 
 // асинхронный ответ по обновлению пользователей
 global updating procedure WorkSectionUpdateGetUsersReply(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
@@ -641,6 +784,33 @@ begin
 return;
 end; 
 
+
+//Обновление папок проектов - регулярная процедура
+global updating procedure WorkSectionUpdateFoldersRequest()// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+begin
+	record WorksectionBlock WSb;
+	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
+	area request;
+	
+	blockload(WSb);		
+	logtext(0,"WorkSectionUpdateRequest");
+	if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
+		reqaction = "get_project_groups";
+		reqpage = "";
+		page = "/api/admin/v2/?action=" & reqaction;
+		if(nonblank(reqpage))then begin
+			page = page & "&page=" & reqpage;
+		end;
+		togashstr = reqpage & reqaction & WSb.ApiKey;
+		HASH = LowerCase(MD5String(togashstr));
+		page = page & "&hash=" & HASH;
+		MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateFoldersRequestReply",20);
+	end;
+		
+return;
+end; 
+
+
 //Обновление пользователей компании - регулярная процедура
 global updating procedure WorkSectionUpdateGetUsersRequest(string arg)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
 begin
@@ -662,6 +832,8 @@ begin
 		page = page & "&hash=" & HASH;
 		MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateGetUsersReply",20);
 	end;
+	
+	//WorkSectionUpdateFoldersRequest;
 		
 return;
 end; 
@@ -1533,194 +1705,8 @@ begin
   
   blockload(WSb);
   
-  
-  
-  
-  ids[ids.length] = "273665";
-  ids[ids.length] = "273921";
-  ids[ids.length] = "274177";
-  ids[ids.length] = "273669";
-  ids[ids.length] = "273925";
-  ids[ids.length] = "274181";
-  ids[ids.length] = "273673";
-  ids[ids.length] = "273929";
-  ids[ids.length] = "274185";
-  ids[ids.length] = "273677";
-  ids[ids.length] = "273933";
-  ids[ids.length] = "274189";
-  ids[ids.length] = "273681";
-  ids[ids.length] = "273937";
-  ids[ids.length] = "274193";
-  ids[ids.length] = "273685";
-  ids[ids.length] = "273941";
-  ids[ids.length] = "274197";
-  ids[ids.length] = "273689";
-  ids[ids.length] = "273945";
-  ids[ids.length] = "274201";
-  ids[ids.length] = "273693";
-  ids[ids.length] = "273949";
-  ids[ids.length] = "274205";
-  ids[ids.length] = "273697";
-  ids[ids.length] = "273953";
-  ids[ids.length] = "274209";
-  ids[ids.length] = "273701";
-  ids[ids.length] = "273957";
-  ids[ids.length] = "274213";
-  ids[ids.length] = "273705";
-  ids[ids.length] = "273961";
-  ids[ids.length] = "274217";
-  ids[ids.length] = "273709";
-  ids[ids.length] = "273965";
-  ids[ids.length] = "274221";
-  ids[ids.length] = "273713";
-  ids[ids.length] = "273969";
-  ids[ids.length] = "274225";
-  ids[ids.length] = "273717";
-  ids[ids.length] = "273973";
-  ids[ids.length] = "274229";
-  ids[ids.length] = "273721";
-  ids[ids.length] = "273977";
-  ids[ids.length] = "274233";
-  ids[ids.length] = "273725";
-  ids[ids.length] = "273981";
-  ids[ids.length] = "274237";
-  ids[ids.length] = "273729";
-  ids[ids.length] = "273985";
-  ids[ids.length] = "273733";
-  ids[ids.length] = "273989";
-  ids[ids.length] = "273737";
-  ids[ids.length] = "273993";
-  ids[ids.length] = "273741";
-  ids[ids.length] = "273997";
-  ids[ids.length] = "273745";
-  ids[ids.length] = "274001";
-  ids[ids.length] = "273749";
-  ids[ids.length] = "274005";
-  ids[ids.length] = "273753";
-  ids[ids.length] = "274009";
-  ids[ids.length] = "273501";
-  ids[ids.length] = "273757";
-  ids[ids.length] = "274013";
-  ids[ids.length] = "273505";
-  ids[ids.length] = "273761";
-  ids[ids.length] = "274017";
-  ids[ids.length] = "273509";
-  ids[ids.length] = "273765";
-  ids[ids.length] = "274021";
-  ids[ids.length] = "273513";
-  ids[ids.length] = "273769";
-  ids[ids.length] = "274025";
-  ids[ids.length] = "273517";
-  ids[ids.length] = "273773";
-  ids[ids.length] = "274029";
-  ids[ids.length] = "273521";
-  ids[ids.length] = "273777";
-  ids[ids.length] = "274033";
-  ids[ids.length] = "273525";
-  ids[ids.length] = "273781";
-  ids[ids.length] = "274037";
-  ids[ids.length] = "273529";
-  ids[ids.length] = "273785";
-  ids[ids.length] = "274041";
-  ids[ids.length] = "273533";
-  ids[ids.length] = "273789";
-  ids[ids.length] = "274045";
-  ids[ids.length] = "273537";
-  ids[ids.length] = "273793";
-  ids[ids.length] = "274049";
-  ids[ids.length] = "273541";
-  ids[ids.length] = "273797";
-  ids[ids.length] = "274053";
-  ids[ids.length] = "273545";
-  ids[ids.length] = "273801";
-  ids[ids.length] = "274057";
-  ids[ids.length] = "273549";
-  ids[ids.length] = "273805";
-  ids[ids.length] = "274061";
-  ids[ids.length] = "273553";
-  ids[ids.length] = "273809";
-  ids[ids.length] = "274065";
-  ids[ids.length] = "273557";
-  ids[ids.length] = "273813";
-  ids[ids.length] = "274069";
-  ids[ids.length] = "273561";
-  ids[ids.length] = "273817";
-  ids[ids.length] = "274073";
-  ids[ids.length] = "273565";
-  ids[ids.length] = "273821";
-  ids[ids.length] = "274077";
-  ids[ids.length] = "273569";
-  ids[ids.length] = "273825";
-  ids[ids.length] = "274081";
-  ids[ids.length] = "273573";
-  ids[ids.length] = "273829";
-  ids[ids.length] = "274085";
-  ids[ids.length] = "273577";
-  ids[ids.length] = "273833";
-  ids[ids.length] = "274089";
-  ids[ids.length] = "273581";
-  ids[ids.length] = "273837";
-  ids[ids.length] = "274093";
-  ids[ids.length] = "273585";
-  ids[ids.length] = "273841";
-  ids[ids.length] = "274097";
-  ids[ids.length] = "273589";
-  ids[ids.length] = "273845";
-  ids[ids.length] = "274101";
-  ids[ids.length] = "273593";
-  ids[ids.length] = "273849";
-  ids[ids.length] = "274105";
-  ids[ids.length] = "273597";
-  ids[ids.length] = "273853";
-  ids[ids.length] = "274109";
-  ids[ids.length] = "273601";
-  ids[ids.length] = "273857";
-  ids[ids.length] = "274113";
-  ids[ids.length] = "273605";
-  ids[ids.length] = "273861";
-  ids[ids.length] = "274117";
-  ids[ids.length] = "273609";
-  ids[ids.length] = "273865";
-  ids[ids.length] = "274121";
-  ids[ids.length] = "273613";
-  ids[ids.length] = "273869";
-  ids[ids.length] = "274125";
-  ids[ids.length] = "273617";
-  ids[ids.length] = "273873";
-  ids[ids.length] = "274129";
-  ids[ids.length] = "273621";
-  ids[ids.length] = "273877";
-  ids[ids.length] = "274133";
-  ids[ids.length] = "273625";
-  ids[ids.length] = "273881";
-  ids[ids.length] = "274137";
-  ids[ids.length] = "273629";
-  ids[ids.length] = "273885";
-  ids[ids.length] = "274141";
-  ids[ids.length] = "273633";
-  ids[ids.length] = "273889";
-  ids[ids.length] = "274145";
-  ids[ids.length] = "273637";
-  ids[ids.length] = "273893";
-  ids[ids.length] = "274149";
-  ids[ids.length] = "273641";
-  ids[ids.length] = "273897";
-  ids[ids.length] = "274153";
-  ids[ids.length] = "273645";
-  ids[ids.length] = "273901";
-  ids[ids.length] = "274157";
-  ids[ids.length] = "273649";
-  ids[ids.length] = "273905";
-  ids[ids.length] = "274161";
-  ids[ids.length] = "273653";
-  ids[ids.length] = "273909";
-  ids[ids.length] = "274165";
-  ids[ids.length] = "273657";
-  ids[ids.length] = "273913";
-  ids[ids.length] = "274169";
-  ids[ids.length] = "273661";
-  ids[ids.length] = "273917";
-  ids[ids.length] = "274173";
+
+ids[ids.length] = "277365";
   
   for(i=0;i<ids.length;i=i+1)begin
     reqpage = "/project/" & ids[i] & "/";
@@ -1973,11 +1959,11 @@ begin
 	
 	logtext(0,"ProjectCallback");
 	
-	LogTextToFile("ProjectCallback","WSLOG/ProjectCallback.txt");		
+	/*LogTextToFile("ProjectCallback","WSLOG/ProjectCallback.txt");		
   addtexttoarea(chr(13) & chr(10),temparea);
 	writeareatofile(temparea,"WSLOG/ProjectCallback.txt",1);
-	LogTextToFile("ProjectCallback","WSLOG/ProjectCallback.txt");		
-  writeareatofile(a_reply,"WSLOG/ProjectCallback.txt",1);
+	LogTextToFile("ProjectCallback","WSLOG/ProjectCallback.txt");	*/	
+  writeareatofile(a_reply,"WSLOG/ProjectCallback.txt",0);
 	
 	if(getarealength(a_reply)>100)then begin
 		jreply = ParseJsonArea(a_reply);
