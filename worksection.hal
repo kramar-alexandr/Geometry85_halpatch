@@ -80,6 +80,7 @@ begin
 		string 255 getaparams,reqpage,reqaction,togashstr,HASH,tstr;
 		area request;
 		integer pos;
+		record WSPSyncVc WSPSyncr;
 		
 		blockload(WSb);	
 	
@@ -100,6 +101,10 @@ begin
 				PRr.WSPage_Tsk = prpage;
 				PRr.WorksectionID_Tsk = id;
 				recordstore(PRr,true);
+				WSPSyncr.PRCode = PRr.Code;
+				if(readfirstmain(WSPSyncr,1,true))then begin
+				  recorddelete(WSPSyncr);
+				end;
 			end;
 		end;
 		
@@ -157,7 +162,6 @@ begin
 							addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);
 							addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);
 							addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
-							//addtexttoarea("&tags=" & URLEncode(PRr.Code),request);
 							if(nonblankdate(PRr.StartDate))then begin
 								addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
 							end;
@@ -252,98 +256,6 @@ begin
 return;
 end;
 
-global updating procedure WorkSectionUpdateReplyProjectUpdate(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
-begin
-		json jreply;
-		string 100 page,id,prcode,prpage,tstr;
-		record PRVc PRr;
-		record WorksectionBlock WSb;
-		string 255 getaparams,reqpage,reqaction,togashstr,HASH;
-		area request;
-		record WorksectionUserVc WUr;
-		integer pos;
-		
-		blockload(WSb);	
-		
-	
-		if(getarealength(a_reply)>100)then begin
-			jreply = ParseJsonArea(a_reply);
-			id = JSONGet(jreply,"data/id");
-			prpage = JSONGet(jreply,"data/page");
-			prpage = ReplaceCharByString(prpage,"\\","");
-			prcode = JSONGet(jreply,"data/name");
-			prcode = ReplaceCharByString(prcode,"\\","");
-			
-			pos = 0;
-			ExtractObjWithSeparator(" ",prcode,true,pos,tstr);
-			PRr.Code = tstr;
-			prcode = tstr;
-			if(readfirstmain(PRr,1,true))then begin
-				if(nonblank(prpage))then begin
-					blockload(WSb);		
-	
-					if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
-						if(blank(PRr.WSPage_Tsk))then begin
-							reqaction = "post_task";
-							reqpage = prpage;
-							page = "/api/admin/v2/?action=" & reqaction;
-							if(nonblank(reqpage))then begin
-								page = page & "&page=" & reqpage;
-							end;
-							togashstr =  reqpage & reqaction & WSb.ApiKey;
-							HASH = LowerCase(MD5String(togashstr));
-							page = page & "&hash=" & HASH;
-							addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);
-							addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);
-							addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);
-							addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
-							if(nonblankdate(PRr.StartDate))then begin
-								addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
-							end;
-							if(nonblankdate(PRr.EndDate))then begin
-								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
-							end;
-							if(nonblank(WSb.TagsPage))then begin
-								if(nonblank(PRr.MotherCode))then begin
-									addtexttoarea("&tags=" & URLEncode(PRr.MotherCode),request);
-								end;
-							end;
-							LogTextToFile("WorkSectionUpdateReplyProjectUpdate req","WSLOG/WorkSectionUpdateRequestTask.txt");	
-							writeareatofile(request,"WSLOG/WorkSectionUpdateRequestTask.txt",1);
-							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
-						end else begin
-							/*reqaction = "update_task";
-							reqpage = PRr.WSPage_Tsk;
-							page = "/api/admin/v2/?action=" & reqaction;
-							if(nonblank(reqpage))then begin
-								page = page & "&page=" & reqpage;
-							end;
-							togashstr =  reqpage & reqaction & WSb.ApiKey;
-							HASH = LowerCase(MD5String(togashstr));
-							page = page & "&hash=" & HASH;
-							logtext(0,page);
-							addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);
-							addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);
-							if(nonblankdate(PRr.StartDate))then begin
-								addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
-							end;
-							if(nonblankdate(PRr.EndDate))then begin
-								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
-							end;
-							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
-							*/
-						end;
-					end;
-				end;
-			end;
-		end;		
-		LogTextToFile("WorkSectionUpdateReplyProjectUpdate rep","WSLOG/WorkSectionUpdateReply.txt");	
-		writeareatofile(a_reply,"WSLOG/WorkSectionUpdateReply.txt",1);
-		
-return;
-end; 
-
-
 function string 100 getgroupid(string code)
 begin
   record WorksectionFoldersVc WSFr;
@@ -372,6 +284,7 @@ begin
 	array string 100 members;
 	boolean res;
 	json jreply,jreply2;
+	record WSPSyncVc WSPSyncr;
 	
 	res = false;
 	
@@ -410,8 +323,9 @@ begin
 				
 				res = false;
 				recordstore(PRr,true);
-			  i = times;
+				WSPSyncr.PRCode = PRr.Code;
 				
+			  i = times;
 				
 				setareazerosize(request);
 				setareazerosize(response);
@@ -434,6 +348,9 @@ begin
           PRr.WorksectionID_Tsk = wsid;
           PRr.WSPage_Tsk = prpage;
           recordstore(PRr,true);
+          if(readfirstmain(WSPSyncr,1,true))then begin
+            recorddelete(WSPSyncr);
+          end;
 				end else begin
 				  setareazerosize(request);
 				  reqaction = "post_task";
@@ -489,6 +406,7 @@ begin
 	integer level;
 	record CUVc CUr;
 	boolean needtosync,needtoclose,testf;
+	record WSPSyncVc WSPSyncr;
 	
 	blockload(WSb);		
 	logtext(0,"WorkSectionUpdateRequest " & PRr.Code & " updatef " & updatef);
@@ -512,7 +430,6 @@ begin
 			end;
 		end;
 	end;
-	
 	
 	
 	if(level!=4)then begin
@@ -539,6 +456,13 @@ begin
 		needtosync = true;
 	end;
 	
+	if(needtosync==false and needtoclose==false)then begin
+	  WSPSyncr.PRCode = PRr.Code;
+	  if(readfirstmain(WSPSyncr,1,true))then begin
+	    recorddelete(WSPSyncr);
+	  end;
+	end;
+	
 	logtext(0,"updatef " & updatef);
 	logtext(0,"needtoclose " & needtoclose);
   logtext(0,"PRr.WorksectionID_Pr " & PRr.WorksectionID_Pr);
@@ -549,8 +473,10 @@ begin
 		  if(needtosync and blank(PRr.WorksectionID_Pr))then begin
         needtosync = CheckWSPOnServer(PRr);
         if(needtosync==false and blank(PRr.WorksectionID_Pr))then begin
-          removetask("CheckSyncForProgect_" & PRr.Code);
-					NewTimedTask("CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect",PRr.Code,CurrentDate,addminutes(currenttime,10),"","");
+          PRr.WSSended = 1;
+          recordstore(PRr,true);
+          //removetask("CheckSyncForProgect_" & PRr.Code);
+					//NewTimedTask("CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect",PRr.Code,CurrentDate,addminutes(currenttime,10),"","");
         end;
 		  end;
 		  logtext(0,"needtosync " & needtosync);
@@ -610,6 +536,7 @@ begin
 					
 					setareazerosize(request);
 					PRr.WSSended = PRr.WSSended + 1;
+					recordstore(PRr,true);
 					reqaction = "post_project";
 					reqpage = "";
 					page = "/api/admin/v2/?action=" & reqaction;
@@ -640,16 +567,12 @@ begin
 					if(nonblankdate(PRr.EndDate))then begin
 						addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
 					end;
-					/*if(nonblank(WSb.TagsPage))then begin
-						if(nonblank(PRr.MotherCode))then begin
-							addtexttoarea("&tags=" & URLEncode(PRr.MotherCode),request);
-						end;
-					end;*/
+
 					LogTextToFile("WorkSectionUpdateRequest","WSLOG/WorkSectionUpdateRequest.txt");	
 					writeareatofile(request,"WSLOG/WorkSectionUpdateRequest.txt",1);
 					MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyProject",20);
-					removetask("CheckSyncForProgect_" & PRr.Code);
-					NewTimedTask("CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect",PRr.Code,CurrentDate,addminutes(currenttime,10),"","");
+					//removetask("CheckSyncForProgect_" & PRr.Code);
+					//NewTimedTask("CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect",PRr.Code,CurrentDate,addminutes(currenttime,10),"","");
 				end;
 			end else begin
 			
@@ -657,6 +580,7 @@ begin
 			
 			if(needtoclose and nonblank(PRr.WorksectionID_Pr) and PRr.WSSended==1)then begin
 				PRr.WSSended = PRr.WSSended + 1;
+				recordstore(PRr,true);
 				reqpage = PRr.WSPage_Pr;
 				reqaction = "close_project";
 				page = "/api/admin/v2/?action=" & reqaction;
@@ -983,48 +907,7 @@ begin
 			end;
 		end;
 	end;
-	
-		
-	/*
-	
-	if(nonblank(PRr.Members) and PRr.Members!=PR2r.Members)then begin
-		if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
-			if(nonblank(PRr.WorksectionID_Pr))then begin//только для существующего проекта
-				pos = 0;
-				ExtractObjWithSeparator(",",PRr.Members,true,pos,tstr);
-				while(nonblank(tstr))begin
-					if(nonblank(tstr))then begin
-						if(!setinset(tstr,PR2r.Members))then begin
-							members[members.length] = tstr;
-						end;
-					end;
-					ExtractObjWithSeparator(",",PRr.Members,true,pos,tstr);
-				end;
-				
-				if(members.length>0)then begin
-					for(i=0;i<members.length;i=i+1)begin
-						reqaction = "add_project_members";
-						reqpage = PRr.WSPage_Pr;
-						page = "/api/admin/v2/?action=" & reqaction;
-						if(nonblank(reqpage))then begin
-							page = page & "&page=" & reqpage;
-						end;
-	
-						togashstr = reqpage & reqaction & WSb.ApiKey;
-	
-						HASH = LowerCase(MD5String(togashstr));
-						page = page & "&hash=" & HASH;
-						addtexttoarea("members=" & prepareUsersEMails(members[i]),request);
-						logtext(0,"members[i]  " & members[i]);
-						logtext(0,"prepareUsersEMails(members[i] " & prepareUsersEMails(members[i]));
-						MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateMembersReply",20);
-					end;
-				end;
-				
-			end;
-		end;
-	end;
-	*/
+
 return;
 end;
 
@@ -2101,5 +1984,79 @@ begin
   
   closeNextProjectinWS;
   
+return;
+end;
+
+
+
+global updating procedure WSSyncProjects()
+begin
+  record WSPSyncVc WSPSyncr;
+  record PRVc PRr,PR2r;
+  boolean proc;
+  
+  if(servermode)then begin
+    setcompany(2,false);
+  
+    logtext(0,"WSSyncProjects ");
+
+  
+    while(loopmain(WSPSyncr,1,true))begin
+      logtext(0,"need to sync " & WSPSyncr.PRCode);
+
+      PRr.Code = WSPSyncr.PRCode;
+      if(readfirstmain(PRr,1,true))then begin
+        if(nonblank(PRr.WorksectionID_Pr) and nonblank(PRr.WorksectionID_Tsk))then begin
+      
+          proc = false;
+          if(nonblank(WSPSyncr.oldMotherCode) and PRr.MotherCode!=WSPSyncr.oldMotherCode)then begin
+            proc = true;
+          end;  
+          if(PRr.Terminated!=WSPSyncr.Terminated)then begin
+            proc = true;
+          end;
+          if(PRr.PRStage!=WSPSyncr.PRStage)then begin
+            proc = true;
+          end;
+          if(PRr.Type!=WSPSyncr.Type)then begin
+            proc = true;
+          end;
+        
+          logtext(0,"proc " & proc);
+
+          if(proc)then begin
+            recordcopy(PR2r,PRr);
+            logtext(0,"Update Folder WS Project " & PRr.Code);
+
+            PR2r.MotherCode = WSPSyncr.oldMotherCode;
+            PR2r.Terminated = WSPSyncr.Terminated;
+            PR2r.PRStage = WSPSyncr.PRStage;
+            PR2r.Type = WSPSyncr.Type;
+          
+            WorkSectionUpdateRequest(PRr,PR2r,WSPSyncr.updatef); ///  ===============================  Create
+            millisleep(1000);
+          end;
+          recorddelete(WSPSyncr);
+          stepback(WSPSyncr);
+        end else begin
+          if(blank(PRr.WorksectionID_Pr))then begin
+            recordcopy(PR2r,PRr);
+            logtext(0,"Create New WS Project " & PRr.Code);
+            WorkSectionUpdateRequest(PRr,PR2r,false); ///  ===============================  Create
+            millisleep(1000);
+          end else begin
+            if(blank(PRr.WorksectionID_Tsk))then begin
+              logtext(0,"Create Task " & PRr.Code);
+              CheckWSPOnServer(PRr);
+            end;
+          end;
+        end;
+      end else begin
+        recorddelete(WSPSyncr);
+        stepback(WSPSyncr);
+      end;
+    end;
+  end;
+
 return;
 end;

@@ -1,0 +1,124 @@
+external function string 255 ReplaceCharByString(string,string,string);
+external procedure ExtractObjWithSeparator(string,string,Boolean,var Integer,var string);
+external function string 60 AddObjectToObjectList(string,string);
+external procedure TSVc_PastePRCode(var record TSVc,Integer);
+external procedure TSVc_PasteEMCode(var record TSVc,Integer);
+external function Boolean TSVc_PasteArtCode(var record TSVc,Integer,var string);
+forward procedure WorkSectionUpdateMembers(record PRVc,record PRVc);
+external function string 255 MonthName(Date);
+external function boolean MySendAsyncWebRequest(string,longint,integer,boolean,string,string,string,string,area,string,integer);
+external function boolean MySendWebRequest(string,longint,longint,boolean,string,string,string,string,boolean,area,var area,integer);
+external function roundmode SetRoundModeD(Integer);
+
+
+function string 255 prepareUsersEMails(string user)
+begin
+	record UserVc USr;
+	record WorksectionUserVc WUr;
+	integer pos;
+	string 255 tstr,res;
+	vector boolean vusers,vWSUsers;
+	vector string 255 vmails;
+	
+	
+	while(loopmain(USr,1,true))begin
+		if(nonblank(USr.emailAddr))then begin
+			WUr.eMail = USr.emailAddr;
+			if(readfirstmain(WUr,1,true))then begin
+				vmails[USr.Code] = USr.emailAddr;
+			end;
+		end;
+	end;
+	
+	
+	pos = 0;
+	ExtractObjWithSeparator(",",user,true,pos,tstr);
+	while(nonblank(tstr))begin
+		if(nonblank(tstr))then begin
+			if(nonblank(vmails[tstr]))then begin
+				if(blank(res))then begin
+					res = vmails[tstr];
+				end else begin
+					res = res & "," & vmails[tstr];
+				end;
+			end;
+		end;
+		ExtractObjWithSeparator(",",user,true,pos,tstr);
+	end;
+	
+	prepareUsersEMails = res;
+return;
+end;
+
+
+global updating procedure WorkSectionUpdateReplyProjectUpdate(Area a_reply,Area a_replyheader,boolean timeout)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+begin
+		json jreply;
+		string 100 page,id,prcode,prpage,tstr;
+		record PRVc PRr;
+		record WorksectionBlock WSb;
+		string 255 getaparams,reqpage,reqaction,togashstr,HASH;
+		area request;
+		record WorksectionUserVc WUr;
+		integer pos;
+		
+		blockload(WSb);	
+		
+	
+		if(getarealength(a_reply)>100)then begin
+			jreply = ParseJsonArea(a_reply);
+			id = JSONGet(jreply,"data/id");
+			prpage = JSONGet(jreply,"data/page");
+			prpage = ReplaceCharByString(prpage,"\\","");
+			prcode = JSONGet(jreply,"data/name");
+			prcode = ReplaceCharByString(prcode,"\\","");
+			
+			pos = 0;
+			ExtractObjWithSeparator(" ",prcode,true,pos,tstr);
+			PRr.Code = tstr;
+			prcode = tstr;
+			if(readfirstmain(PRr,1,true))then begin
+				if(nonblank(prpage))then begin
+					blockload(WSb);		
+	
+					if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
+						if(blank(PRr.WSPage_Tsk))then begin
+							reqaction = "post_task";
+							reqpage = prpage;
+							page = "/api/admin/v2/?action=" & reqaction;
+							if(nonblank(reqpage))then begin
+								page = page & "&page=" & reqpage;
+							end;
+							togashstr =  reqpage & reqaction & WSb.ApiKey;
+							HASH = LowerCase(MD5String(togashstr));
+							page = page & "&hash=" & HASH;
+							addtexttoarea("title=" & URLEncode(PRr.Code & " " & PRr.Name),request);
+							addtexttoarea("&email_user_from=" & prepareUsersEMails(PRr.PrSalesMan),request);
+							addtexttoarea("&email_user_to="  & prepareUsersEMails(PRr.Leader),request);
+							addtexttoarea("&text=" & URLEncode(PRr.Desc0),request);
+							if(nonblankdate(PRr.StartDate))then begin
+								addtexttoarea("&datestart=" & datetostring(PRr.StartDate,"DD.MM.YYYY"),request);
+							end;
+							if(nonblankdate(PRr.EndDate))then begin
+								addtexttoarea("&dateend=" & datetostring(PRr.EndDate,"DD.MM.YYYY"),request);
+							end;
+							if(nonblank(WSb.TagsPage))then begin
+								if(nonblank(PRr.MotherCode))then begin
+									addtexttoarea("&tags=" & URLEncode(PRr.MotherCode),request);
+								end;
+							end;
+							LogTextToFile("WorkSectionUpdateReplyProjectUpdate req","WSLOG/WorkSectionUpdateRequestTask.txt");	
+							writeareatofile(request,"WSLOG/WorkSectionUpdateRequestTask.txt",1);
+							MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
+						end else begin
+						
+						end;
+					end;
+				end;
+			end;
+		end;		
+		LogTextToFile("WorkSectionUpdateReplyProjectUpdate rep","WSLOG/WorkSectionUpdateReply.txt");	
+		writeareatofile(a_reply,"WSLOG/WorkSectionUpdateReply.txt",1);
+		
+return;
+end; 
