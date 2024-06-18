@@ -370,12 +370,13 @@ begin
     PRUpdatePRSchedule(PRr);
   end;
   
-  WSPSyncr.PRCode = PRr.Code;
+
+  WSPSyncr.PRCode = PRr.Code;// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 18 June 2024 at 14:49:20
   WSPSyncr.oldMotherCode = PR2r.MotherCode;
   WSPSyncr.updatef = 1;
   WSPSyncr.Terminated = PR2r.Terminated;
   WSPSyncr.PRStage = PR2r.PRStage;
-  WSPSyncr.Type = PR2r.Type;
+  WSPSyncr.Type = PR2r.Type;  
   
   recordstore(WSPSyncr,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 18 June 2024 at 09:38:51
   
