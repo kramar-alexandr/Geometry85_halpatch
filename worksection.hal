@@ -1996,7 +1996,7 @@ begin
   boolean proc;
   
   if(servermode)then begin
-    setcompany(2,false);
+    setcompany(1,false);
   
     logtext(0,"WSSyncProjects ");
 
