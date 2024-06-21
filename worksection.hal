@@ -1474,7 +1474,7 @@ begin
 		record WorksectionBlock WSb;
 		string 255 getaparams,reqpage,reqaction,togashstr,HASH,user,project,tstr,inwarn;
 		string 50 date_added;
-		area request;
+		area request,response;
 		integer times,i,pos,rwcnt,irow,k;
 		record WorksectionUserVc WUr;
 		record Uservc USr;
@@ -1486,8 +1486,51 @@ begin
 		boolean TrHs,foundf;
 		date tmpdat;
 		vector string 40 vPRCodes;
+		vector boolean prexists;
 		
-		while(loopmain(PRr,1,true))begin
+		blockload(WSb);
+		
+		logtext(0,"WorkSectionGetCostsMnReplyMn " & WorkSectionGetCostsMnReplyMn);
+
+		
+		reqaction = "get_projects";
+    page = "/api/admin/v2/?action=" & reqaction;
+    togashstr = reqaction & WSb.ApiKey;
+    HASH = LowerCase(MD5String(togashstr));
+    page = page & "&hash=" & HASH & "&filter=active";			
+    MySendWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",false,request,response,20);
+  
+    jreply = ParseJsonArea(response);
+    logtext(0,"status " & JSONGET(jreply,"status"));
+
+    if(JSONGET(jreply,"status")=="ok")then begin
+      
+      times = JSONCountChildren(jreply,"data");
+      for(i=0;i<times;i=i+1)begin
+        project = JSONGet(jreply,"data/[" & i & "]/name");
+        
+        project = ReplaceCharByString(project,"\\","");
+        pos = 0;
+        ExtractObjWithSeparator(" ",project,true,pos,tstr);      
+        project = tstr;
+        
+        PRr.Code = project;
+        if(readfirstmain(PRr,1,true))then begin
+          if(PRr.Terminated==1 or PRr.Terminated==3)then begin
+            if(nonblank(PRr.WorksectionID_Pr))then begin
+              PRr.WSSended = 1;
+              recordstore(PRr,true);
+              logtext(0,"Project will be closed " & PRr.Code);
+              queued.WorkSectionUpdateRequest(PRr,PRr,true);
+              millisleep(100);
+            end;
+          end;
+        end;
+      end;
+    end;
+		
+		
+		/*while(loopmain(PRr,1,true))begin
 			if(nonblank(PRr.WorksectionID_Pr))then begin
         if(PRr.Terminated==1 or PRr.Terminated==3)then begin
           if(PRr.WSSended==2)then begin
@@ -1499,7 +1542,7 @@ begin
           end;
         end;
       end;
-		end;
+		end;*/
 		
 return;
 end;
