@@ -475,8 +475,10 @@ begin
         if(needtosync==false and blank(PRr.WorksectionID_Pr))then begin
           PRr.WSSended = 1;
           recordstore(PRr,true);
-          //removetask("CheckSyncForProgect_" & PRr.Code);
-					//NewTimedTask("CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect_" & PRr.Code,"CheckSyncForProgect",PRr.Code,CurrentDate,addminutes(currenttime,10),"","");
+        end;
+        if(needtosync and blank(PRr.WorksectionID_Pr) and PRr.WSSended!=0)then begin
+          PRr.WSSended = 0;
+          recordstore(PRr,true);
         end;
 		  end;
 		  logtext(0,"needtosync " & needtosync);
