@@ -352,7 +352,7 @@ begin
             recorddelete(WSPSyncr);
           end;
 				end else begin
-				  /*setareazerosize(request);
+				  setareazerosize(request);
 				  reqaction = "post_task";
           reqpage = prpage;
           page = "/api/admin/v2/?action=" & reqaction;
@@ -380,7 +380,7 @@ begin
           end;
           LogTextToFile("WorkSectionUpdateReplyProject req","WSLOG/WorkSectionUpdateRequestTask.txt");
           writeareatofile(request,"WSLOG/WorkSectionUpdateRequestTask.txt",1);
-          MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);*/
+          MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
 				end;
 				writeareatofile(response,"hansa.log",1);
 				
