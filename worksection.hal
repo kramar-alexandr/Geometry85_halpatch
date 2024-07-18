@@ -352,7 +352,7 @@ begin
             recorddelete(WSPSyncr);
           end;
 				end else begin
-				  setareazerosize(request);
+				  /*setareazerosize(request);
 				  reqaction = "post_task";
           reqpage = prpage;
           page = "/api/admin/v2/?action=" & reqaction;
@@ -380,7 +380,7 @@ begin
           end;
           LogTextToFile("WorkSectionUpdateReplyProject req","WSLOG/WorkSectionUpdateRequestTask.txt");
           writeareatofile(request,"WSLOG/WorkSectionUpdateRequestTask.txt",1);
-          MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);
+          MySendAsyncWebRequest(WSb.ApiPage,443,-1,true,"POST",page,"application/x-www-form-urlencoded","",request,"WorkSectionUpdateReplyTask",20);*/
 				end;
 				writeareatofile(response,"hansa.log",1);
 				
@@ -976,6 +976,9 @@ begin
 		area repsp;
 		record RcVc RepSpec;
 		
+		logtext(0,"WorkSectionGetCostsMnReply");
+
+		
 		addfiletoarea("WSLOG/repsp",repsp,0);
 		
 		RepSpec.f1 = gettabtextfromarea(0,0,repsp);
@@ -996,15 +999,24 @@ begin
 		blockload(WSb);	
 		LogTextToFile("WorkSectionGetCostsMnReply","WSLOG/WorkSectionGetCostsMnReply_Reply.txt");		
 	  writeareatofile(a_reply,"WSLOG/WorkSectionGetCostsMnReply_Reply.txt",1);
+	  logtext(0,"getarealength(a_reply) " & getarealength(a_reply));
+
 		if(getarealength(a_reply)>100)then begin
 			jreply = ParseJsonArea(a_reply);
 			times = JSONCountChildren(jreply,"data");
+			logtext(0,"times " & times);
+
 			for(i=0;i<times;i=i+1)begin
 				user = JSONGet(jreply,"data/[" & i & "]/user_from/email");
 				if(nonblank(user)/* and user=="maiia.robeiko@vmlyr.com"*/)then begin
+				  logtext(0,"user " & user);
+
 				  testf = true;
 				  if(nonblank(RepSpec.f1) and RepSpec.f1!=user)then begin testf = false; end;
 				  if(blank(vUsers[user]))then begin testf = false; end;
+				  
+				  logtext(0,"testf " & testf);
+
 				  if(testf)then begin
             logtext(0,"TS from user " & vUsers[user]);
             project = JSONGet(jreply,"data/[" & i & "]/task/project/name");
