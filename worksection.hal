@@ -473,7 +473,7 @@ begin
 		  if(needtosync and blank(PRr.WorksectionID_Pr))then begin
         needtosync = CheckWSPOnServer(PRr);
         if(needtosync==false and blank(PRr.WorksectionID_Pr))then begin
-          PRr.WSSended = 1;
+          PRr.WSSended = 0;
           recordstore(PRr,true);
         end;
         if(needtosync and blank(PRr.WorksectionID_Pr) and PRr.WSSended!=0)then begin
