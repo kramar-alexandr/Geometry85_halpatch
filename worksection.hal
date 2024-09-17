@@ -683,7 +683,7 @@ begin
 		record WorksectionUserVc WUr;
 		
 		blockload(WSb);	
-	
+	  
 		if(getarealength(a_reply)>100)then begin
 			jreply = ParseJsonArea(a_reply);
 			users = JSONCountChildren(jreply,"data");
@@ -738,14 +738,13 @@ end;
 
 
 //Обновление пользователей компании - регулярная процедура
-global updating procedure WorkSectionUpdateGetUsersRequest(string arg)// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
+global updating procedure WorkSectionUpdateGetUsersRequest()// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 12 03 2021 y. at 12:41:49 PM
 begin
 	record WorksectionBlock WSb;
 	string 255 page,getaparams,reqpage,reqaction,togashstr,HASH;
 	area request;
 	
 	blockload(WSb);		
-	logtext(0,"WorkSectionUpdateRequest");
 	if(nonblank(WSb.ApiKey) and nonblank(WSb.ApiPage))then begin
 		reqaction = "get_users";
 		reqpage = "";
@@ -2056,13 +2055,9 @@ begin
   
   if(servermode)then begin
     setcompany(1,false);
-  
-    logtext(0,"WSSyncProjects ");
+    WorkSectionUpdateGetUsersRequest;
 
-  
     while(loopmain(WSPSyncr,1,true))begin
-      logtext(0,"need to sync " & WSPSyncr.PRCode);
-
       PRr.Code = WSPSyncr.PRCode;
       if(readfirstmain(PRr,1,true))then begin
         if(nonblank(PRr.WorksectionID_Pr) and nonblank(PRr.WorksectionID_Tsk))then begin
