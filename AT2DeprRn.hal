@@ -1395,6 +1395,12 @@ BEGIN
           testf = false;
         end;
       case 2:
+            if(CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sEndDate,1))) then begin
+              testf = false;
+              if(CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sEndDate,1)) and !CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sStartDate,0))) then begin
+                testf = true;
+              end;
+            end;
     end;
     switch (RepSpec.flags[6]) begin
       case 0:
