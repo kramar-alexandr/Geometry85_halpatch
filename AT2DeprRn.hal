@@ -1605,7 +1605,7 @@ BEGIN
       if (RepSpec.flags[9]==1) then begin //and (nonblank(ATUnitr.AT2Class)) then begin
         classinvdprbef = classinvdprbef + invdprbef;
         classinvdprv = classinvdprv + invdprv;
-        classwrofsum = classwrofsum + wrofsum;
+        //classwrofsum = classwrofsum + wrofsum;// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 1 April 2025 at 16:51:53
         classwrofdprsum = classwrofdprsum + wrofdprsum;
         classpurchval = classpurchval + purchval*ATUnitr.Quantity;
         classstartval = classstartval + thestartval*ATUnitr.Quantity; 
@@ -1725,7 +1725,8 @@ LSKIPASSET:;
                 OutVal(350,0,classaccdepr,M4Val,true);
                 OutVal(6,0,classstartval-classpurchval,M4Val,true);
                 OutVal(7,0,classinvdprv,M4Val,true);
-                OutVal(1,0,((classpurchval-classinvdprbef-classinvdprv+((classinvdprv-classstartval)+classinvdprbef+classwrofsum))),M4Val,true);
+                OutVal(1,0,classpurchval-classinvdprbef - classinvdprv-classwrofsum,M4Val,true);
+                //OutVal(1,0,((classpurchval-classinvdprbef-classinvdprv+((classinvdprv-classstartval)+classinvdprbef+classwrofsum))),M4Val,true);
                 EndFormat;
                 Gray_Divider(2,1);
               end;
