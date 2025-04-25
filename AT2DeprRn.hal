@@ -179,64 +179,7 @@ BEGIN
   end;
   RETURN;      
 END;
-      
-/*      
-procedure PrintInventoryNrResult(record AT2UnitVc ATUnitr,val InitDeprVal,val PurchVal,val startval,val invdprbef,var val invdprv,val invrevdprv,val invrevdprbef,
-                                 val wrofsum,val wrofdprsum,val revbef,val fwdbal,val endbal,
-                                 Integer ArtMode,Integer InclRevDpr)
-BEGIN   
-  if (ArtMode==1) then begin
-    if ((invdprbef+ATUnitr.ResVal+ATUnitr.LandVal)>=startval) then begin
-      invdprv = 0;
-    end;   
-    StartFormat(15);
-     OutString(100,0,USetStr(5292),false);
-     OutVal(4,0,InitDeprVal,M4Val,true);
-    EndFormat;    
-    StartFormat(15);
-     OutString(100,0,USetStr(5288),false);
-     OutVal(4,0,fwdbal+revbef-wrofsum,M4Val,true);
-     OutVal(5,0,(startval-PurchVal-revbef),M4Val,true);
-     OutVal(1,0,endbal,M4Val,true);
-    EndFormat;    
-    StartFormat(15);
-     OutString(100,0,USetStr(5289),false);
-     OutVal(4,0,invdprbef-wrofdprsum,M4Val,true);
-     OutVal(5,0,invdprv,M4Val,true);
-     OutVal(1,0,(invdprv+invdprbef-wrofdprsum),M4Val,true);
-    EndFormat;    
-    if (InclRevDpr!=0) then begin
-      if (invrevdprbef!=0) or (invrevdprv!=0) then begin
-        StartFormat(15);
-         OutString(100,0,USetStr(5278),false);
-         OutVal(4,0,invrevdprbef,M4Val,true);
-         OutVal(5,0,invrevdprv,M4Val,true);
-         OutVal(1,0,(invrevdprv+invrevdprbef),M4Val,true);
-        EndFormat;
-      end;
-    end; 
-     StartFormat(15);
-     OutString(100,0,USetStr(5290),false);
-     OutVal(4,0,(fwdbal+revbef-wrofsum)-(invdprbef-wrofdprsum),M4Val,true);//-InitDeprVal
-     OutVal(5,0,(startval-startval-invdprv),M4Val,true);
-     OutVal(1,0,(fwdbal+revbef-wrofsum)-(invdprv+(invdprbef-wrofdprsum)),M4Val,true);//+InitDeprVal
-    EndFormat;    
-    Gray_Divider(0,1);
-  end else begin
-    StartFormat(15);
-     OutString(0,"DblAT2UnitVc",ATUnitr.InventoryNr,false);
-     OutString(2,0,ATUnitr.Description,false);
-     OutVal(3,0,PurchVal,M4Val,true);
-     OutVal(4,0,(PurchVal-invdprbef),M4Val,true);//-InitDeprVal
-     OutVal(5,0,(startval-PurchVal),M4Val,true);
-     OutVal(6,0,invdprv,M4Val,true);
-     OutVal(1,0,(startval-(invdprv+invdprbef)),M4Val,true);//+InitDeprVal + wrofsum
-    EndFormat;    
-  end;  
-  RETURN;          
-END;          
-*/
-
+    
 procedure PrintDprModelInfo(record DprModVc DMr,Date sd, Date ed,Integer ArtMode)
 begin
   string 255 tstr,t2;
@@ -339,7 +282,11 @@ BEGIN
             endbalance = startval-(invdprv+invdprbef+wrofsum);
           end;
         case 2://Include Disposed in Period
-        endbalance =startval-(invdprv+invdprbef);
+          endbalance =startval-(invdprv+invdprbef+wrofsum);
+          if(endbalance<0)then begin
+            endbalance = 0;
+            //invdprv = (PurchVal-invdprbef);
+          end;
       end;
       OutVal(350,0,PurchVal + (startval-PurchVal) - endbalance - invdprv,M4Val,true);
       OutVal(6,0,(startval-PurchVal),M4Val,true);
@@ -394,10 +341,10 @@ begin
         end;
       case 2://Include Disposed in Period
         if ((startval-wrofsum)<=0) then begin
-         OutVal(1,0,startval-wrofsum,M4Val,true);//+InitDeprVal
-       end else begin
-        OutVal(1,0,startval-(invdprv+invdprbef),M4Val,true);//+InitDeprVal
-       end;
+          OutVal(1,0,startval-wrofsum,M4Val,true);//+InitDeprVal
+        end else begin
+          OutVal(1,0,startval-(invdprv+invdprbef),M4Val,true);//+InitDeprVal
+        end;
     end;
     EndFormat;    
     Gray_Divider(0,1);
@@ -421,7 +368,12 @@ begin
           end;
         end;
       case 2://Include Disposed in Period
-       endbalance = startval-(invdprv+invdprbef);
+        if(wrofsum!=0)then begin
+          //endbalance = startval-wrofsum;// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 15 April 2025 at 09:58:18
+          endbalance = startval-(invdprv+invdprbef);
+        end else begin
+          endbalance = startval-(invdprv+invdprbef);
+        end;
     end;
     OutVal(350,0,PurchVal + (startval-PurchVal)- endbalance - invdprv ,M4Val,true);
     OutVal(6,0,startval-PurchVal,M4Val,true);
@@ -1297,7 +1249,7 @@ global
 procedure AT2DeprCalculation(record RcVc RepSpec,Integer mode,var val totinitdprval,var val totpurchval,var val totstartval,var val totdprbef,var val totdprv,var val totresval,var val totwrofsum,var val totrevbef,var val totthestartval,boolean printf)
 BEGIN
   record AT2UnitVc ATUnitr;
-  Boolean TrHs,found,testf,writtenoff,assetqtynegf;
+  Boolean TrHs,found,testf,writtenoff,assetqtynegf,ismode1;// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 24 April 2025 at 15:33:11
   string 30 frinv,toinv,frcla,tocla;
   string 20 frcat,tocat,dmcode,nextdmcode,lastat2class,lastat2code;
   Date startdate;
@@ -1316,6 +1268,8 @@ BEGIN
   val invrevdprv,invrevdprbef,revbef,assetqty,fwdassetqty;
   val totwrofdprsum,classaccdepr,cataccdepr;
   val partswrofqty,partswrofsum,partswrofdprsum,partspurchval,partsstartval,partsinvdprv,partsinvdprbef,partsinvrevdprv,partsinvrevdprbef,partsrevbef,partsfwdassetqty,partsassetqty,partsthestartval;
+  
+  
   frinv = FirstInRange(RepSpec.f2,30);    
   toinv = LastInRange(RepSpec.f2,30);    
   frcat = FirstInRange(RepSpec.f1,30);    
@@ -1349,8 +1303,8 @@ BEGIN
           if (ATUnitr.InventoryNr<frinv) then begin testf = false; end;
           if (ATUnitr.InventoryNr>toinv) then begin testf = false; end;
         otherwise
-          if (ATUnitr.InventoryNr>toinv) then begin TrHs = false; end;
-          if (ATUnitr.InventoryNr<frinv) then begin TrHs = false; end;
+          if (ATUnitr.InventoryNr>toinv) then begin testf = false; end;
+          if (ATUnitr.InventoryNr<frinv) then begin testf = false; end;
       end;  
     end;  
     if (nonblank(RepSpec.f3)) then begin   
@@ -1388,20 +1342,25 @@ BEGIN
         testf = false;
       end;
     end;
-    switch (RepSpec.flags[5]) begin
-      case 0:
-      case 1:
-        if (CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sEndDate,1))) then begin
-          testf = false;
-        end;
-      case 2:
-            if(CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sEndDate,1))) then begin
-              testf = false;
-              if(CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sEndDate,1)) and !CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sStartDate,0))) then begin
-                testf = true;
+    if(testf)then begin
+      switch (RepSpec.flags[5]) begin
+        case 0:
+        case 1:
+          if (CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sEndDate,1))) then begin
+            testf = false;
+          end;
+        case 2:
+              ismode1 = false;
+              if(CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sEndDate,1))) then begin
+                testf = false;
+                if(CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sEndDate,1)) and !CheckifAT2UnitSold(ATUnitr.InventoryNr,AddDay(RepSpec.sStartDate,0))) then begin
+                  testf = true;
+                  ismode1 = true;
+                end;
               end;
-            end;
+      end;
     end;
+
     switch (RepSpec.flags[6]) begin
       case 0:
         switch (RepSpec.flags[1]) begin
@@ -1577,6 +1536,9 @@ BEGIN
         if (RepSpec.ArtMode!=0) begin
           StartFormat(15);
            OutString(100,0,USetStr(9648),false);
+           OutVal(200,0,wrofsum,M4Val,true);
+           OutVal(300,0,wrofdprsum,M4Val,true);
+           
            OutVal(1,0,wrofqty,M4Val,true);
           EndFormat;
           StartFormat(15);
@@ -1604,8 +1566,16 @@ BEGIN
       end;
       if (RepSpec.flags[9]==1) then begin //and (nonblank(ATUnitr.AT2Class)) then begin
         classinvdprbef = classinvdprbef + invdprbef;
-        classinvdprv = classinvdprv + invdprv;
+        
         //classwrofsum = classwrofsum + wrofsum;// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 1 April 2025 at 16:51:53
+        if(wrofsum!=0)then begin
+          //invdprv = 
+          invdprv = wrofsum - invdprbef;
+          //messagebox(0,"wrofsum " & wrofsum & " invdprbef " & invdprbef & " invdprv " & invdprv);
+          //classinvdprv = wrofsum - invdprbef;
+          //classwrofsum = classwrofsum + 
+        end;
+        classinvdprv = classinvdprv + invdprv;
         classwrofdprsum = classwrofdprsum + wrofdprsum;
         classpurchval = classpurchval + purchval*ATUnitr.Quantity;
         classstartval = classstartval + thestartval*ATUnitr.Quantity; 
@@ -1620,12 +1590,18 @@ BEGIN
         catstartval = catstartval + thestartval*ATUnitr.Quantity; 
       end;
       if (mode==1) then begin  
+        if(wrofsum>0)then begin
+          //invdprv = wrofsum - invdprbef;
+        end;
         totinitdprval = totinitdprval + InitDeprVal;
         totrevbef = totrevbef + revbef;
         totpurchval = totpurchval + purchval*assetqty;
         totdprbef = totdprbef + invdprbef;
         totdprv = totdprv + invdprv;  
         totresval = totresval +  ATUnitr.ResVal*assetqty; 
+        if(wrofsum>0)then begin
+          //totdprv = totdprbef;
+        end;
         switch (RepSpec.flags[1]) begin
           case 0: DMr.Code = ATUnitr.Model1;
           case 1: DMr.Code = ATUnitr.Model2;
@@ -1645,6 +1621,10 @@ BEGIN
   //            startval = startval + InitDeprVal*assetqty;
               totthestartval = totthestartval + assetqty*thestartval;
           end;
+        end;
+        if(wrofsum>0)then begin
+          //messagebox(0,"totinitdprval " & totinitdprval & " totpurchval " & totpurchval & " totdprv " & totdprv & " totdprv " & totdprv & " wrofsum " & wrofsum & " totdprbef " & totdprbef);
+          //totdprv = totdprv + (invdprv - invdprbef);
         end;
         if (RepSpec.ArtMode==0) then begin
           if (mode!=0) then begin  
@@ -1698,6 +1678,7 @@ BEGIN
         totwrofdprsum = totwrofdprsum + wrofdprsum; 
         wrofsum = blankval;
       end;
+      
       if (mode!=1) then begin       
         AddSMDprRowRows(RepSpec,ATUnitr,invdprv,invrevdprv,mode,SMr,commentstr);
         if (mode==0) then begin

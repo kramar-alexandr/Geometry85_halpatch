@@ -189,7 +189,7 @@ BEGIN
 //    acumdpr = acumdpr + dprv;
     if (dprv>0) then begin
       StartFormat(15);
-       OutString(15,0,USetStr(2780+GetMonth(td)),false);
+       OutString(15,0,td.year & " " & USetStr(2780+GetMonth(td)),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 15 April 2025 at 09:08:40
        revval = blankval;
        TrHs = true; 
        dprprc2 = -1;
