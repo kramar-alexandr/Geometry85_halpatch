@@ -1313,8 +1313,8 @@ BEGIN
           if (ATUnitr.AT2Class<frcla) then begin testf = false; end;
           if (ATUnitr.AT2Class>tocla) then begin testf = false; end;
         otherwise
-          if (ATUnitr.AT2Class>tocla) then begin TrHs = false; end;
-          if (ATUnitr.AT2Class<frcla) then begin TrHs = false; end;
+          if (ATUnitr.AT2Class>tocla) then begin testf = false; end;
+          if (ATUnitr.AT2Class<frcla) then begin testf = false; end;
       end;  
     end;  
     if (nonblank(RepSpec.f1)) then begin      
@@ -1323,8 +1323,8 @@ BEGIN
           if (ATUnitr.AT2Code<frcat) then begin testf = false; end;
           if (ATUnitr.AT2Code>tocat) then begin testf = false; end;
         otherwise
-          if (ATUnitr.AT2Code>tocat) then begin TrHs = false; end;
-          if (ATUnitr.AT2Code<frcat) then begin TrHs = false; end;
+          if (ATUnitr.AT2Code>tocat) then begin testf = false; end;
+          if (ATUnitr.AT2Code<frcat) then begin testf = false; end;
       end;
     end;  
     if (CheckAssetCatMatch(ATUnitr.AT2Code,ATUnitr.AT2Class,RepSpec.f3)==false) then begin testf = false; end;
