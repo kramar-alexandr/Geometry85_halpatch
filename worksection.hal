@@ -989,7 +989,7 @@ begin
 		end;
 		
 		while(loopmain(USr,1,true))begin
-			if(nonblank(USr.emailAddr))then begin
+			if(nonblank(USr.emailAddr) and USr.Closed==0)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 17 October 2025 at 08:42:59
 				vUsers[USr.emailAddr] = USr.Code;
 				vUsersSalesGroup[USr.emailAddr] = USr.SalesGroup;
 			end;
@@ -1252,7 +1252,7 @@ begin
 	  if(getarealength(reply)>500)then begin
 	    
 	    while(loopmain(USr,1,true))begin
-        if(nonblank(USr.emailAddr))then begin
+        if(nonblank(USr.emailAddr) and USr.Closed==0)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 17 October 2025 at 08:43:18
           vUsers[USr.emailAddr] = USr.Code;
           vUsersSalesGroup[USr.emailAddr] = USr.SalesGroup;
         end;
