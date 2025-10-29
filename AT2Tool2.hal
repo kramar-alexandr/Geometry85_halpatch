@@ -22,12 +22,14 @@ BEGIN
   RETURN;
 END;
 
-procedure StraightDepr_Monthly(val svp,val dprprc,Integer deprrnd,Integer LifecycleYears,Integer LifecycleDays,Integer DeprCalc,Date sd,Date ed,Boolean yearprcf,var val res)
+procedure StraightDepr_Monthly(val svp,val dprprc,Integer deprrnd,Integer LifecycleYears,Integer LifecycleMonths,Integer LifecycleDays,Integer DeprCalc,Date sd,Date ed,Boolean yearprcf,var val res)
 BEGIN
   LongInt nm;
   Integer sm,em;
   val nmv,t;  
-    
+  
+  logtext(0,"StraightDepr_Monthly svp " & svp & " dprprc " & dprprc & " deprrnd " & deprrnd & " LifecycleYears " & LifecycleYears & " LifecycleDays " & LifecycleDays & " DeprCalc " & DeprCalc & " sd " & sd & " ed " & ed & " yearprcf " & yearprcf);
+
   sm = DateGetIntMonth(sd);
   em = DateGetIntMonth(ed);    
   nm = em - sm + 1;    
@@ -35,35 +37,43 @@ BEGIN
   res = svp;
   switch (DeprCalc) begin
     otherwise
-      if (LifecycleYears>0) and ((yearprcf==false) or (dprprc==0)) then begin
-        t = LifecycleYears;
+      if (LifecycleMonths>0) and ((yearprcf==false) or (dprprc==0)) then begin
+        t = LifecycleMonths;
         res = res * (100/t);
         res = res/100;
-        if (deprrnd==20) then begin
-          res = res / 12;
-          t = 49999.00/100000.00;
-          res = res + t;
-          res = Round(res,SetRoundModeD(deprrnd));
-          res = res * nmv;
-        end else begin
-          res = Round(res,SetRoundModeD(deprrnd));
-          res = res / 12;
-          res = Round(res,SetRoundModeD(deprrnd));
-          res = res * nmv;
-        end;
-      end else begin
-        res = res * dprprc;
-        res = res/100;
-        res = res / 12;//one month depreciation rounded and then times 12, otherwise neverending roundof problem
-        if (deprrnd==20) then begin
-          t = 49999.00/100000.00;
-          res = res + t;
-          res = Round(res,SetRoundModeD(0));
-        end else begin
-          res = Round(res,SetRoundModeD(deprrnd));
-        end;
         res = Round(res,SetRoundModeD(deprrnd));
         res = res * nmv;
+      end else begin
+        if (LifecycleYears>0) and ((yearprcf==false) or (dprprc==0)) then begin
+          t = LifecycleYears;
+          res = res * (100/t);
+          res = res/100;
+          if (deprrnd==20) then begin
+            res = res / 12;
+            t = 49999.00/100000.00;
+            res = res + t;
+            res = Round(res,SetRoundModeD(deprrnd));
+            res = res * nmv;
+          end else begin
+            res = Round(res,SetRoundModeD(deprrnd));
+            res = res / 12;
+            res = Round(res,SetRoundModeD(deprrnd));
+            res = res * nmv;
+          end;
+        end else begin
+          res = res * dprprc;
+          res = res/100;
+          res = res / 12;//one month depreciation rounded and then times 12, otherwise neverending roundof problem
+          if (deprrnd==20) then begin
+            t = 49999.00/100000.00;
+            res = res + t;
+            res = Round(res,SetRoundModeD(0));
+          end else begin
+            res = Round(res,SetRoundModeD(deprrnd));
+          end;
+          res = Round(res,SetRoundModeD(deprrnd));
+          res = res * nmv;
+        end;
       end;
   end;
   RETURN;
@@ -214,9 +224,9 @@ begin
   Boolean found;
   Date eed;
   Integer LifecycleYears;
-  
+  Integer LifecycleMonths;
+
   LifecycleYears = LifecycleYears2;
-  
 
   eed = sd;
   AT2Dprr.InventoryNr = AT2Unitr.InventoryNr;
@@ -235,6 +245,9 @@ begin
         if(AT2Dprr.FromBal>0)then begin
           svp = AT2Dprr.FromBal;
           LifecycleYears = AT2Dprr.LeftYears;
+          if(AT2Dprr.LeftMonths>0)then begin
+            LifecycleMonths = AT2Dprr.LeftMonths;
+          end;
         end;
       end;
     end;
@@ -301,7 +314,7 @@ begin
         end;
       end else begin
         logtext(0,"StraightDepr_Monthly LifecycleYears " & LifecycleYears & " svp " & svp);
-        StraightDepr_Monthly(svp,pp,deprrnd,LifecycleYears,LifecycleDays,DeprCalc,sdate,edate,yearprcf,dvp);
+        StraightDepr_Monthly(svp,pp,deprrnd,LifecycleYears,LifecycleMonths,LifecycleDays,DeprCalc,sdate,edate,yearprcf,dvp);
         logtext(0,"dvp " & dvp);
 
       end;
