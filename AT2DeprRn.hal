@@ -20,6 +20,8 @@ external function Boolean GetInventoryNrWrofSoldQuant(string,Date,Date,var val,v
 external function roundmode SetRoundModeD(Integer);
 external procedure OutEmpty(record RcVc,Integer);
 
+SetLangMode(LangUkrainian,"UKR",2);
+
 function Date LastDprDate(Date dat,string InventoryNr,Integer Model,Integer typ,var val revinitdeprval) 
 begin
   Date res;
@@ -226,6 +228,45 @@ procedure PrintInventoryNrResult(Boolean partf,record AT2UnitVc ATUnitr,record D
 BEGIN
   Date sd,ed;
   val endbalance;
+  record AT2DprVc AT2Dprr;
+  val endcost;
+  record InvrsVc Invrsr;
+  boolean found;
+  record AT2WrofVc AT2Wrofr;
+  row AT2WrofVc AT2Wrofrw;
+  date atoutdate;
+  
+  AT2Dprr.InventoryNr = ATUnitr.InventoryNr;
+  AT2Dprr.TransDate = addyear(currentdate,100);
+  readlastkey("DateInventoryNr",AT2Dprr,2,false);
+  if(AT2Dprr.InventoryNr==ATUnitr.InventoryNr)then begin
+    endcost = AT2Dprr.ResVal;
+  end;
+  
+  Invrsr.InventoryNr = ATUnitr.InventoryNr; 
+  Invrsr.FileName = "AT2WrofVc";
+  found = true;
+  while (LoopKey("FileName",Invrsr,3,found)) begin
+    if (Invrsr.InventoryNr!=ATUnitr.InventoryNr) then begin
+      found = false;
+    end;
+    if (Invrsr.FileName!="AT2WrofVc") then begin
+      found = false;
+    end;
+    
+    if (found) then begin
+      AT2Wrofr.SerNr = Invrsr.TransNr;
+      if (ReadFirstMain(AT2Wrofr,1,true)) then begin
+        if (Invrsr.Row<MatRowCnt(AT2Wrofr)) then begin
+          MatRowGet(AT2Wrofr,Invrsr.Row,AT2Wrofrw);
+          if(AT2Wrofrw.InventoryNr==ATUnitr.InventoryNr)then begin
+            atoutdate = AT2Wrofr.TransDate;
+          end;
+        end;
+      end;
+    end;  
+  end;
+  
   if (printf) then begin
     if ((invdprbef+ATUnitr.ResVal)>=startval) then begin
       invdprv = 0;
@@ -237,6 +278,9 @@ BEGIN
       EndFormat;    
       StartFormat(15);
        OutString(100,0,USetStr(5288),false);
+       OutString(125,0,ATUnitr.Classification,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:23:32
+       OutString(160,0,ATUnitr.PurchaseDate,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:24:31
+
        OutVal(4,0,PurchVal,M4Val,true);
        OutVal(5,0,(startval-PurchVal),M4Val,true);
        OutVal(1,0,startval,M4Val,true);
@@ -252,10 +296,13 @@ BEGIN
        OutVal(4,0,(PurchVal-invdprbef),M4Val,true);//-InitDeprVal
        OutVal(5,0,(startval-PurchVal-invdprv),M4Val,true);
        if ((startval-wrofsum)<=0) then begin
-         OutVal(1,0,startval-wrofsum,M4Val,true);//+InitDeprVal
+         OutVal(8,0,startval-wrofsum,M4Val,true);//+InitDeprVal
        end else begin
-         OutVal(1,0,(startval-(invdprv+invdprbef)),M4Val,true);//+InitDeprVal
+         OutVal(8,0,(startval-(invdprv+invdprbef)),M4Val,true);//+InitDeprVal
        end;
+       OutString(440,0,endcost,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 15:28:21
+       OutString(480,0,atoutdate,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:36:00
+
       EndFormat;    
       Gray_Divider(0,1);
     end else begin
@@ -270,6 +317,9 @@ BEGIN
       if (datef) then begin  
         OutString(8,0,ATUnitr.PurchaseDate,false);
       end;
+      OutString(125,0,ATUnitr.Classification,false);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:23:32
+      OutString(160,0,ATUnitr.PurchaseDate,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:24:31
+
       OutVal(4,0,PurchVal,M4Val,true);
       OutVal(5,0,(PurchVal-invdprbef),M4Val,true);//-InitDeprVal
       switch (SkipDisposed) begin
@@ -288,10 +338,13 @@ BEGIN
             //invdprv = (PurchVal-invdprbef);
           end;
       end;
-      OutVal(350,0,PurchVal + (startval-PurchVal) - endbalance - invdprv,M4Val,true);
+      OutVal(280,0,PurchVal + (startval-PurchVal) - endbalance - invdprv,M4Val,true);
       OutVal(6,0,(startval-PurchVal),M4Val,true);
       OutVal(7,0,invdprv,M4Val,true);
-      OutVal(1,0,endbalance,M4Val,true);
+      OutVal(8,0,endbalance,M4Val,true);
+      OutString(440,0,endcost,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 15:28:26
+      OutString(480,0,atoutdate,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:36:00
+
       EndFormat;    
     end;  
   end;
@@ -378,7 +431,7 @@ begin
     OutVal(350,0,PurchVal + (startval-PurchVal)- endbalance - invdprv ,M4Val,true);
     OutVal(6,0,startval-PurchVal,M4Val,true);
     OutVal(7,0,invdprv,M4Val,true);
-    OutVal(1,0,endbalance,M4Val,true);
+    OutVal(8,0,endbalance,M4Val,true);
     EndFormat;  
   end;  
   return;          
@@ -1782,13 +1835,13 @@ begin
   PrintAT2DprHeader(RepSpec);
   EndHeader;
   if (RepSpec.ArtMode==0) then begin
-    SetRepCol(2,60);
-    SetRepCol(3,140);
-    SetRepCol(4,250);
-    SetRepCol(5,300);
-    SetRepCol(6,400);
-    SetRepCol(7,440);
-    SetRepCol(8,480);
+    SetRepCol(2,30);
+    SetRepCol(3,100);
+    SetRepCol(4,200);
+    SetRepCol(5,250);
+    SetRepCol(6,320);
+    SetRepCol(7,360);
+    SetRepCol(8,400);
     if (RepSpec.flags[13]) then begin
       SetRepCol(3,125);
       SetRepCol(8,175);
@@ -1797,6 +1850,9 @@ begin
      OutString(0,0,USetStr(9001),false);
      OutString(2,0,USetStr(9002),false);
      OutString(3,0,USetStr(8833),false);
+     OutString(125,0,USetStr(9846),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:23:32
+     OutString(160,0,USetStr(13707),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:24:31
+     
      if (RepSpec.flags[13]) then begin
        OutString(8,0,USetStr(12001),false);
      end;
@@ -1805,18 +1861,25 @@ begin
      OutString(350,0,USetStr(5277),true);
      OutString(6,0,USetStr(9651),true);
      OutString(7,0,USetStr(5284),true);     
-     OutString(1,0,USetStr(5298),true);
+     OutString(8,0,USetStr(5298),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:32:23
+     OutString(440,0,"Ліквідаційна вартість",true);
+     OutString(480,0,USetStr(10200),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:35:58
     EndFormat;
     Gray_Divider(0,1);
   end else begin
     SetRepCol(2,70);
     SetRepCol(3,220);
-    SetRepCol(4,320);
-    SetRepCol(5,400);
+    OutString(125,0,USetStr(9846),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:23:32
+    OutString(160,0,USetStr(13707),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:24:31
+    SetRepCol(4,200);
+    SetRepCol(5,250);
     StartFormat(15);
      OutString(4,0,USetStr(5283),true);
      OutString(5,0,USetStr(5284),true);
-     OutString(1,0,USetStr(5298),true);
+     OutString(8,0,USetStr(5298),true);
+     OutString(440,0,"Ліквідаційна вартість",true);
+     OutString(480,0,USetStr(10200),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:36:00
+     
     EndFormat;    
     Gray_Divider(0,1);
   end;
