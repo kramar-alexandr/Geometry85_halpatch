@@ -222,7 +222,7 @@ begin
   return;
 end;
 
-procedure PrintInventoryNrResult(Boolean partf,record AT2UnitVc ATUnitr,record DprModVc DMr,val InitDeprVal,val PurchVal,val startval,val invdprbef,var val invdprv,val invrevdprv,val invrevdprbef,
+procedure PrintInventoryNrResult(record RcVc RepSpec,Boolean partf,record AT2UnitVc ATUnitr,record DprModVc DMr,val InitDeprVal,val PurchVal,val startval,val invdprbef,var val invdprv,val invrevdprv,val invrevdprbef,
                                  val wrofsum,val wrofdprsum,val revbef,val fwdbal,val endbal,
                                  Integer ArtMode,Integer InclRevDpr,Integer SkipDisposed,Integer datef,boolean printf)
 BEGIN
@@ -240,7 +240,9 @@ BEGIN
   AT2Dprr.TransDate = addyear(currentdate,100);
   readlastkey("DateInventoryNr",AT2Dprr,2,false);
   if(AT2Dprr.InventoryNr==ATUnitr.InventoryNr)then begin
-    endcost = AT2Dprr.ResVal;
+    if(RepSpec.sEndDate>=AT2Dprr.TransDate)then begin
+      endcost = AT2Dprr.ResVal;
+    end;
   end;
   
   Invrsr.InventoryNr = ATUnitr.InventoryNr; 
@@ -260,7 +262,9 @@ BEGIN
         if (Invrsr.Row<MatRowCnt(AT2Wrofr)) then begin
           MatRowGet(AT2Wrofr,Invrsr.Row,AT2Wrofrw);
           if(AT2Wrofrw.InventoryNr==ATUnitr.InventoryNr)then begin
-            atoutdate = AT2Wrofr.TransDate;
+            if(RepSpec.sEndDate>=AT2Wrofr.TransDate)then begin
+              atoutdate = AT2Wrofr.TransDate;
+            end;
           end;
         end;
       end;
@@ -300,9 +304,8 @@ BEGIN
        end else begin
          OutVal(8,0,(startval-(invdprv+invdprbef)),M4Val,true);//+InitDeprVal
        end;
-       OutString(440,0,endcost,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 15:28:21
-       OutString(480,0,atoutdate,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:36:00
-
+       OutVal(440,0,endcost,M4val,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 15:28:21
+       OutDate(480,0,atoutdate,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:36:00
       EndFormat;    
       Gray_Divider(0,1);
     end else begin
@@ -342,9 +345,8 @@ BEGIN
       OutVal(6,0,(startval-PurchVal),M4Val,true);
       OutVal(7,0,invdprv,M4Val,true);
       OutVal(8,0,endbalance,M4Val,true);
-      OutString(440,0,endcost,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 15:28:26
-      OutString(480,0,atoutdate,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:36:00
-
+      OutVal(440,0,endcost,m4val,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 15:28:26
+      OutDate(480,0,atoutdate,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:36:00
       EndFormat;    
     end;  
   end;
@@ -428,7 +430,7 @@ begin
           endbalance = startval-(invdprv+invdprbef);
         end;
     end;
-    OutVal(350,0,PurchVal + (startval-PurchVal)- endbalance - invdprv ,M4Val,true);
+    OutVal(280,0,PurchVal + (startval-PurchVal)- endbalance - invdprv ,M4Val,true);
     OutVal(6,0,startval-PurchVal,M4Val,true);
     OutVal(7,0,invdprv,M4Val,true);
     OutVal(8,0,endbalance,M4Val,true);
@@ -615,7 +617,7 @@ BEGIN
   RETURN;
 END;
 
-procedure DepreciationCalculation(Integer Model,Integer Comparison,Integer ArtMode,Integer PrintPeriodVals,Integer mode,Integer InclRevDpr,Integer SkipDisposed,
+procedure DepreciationCalculation(record RcVc RepSpec,Integer Model,Integer Comparison,Integer ArtMode,Integer PrintPeriodVals,Integer mode,Integer InclRevDpr,Integer SkipDisposed,
                              var record AT2UnitVc ATUnitr,var record DprModVc DMr,Boolean dprmodelf,
                              val purchval,var val startval,var val resval,
                              Date startdate,Date enddate,
@@ -770,7 +772,7 @@ begin
       end;
       if (dpr!=0) and (PrintPeriodVals!=0)  then begin
         t = dpr*lassetqty; 
-        PrintInventoryNrResult(false,ATUnitr,DMr,0.00,purchval*ATUnitr.Quantity,startval*ATUnitr.Quantity,0,t,0,dpr2*lassetqty,wrofsum,wrofdprsum,revinperiod*ATUnitr.Quantity,0,0,ArtMode,InclRevDpr,SkipDisposed,datef,true);
+        PrintInventoryNrResult(RepSpec,false,ATUnitr,DMr,0.00,purchval*ATUnitr.Quantity,startval*ATUnitr.Quantity,0,t,0,dpr2*lassetqty,wrofsum,wrofdprsum,revinperiod*ATUnitr.Quantity,0,0,ArtMode,InclRevDpr,SkipDisposed,datef,true);
      end;
     end;    
     if (nonblank(nextdmcode)) then begin
@@ -842,7 +844,7 @@ LDepreciationCalculation:;
   RETURN;
 END;
 
-procedure OneInventoryNrDepreciation_DepreciationBeforeCurrentPeriod_SVK(record AT2UnitVc orgATUr,record DprModVc DMr,
+procedure OneInventoryNrDepreciation_DepreciationBeforeCurrentPeriod_SVK(record RcVc RepSpec,record AT2UnitVc orgATUr,record DprModVc DMr,
                                     Integer mode,Integer ArtMode,Date sStartDate,
                                     Integer Model,Integer UseFiscalVal,Integer LastOfficialRev,Integer Comparison,Integer SkipDisposed,
                                     Integer InclRevDpr,Integer PrintPeriodVals,
@@ -881,7 +883,7 @@ begin
     end;
     roundf = true;
     if (dodeprf) then begin
-      DepreciationCalculation(Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,ATUr,DMr,false,purchval,startval,resval,fullyearsd,ed,fullyearinvdprbef,fullyearinvrevdprbef,tfullyearacumdpr,fullyearrevacumdpr,assetqty,wrofqty,wrofsum,wrofdprsum,lastrevval,t,roundf,prevmode,datef,blankval);
+      DepreciationCalculation(RepSpec,Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,ATUr,DMr,false,purchval,startval,resval,fullyearsd,ed,fullyearinvdprbef,fullyearinvrevdprbef,tfullyearacumdpr,fullyearrevacumdpr,assetqty,wrofqty,wrofsum,wrofdprsum,lastrevval,t,roundf,prevmode,datef,blankval);
     end;
     roundf = false;
     if (tfullyearacumdpr!=blankval) then begin
@@ -896,7 +898,7 @@ begin
         ed2.day = DaysInMonth(ed2.year,ed2.month);
       end;
       if (ed2>pysd) then begin
-        DepreciationCalculation(Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,ATUr,DMr,true,purchval,startval,resval,pysd,ed2,pyinvdprv,pyinvrevdprv,pyacumdpr,pyrevacumdpr,assetqty,wrofqty,wrofsum,wrofdprsum,lastrevval,t,roundf,prevmode,datef,currentdepr);
+        DepreciationCalculation(RepSpec,Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,ATUr,DMr,true,purchval,startval,resval,pysd,ed2,pyinvdprv,pyinvrevdprv,pyacumdpr,pyrevacumdpr,assetqty,wrofqty,wrofsum,wrofdprsum,lastrevval,t,roundf,prevmode,datef,currentdepr);
       end;
     end;
     invdprbef = invdprbef + pyinvdprv;
@@ -925,7 +927,7 @@ begin
 end;
 
 global
-procedure OneInventoryNrDepreciation2(record AT2UnitVc ATUnitr,Integer mode,Integer ArtMode,Date sStartDate,Date sEndDate,
+procedure OneInventoryNrDepreciation2(record RcVc RepSpec,record AT2UnitVc ATUnitr,Integer mode,Integer ArtMode,Date sStartDate,Date sEndDate,
                                      Integer Model,Integer UseFiscalVal,Integer LastOfficialRev,Integer Comparison,Integer SkipDisposed,
                                      Integer InclRevDpr,Integer PrintPeriodVals,
                                      var val totwrofqty,var val totwrofsum,var val totwrofdprsum,var val purchval,var val startval,var val invdprv,var val invdprbef,
@@ -1075,11 +1077,11 @@ begin
   end;
 
   if (HasLocalization("CZE,SVK")) then begin
-    OneInventoryNrDepreciation_DepreciationBeforeCurrentPeriod_SVK(ATUnitr,DMr,mode,ArtMode,sStartDate,Model,UseFiscalVal,LastOfficialRev,Comparison,SkipDisposed,
+    OneInventoryNrDepreciation_DepreciationBeforeCurrentPeriod_SVK(RepSpec,ATUnitr,DMr,mode,ArtMode,sStartDate,Model,UseFiscalVal,LastOfficialRev,Comparison,SkipDisposed,
                                     InclRevDpr,PrintPeriodVals,assetqty,purchval,startval,resval,wrofqty,wrofsum,wrofdprsum,stdprdate,enddatebef,acumdpr,invdprbef,
                                     roundf,prevmode,datef,currentdepr,sEndDate);
   end else begin
-    DepreciationCalculation(Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,ATUnitr,DMr,true,purchval,startval,resval,stdprdate,enddatebef,invdprbef,invrevdprbef,acumdpr,revacumdpr,assetqty,wrofqty,wrofsum,wrofdprsum,lastrevval,revbef,roundf,prevmode,datef,blankval);
+    DepreciationCalculation(RepSpec,Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,ATUnitr,DMr,true,purchval,startval,resval,stdprdate,enddatebef,invdprbef,invrevdprbef,acumdpr,revacumdpr,assetqty,wrofqty,wrofsum,wrofdprsum,lastrevval,revbef,roundf,prevmode,datef,blankval);
   end;
 
   if (blank(revinitdeprval)==false) then begin
@@ -1107,9 +1109,9 @@ begin
       RecordCopy(tmpATUr,ATUnitr);
       td = ATUnitr.StartingDate1; td.month = 1; td.day = 1;
       tmpATUr.StartingDate1 = td;
-      DepreciationCalculation(Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,tmpATUr,DMr,true,purchval,startval,resval,startdate,enddate,invdprv,invrevdprv,acumdpr,revacumdpr,aqty,wrofqty,wrofsum,wrofdprsum,lastrevval,t,roundf,prevmode,datef,currentdepr);
+      DepreciationCalculation(RepSpec,Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,tmpATUr,DMr,true,purchval,startval,resval,startdate,enddate,invdprv,invrevdprv,acumdpr,revacumdpr,aqty,wrofqty,wrofsum,wrofdprsum,lastrevval,t,roundf,prevmode,datef,currentdepr);
     end else begin
-      DepreciationCalculation(Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,ATUnitr,DMr,true,purchval,startval,resval,startdate,enddate,invdprv,invrevdprv,acumdpr,revacumdpr,aqty,wrofqty,wrofsum,wrofdprsum,lastrevval,t,roundf,prevmode,datef,blankval);
+      DepreciationCalculation(RepSpec,Model,Comparison,ArtMode,PrintPeriodVals,mode,InclRevDpr,SkipDisposed,ATUnitr,DMr,true,purchval,startval,resval,startdate,enddate,invdprv,invrevdprv,acumdpr,revacumdpr,aqty,wrofqty,wrofsum,wrofdprsum,lastrevval,t,roundf,prevmode,datef,blankval);
     end;
   end else begin
     invdprbef = startval - resval;
@@ -1195,7 +1197,8 @@ procedure OneInventoryNrDepreciation(record AT2UnitVc ATUnitr,Integer mode,Integ
                                      var val invrevdprv,var val invrevdprbef,var val revbef,var val fwdassetqty,var val assetqty,
                                      var val thestartval)
 begin
-  OneInventoryNrDepreciation2(ATUnitr,mode,ArtMode,sStartDate,sEndDate,Model,UseFiscalVal,LastOfficialRev,Comparison,SkipDisposed,InclRevDpr,PrintPeriodVals,
+  record RcVc RepSpec;
+  OneInventoryNrDepreciation2(RepSpec,ATUnitr,mode,ArtMode,sStartDate,sEndDate,Model,UseFiscalVal,LastOfficialRev,Comparison,SkipDisposed,InclRevDpr,PrintPeriodVals,
                                      totwrofqty,totwrofsum,totwrofdprsum,purchval,startval,invdprv,invdprbef,invrevdprv,invrevdprbef,revbef,fwdassetqty,assetqty,
                                      thestartval,0,false);
   return;
@@ -1251,7 +1254,7 @@ begin
           end;
         end;
       end;
-      OneInventoryNrDepreciation2(ATUnitr,1,RepSpec.ArtMode,RepSpec.sStartDate,RepSpec.sEndDate,
+      OneInventoryNrDepreciation2(RepSpec,ATUnitr,1,RepSpec.ArtMode,RepSpec.sStartDate,RepSpec.sEndDate,
                                  RepSpec.flags[1],RepSpec.flags[7],RepSpec.flags[3],RepSpec.Comparison,RepSpec.flags[5],
                                  RepSpec.flags[10],RepSpec.flags[11],
                                  wrofqty,wrofsum,wrofdprsum,purchval,startval,invdprv,invdprbef,invrevdprv,invrevdprbef,revbef,fwdassetqty,assetqty,thestartval,RepSpec.flags[13],printf);
@@ -1264,7 +1267,7 @@ begin
             InitDeprVal = ATUnitr.InitDeprVal2*ATUnitr.Quantity;
         end;
         if (printf) then begin
-          PrintInventoryNrResult(true,ATUnitr,DMr,InitDeprVal,thestartval*assetqty,startval*assetqty,invdprbef,
+          PrintInventoryNrResult(RepSpec,true,ATUnitr,DMr,InitDeprVal,thestartval*assetqty,startval*assetqty,invdprbef,
                                  invdprv,invrevdprv,invrevdprbef,wrofsum,wrofdprsum,
                                  revbef*ATUnitr.Quantity,ATUnitr.Quantity*purchval,assetqty*startval,
                                  RepSpec.ArtMode,RepSpec.flags[10],RepSpec.flags[5],RepSpec.flags[13],true);
@@ -1445,13 +1448,17 @@ BEGIN
                     Gray_Divider(2,1);
                     StartFormat(15);
                     OutString(100,0,lastat2class,false);
+                    if(RepSpec.Media==mtExcel)then begin
+                      OutString(160,0,"",true);
+                      OutString(160,0,"",true);
+                    end;
                     OutVal(4,0,classpurchval,M4Val,true);
                     OutVal(5,0,classpurchval-classinvdprbef,M4Val,true);
                     classaccdepr = classpurchval + (classstartval-classpurchval) - (classstartval-(classinvdprv+classinvdprbef+classwrofsum)) - classinvdprv;
-                    OutVal(350,0,classaccdepr,M4Val,true);
+                    OutVal(280,0,classaccdepr,M4Val,true);
                     OutVal(6,0,classstartval-classpurchval,M4Val,true); 
                     OutVal(7,0,classinvdprv,M4Val,true);
-                    OutVal(1,0,(classstartval-(classinvdprv+classinvdprbef+classwrofsum)),M4Val,true);
+                    OutVal(8,0,(classstartval-(classinvdprv+classinvdprbef+classwrofsum)),M4Val,true);
                     EndFormat;
                     Gray_Divider(2,1);
                     classinvdprv = blankval;
@@ -1472,13 +1479,17 @@ BEGIN
                     Gray_Divider(2,1);
                     StartFormat(15);
                     OutString(100,0,"BLANK",false);
+                    if(RepSpec.Media==mtExcel)then begin
+                      OutString(160,0,"",true);
+                      OutString(160,0,"",true);
+                    end;
                     OutVal(4,0,classpurchval,M4Val,true);
                     OutVal(5,0,classpurchval-classinvdprbef,M4Val,true);
                     classaccdepr = classpurchval + (classstartval-classpurchval) - (classstartval-(classinvdprv+classinvdprbef+classwrofsum)) - classinvdprv;
-                    OutVal(350,0,classaccdepr,M4Val,true);
+                    OutVal(280,0,classaccdepr,M4Val,true);
                     OutVal(6,0,classstartval-classpurchval,M4Val,true); 
                     OutVal(7,0,classinvdprv,M4Val,true);
-                    OutVal(1,0,(classstartval-(classinvdprv+classinvdprbef+classwrofsum)),M4Val,true);
+                    OutVal(8,0,(classstartval-(classinvdprv+classinvdprbef+classwrofsum)),M4Val,true);
                     EndFormat;
                     Gray_Divider(2,1);
                     classinvdprv = blankval;
@@ -1504,13 +1515,17 @@ BEGIN
                     Gray_Divider(2,1);
                     StartFormat(15);
                     OutString(100,0,lastat2code,false);
+                    if(RepSpec.Media==mtExcel)then begin
+                      OutString(160,0,"",true);
+                      OutString(160,0,"",true);
+                    end;
                     OutVal(4,0,catpurchval,M4Val,true);
                     OutVal(5,0,catpurchval-catinvdprbef,M4Val,true);
                     cataccdepr = catpurchval + (catpurchval-catinvdprbef) - (catstartval-(catinvdprv+catinvdprbef+catwrofsum)) - catinvdprv;
-                    OutVal(350,0,cataccdepr,M4Val,true);
+                    OutVal(280,0,cataccdepr,M4Val,true);
                     OutVal(6,0,catstartval-catpurchval,M4Val,true);
                     OutVal(7,0,catinvdprv,M4Val,true);
-                    OutVal(1,0,(catstartval-(catinvdprv+catinvdprbef+catwrofsum)),M4Val,true);
+                    OutVal(8,0,(catstartval-(catinvdprv+catinvdprbef+catwrofsum)),M4Val,true);
                     EndFormat;
                     Gray_Divider(2,1);
                     catinvdprv = blankval;
@@ -1531,13 +1546,17 @@ BEGIN
                     Gray_Divider(2,1);
                     StartFormat(15);
                     OutString(100,0,"BLANK",false);
+                    if(RepSpec.Media==mtExcel)then begin
+                      OutString(160,0,"",true);
+                      OutString(160,0,"",true);
+                    end;
                     OutVal(4,0,catpurchval,M4Val,true);
                     OutVal(5,0,catpurchval-catinvdprbef,M4Val,true);
                     cataccdepr = catpurchval + (catpurchval-catinvdprbef) - (catstartval-(catinvdprv+catinvdprbef+catwrofsum)) - catinvdprv;
-                    OutVal(350,0,cataccdepr,M4Val,true);
+                    OutVal(280,0,cataccdepr,M4Val,true);
                     OutVal(6,0,catstartval-catpurchval,M4Val,true);
                     OutVal(7,0,catinvdprv,M4Val,true);
-                    OutVal(1,0,(catstartval-(catinvdprv+catinvdprbef+catwrofsum)),M4Val,true);
+                    OutVal(8,0,(catstartval-(catinvdprv+catinvdprbef+catwrofsum)),M4Val,true);
                     EndFormat;
                     Gray_Divider(2,1);
                     catinvdprv = blankval;
@@ -1574,13 +1593,13 @@ BEGIN
       invrevdprv = blankval;
       invrevdprbef = blankval;
       if (HasLocalization("CZE,SVK")) then begin
-        OneInventoryNrDepreciation2(ATUnitr,mode,RepSpec.ArtMode,RepSpec.sStartDate,RepSpec.sEndDate,
+        OneInventoryNrDepreciation2(RepSpec,ATUnitr,mode,RepSpec.ArtMode,RepSpec.sStartDate,RepSpec.sEndDate,
                                    RepSpec.flags[1],RepSpec.flags[7],RepSpec.flags[3],RepSpec.Comparison,RepSpec.flags[5],
                                    RepSpec.flags[10],RepSpec.flags[11],
                                    wrofqty,wrofsum,wrofdprsum,purchval,startval,invdprv,invdprbef,invrevdprv,invrevdprbef,revbef,fwdassetqty,assetqty,thestartval,RepSpec.flags[13],printf);
       end else begin
 
-        OneInventoryNrDepreciation2(ATUnitr,mode,RepSpec.ArtMode,RepSpec.sStartDate,RepSpec.sEndDate,
+        OneInventoryNrDepreciation2(RepSpec,ATUnitr,mode,RepSpec.ArtMode,RepSpec.sStartDate,RepSpec.sEndDate,
                                    RepSpec.flags[1],RepSpec.flags[7],RepSpec.flags[3],RepSpec.Comparison,RepSpec.flags[5],
                                    RepSpec.flags[10],RepSpec.flags[11],
                                    wrofqty,wrofsum,wrofdprsum,purchval,startval,invdprv,invdprbef,invrevdprv,invrevdprbef,revbef,fwdassetqty,assetqty,thestartval,RepSpec.flags[13],printf);
@@ -1684,13 +1703,13 @@ BEGIN
             switch (RepSpec.flags[12]) begin
               case 1:
                 t = invdprv + partsinvdprv;
-                PrintInventoryNrResult(false,ATUnitr,DMr,InitDeprVal,thestartval*assetqty+partsthestartval,startval*assetqty+partsstartval,invdprbef+partsinvdprbef,
+                PrintInventoryNrResult(RepSpec,false,ATUnitr,DMr,InitDeprVal,thestartval*assetqty+partsthestartval,startval*assetqty+partsstartval,invdprbef+partsinvdprbef,
                                        t,invrevdprv+partsinvrevdprv,invrevdprbef+partsinvrevdprbef,wrofsum+partswrofsum,wrofdprsum+partswrofdprsum,
                                        revbef*ATUnitr.Quantity+partsrevbef,ATUnitr.Quantity*purchval+partspurchval,assetqty*startval+partsstartval,
                                        RepSpec.ArtMode,RepSpec.flags[10],RepSpec.flags[5],RepSpec.flags[13],printf);
               case 2:
                 t = invdprv + partsinvdprv;
-                PrintInventoryNrResult(false,ATUnitr,DMr,InitDeprVal,thestartval*assetqty+partsthestartval,startval*assetqty+partsstartval,invdprbef+partsinvdprbef,
+                PrintInventoryNrResult(RepSpec,false,ATUnitr,DMr,InitDeprVal,thestartval*assetqty+partsthestartval,startval*assetqty+partsstartval,invdprbef+partsinvdprbef,
                                        t,invrevdprv+partsinvrevdprv,invrevdprbef+partsinvrevdprbef,wrofsum+partswrofsum,wrofdprsum+partswrofdprsum,
                                        revbef*ATUnitr.Quantity+partsrevbef,ATUnitr.Quantity*purchval+partspurchval,assetqty*startval+partsstartval,
                                        RepSpec.ArtMode,RepSpec.flags[10],RepSpec.flags[5],RepSpec.flags[13],printf);
@@ -1702,7 +1721,7 @@ BEGIN
                 end;
               otherwise
                 if (blank(RepSpec.f3)) or ((nonblank(RepSpec.f3)) and (ATUnitr.AT2Class==RepSpec.f3)) then begin
-                  PrintInventoryNrResult(false,ATUnitr,DMr,InitDeprVal,thestartval*assetqty,startval*assetqty,invdprbef,invdprv,invrevdprv,invrevdprbef,wrofsum,wrofdprsum,revbef*ATUnitr.Quantity,ATUnitr.Quantity*purchval,assetqty*startval,RepSpec.ArtMode,RepSpec.flags[10],RepSpec.flags[5],RepSpec.flags[13],printf);
+                  PrintInventoryNrResult(RepSpec,false,ATUnitr,DMr,InitDeprVal,thestartval*assetqty,startval*assetqty,invdprbef,invdprv,invrevdprv,invrevdprbef,wrofsum,wrofdprsum,revbef*ATUnitr.Quantity,ATUnitr.Quantity*purchval,assetqty*startval,RepSpec.ArtMode,RepSpec.flags[10],RepSpec.flags[5],RepSpec.flags[13],printf);
                 end;
             end;
             totwrofsum =  partswrofsum + totwrofsum;
@@ -1717,7 +1736,7 @@ BEGIN
         end else begin
 //        t = invdprv;
 //        PrintInventoryNrResult(ATUnitr,InitDeprVal,thestartval*ATUnitr.Quantity,startval*ATUnitr.Quantity,invdprbef,t,invrevdprv,invrevdprbef,wrofsum,wrofdprsum,revbef*ATUnitr.Quantity,ATUnitr.Quantity*purchval,assetqty*startval,RepSpec.ArtMode,RepSpec.flags[10]);
-          PrintInventoryNrResult(false,ATUnitr,DMr,InitDeprVal,thestartval*assetqty,startval*assetqty,invdprbef,invdprv,invrevdprv,invrevdprbef,wrofsum,wrofdprsum,revbef*ATUnitr.Quantity,ATUnitr.Quantity*purchval,assetqty*startval,RepSpec.ArtMode,RepSpec.flags[10],RepSpec.flags[5],RepSpec.flags[13],printf);
+          PrintInventoryNrResult(RepSpec,false,ATUnitr,DMr,InitDeprVal,thestartval*assetqty,startval*assetqty,invdprbef,invdprv,invrevdprv,invrevdprbef,wrofsum,wrofdprsum,revbef*ATUnitr.Quantity,ATUnitr.Quantity*purchval,assetqty*startval,RepSpec.ArtMode,RepSpec.flags[10],RepSpec.flags[5],RepSpec.flags[13],printf);
          switch (RepSpec.flags[12]) begin
             case 2:
               if (mode!=0) then begin       
@@ -1756,10 +1775,10 @@ LSKIPASSET:;
                 OutVal(4,0,classpurchval,M4Val,true);
                 OutVal(5,0,classpurchval-classinvdprbef,M4Val,true);
                 classaccdepr = classpurchval + (classstartval-classpurchval) - (classstartval-(classinvdprv+classinvdprbef+classwrofsum)) - classinvdprv;
-                OutVal(350,0,classaccdepr,M4Val,true);
+                OutVal(280,0,classaccdepr,M4Val,true);
                 OutVal(6,0,classstartval-classpurchval,M4Val,true);
                 OutVal(7,0,classinvdprv,M4Val,true);
-                OutVal(1,0,classpurchval-classinvdprbef - classinvdprv-classwrofsum,M4Val,true);
+                OutVal(8,0,classpurchval-classinvdprbef - classinvdprv-classwrofsum,M4Val,true);
                 //OutVal(1,0,((classpurchval-classinvdprbef-classinvdprv+((classinvdprv-classstartval)+classinvdprbef+classwrofsum))),M4Val,true);
                 EndFormat;
                 Gray_Divider(2,1);
@@ -1782,10 +1801,10 @@ LSKIPASSET:;
               OutVal(4,0,catpurchval,M4Val,true);
               OutVal(5,0,catpurchval-catinvdprbef,M4Val,true);
               cataccdepr = catpurchval + (catpurchval-catinvdprbef) - (catstartval-(catinvdprv+catinvdprbef+catwrofsum)) - catinvdprv;
-              OutVal(350,0,cataccdepr,M4Val,true);
+              OutVal(280,0,cataccdepr,M4Val,true);
               OutVal(6,0,catstartval-catpurchval,M4Val,true);
               OutVal(7,0,catinvdprv,M4Val,true);
-              OutVal(1,0,((catpurchval-catinvdprbef-catinvdprv+((catinvdprv-catstartval)+catinvdprbef+catwrofsum))),M4Val,true);
+              OutVal(8,0,((catpurchval-catinvdprbef-catinvdprv+((catinvdprv-catstartval)+catinvdprbef+catwrofsum))),M4Val,true);
               EndFormat;
               Gray_Divider(2,1);
             end;
@@ -1851,34 +1870,34 @@ begin
      OutString(2,0,USetStr(9002),false);
      OutString(3,0,USetStr(8833),false);
      OutString(125,0,USetStr(9846),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:23:32
-     OutString(160,0,USetStr(13707),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:24:31
+     OutString(160,0,"Дата прид.",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:24:31
      
      if (RepSpec.flags[13]) then begin
        OutString(8,0,USetStr(12001),false);
      end;
      OutString(4,0,USetStr(8780),true);
-     OutString(5,0,USetStr(2495),true);
-     OutString(350,0,USetStr(5277),true);
+     OutString(5,0,"На поч.періоду",true);
+     OutString(280,0,"Накоп.амортиз.",true);
      OutString(6,0,USetStr(9651),true);
      OutString(7,0,USetStr(5284),true);     
      OutString(8,0,USetStr(5298),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:32:23
-     OutString(440,0,"Ліквідаційна вартість",true);
-     OutString(480,0,USetStr(10200),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:35:58
+     OutString(440,0,"Ліквід.вартість",true);
+     OutString(480,0,"Дата виб.",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:35:58
     EndFormat;
     Gray_Divider(0,1);
   end else begin
     SetRepCol(2,70);
     SetRepCol(3,220);
     OutString(125,0,USetStr(9846),false);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:23:32
-    OutString(160,0,USetStr(13707),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:24:31
+    OutString(160,0,"Дата прид.",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:24:31
     SetRepCol(4,200);
     SetRepCol(5,250);
     StartFormat(15);
-     OutString(4,0,USetStr(5283),true);
+     OutString(4,0,"На поч.періоду",true);
      OutString(5,0,USetStr(5284),true);
      OutString(8,0,USetStr(5298),true);
-     OutString(440,0,"Ліквідаційна вартість",true);
-     OutString(480,0,USetStr(10200),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:36:00
+     OutString(440,0,"Ліквід.вартість",true);
+     OutString(480,0,"Дата виб.",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 17 November 2025 at 12:36:00
      
     EndFormat;    
     Gray_Divider(0,1);
