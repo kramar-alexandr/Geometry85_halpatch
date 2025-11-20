@@ -297,6 +297,10 @@ BEGIN
       EndFormat;      
       StartFormat(15);
        OutString(100,0,USetStr(5290),false);
+       if(RepSpec.Media==mtExcel)then begin
+          OutString(100,0,"",false);
+          OutString(100,0,"",false);
+       end;
        OutVal(4,0,(PurchVal-invdprbef),M4Val,true);//-InitDeprVal
        OutVal(5,0,(startval-PurchVal-invdprv),M4Val,true);
        if ((startval-wrofsum)<=0) then begin
@@ -379,6 +383,10 @@ begin
     EndFormat;    
     StartFormat(15);
     OutString(100,0,USetStr(5290),false);
+    if(RepSpec.Media==mtExcel)then begin
+        OutString(100,0,"",false);
+        OutString(100,0,"",false);
+     end;
     OutVal(4,0,PurchVal-invdprbef,M4Val,true);//-InitDeprVal
     OutVal(5,0,startval-startval-invdprv,M4Val,true);
     switch (SkipDisposed) begin
@@ -407,6 +415,10 @@ begin
     StartFormat(15);
     OutString(2,0,USetStr(5290),false);
     OutEmpty(RepSpec,2);
+    if(RepSpec.Media==mtExcel)then begin
+        OutString(100,0,"",false);
+        OutString(100,0,"",false);
+     end;
     OutVal(4,0,PurchVal,M4Val,true);
     OutVal(5,0,PurchVal-invdprbef,M4Val,true);//-InitDeprVal
     switch (SkipDisposed) begin
@@ -1449,6 +1461,8 @@ BEGIN
                     StartFormat(15);
                     OutString(100,0,lastat2class,false);
                     if(RepSpec.Media==mtExcel)then begin
+                      OutString(160,0,"",true);
+                      OutString(160,0,"",true);
                       OutString(160,0,"",true);
                       OutString(160,0,"",true);
                     end;
