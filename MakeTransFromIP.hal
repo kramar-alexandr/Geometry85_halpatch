@@ -1255,13 +1255,15 @@ BEGIN
           ors = MulRateToBase1(IVr.CurncyCode,v,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
           ors2 = MulRateToBase2(IVr.CurncyCode,v,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
           
-          if(getmonth(IVr.InvDate)!=getmonth(IPp.TransDate) or getyear(IVr.InvDate)!=getyear(IPp.TransDate))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:49:17
-            lastmonthdate = IPp.TransDate;
-            lastmonthdate.day = 1;
-            lastmonthdate = addday(lastmonthdate,-1);
-            GetFullCurncyRate(IVr.CurncyCode,lastmonthdate,fr,to1,to2,br1,br2);
-            ors = MulRateToBase1(IVr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
-            ors2 = MulRateToBase2(IVr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+          if(IPp.TransDate>stringtodate("31/12/2025"))then begin
+            if(getmonth(IVr.InvDate)!=getmonth(IPp.TransDate) or getyear(IVr.InvDate)!=getyear(IPp.TransDate))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:49:17
+              lastmonthdate = IPp.TransDate;
+              lastmonthdate.day = 1;
+              lastmonthdate = addday(lastmonthdate,-1);
+              GetFullCurncyRate(IVr.CurncyCode,lastmonthdate,fr,to1,to2,br1,br2);
+              ors = MulRateToBase1(IVr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+              ors2 = MulRateToBase2(IVr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+            end;
           end;
           // Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:54:15
           

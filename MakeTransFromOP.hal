@@ -1334,14 +1334,16 @@ begin
             ors = MulRateToBase1(VIr.CurncyCode,v,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
             ors2 = MulRateToBase2(VIr.CurncyCode,v,VIr.FrRate,VIr.ToRateB1,VIr.ToRateB2,VIr.BaseRate1,VIr.BaseRate2,DefaultCurRoundOff);
             
-            if(getmonth(VIr.InvDate)!=getmonth(OPp.TransDate) or getyear(VIr.InvDate)!=getyear(OPp.TransDate))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:49:17
-              lastmonthdate = OPp.TransDate;
-              lastmonthdate.day = 1;
-              lastmonthdate = addday(lastmonthdate,-1);
-              GetFullCurncyRate(VIr.CurncyCode,lastmonthdate,fr,to1,to2,br1,br2);
-              ors = MulRateToBase1(VIr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
-              ors2 = MulRateToBase2(VIr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
-            end;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:54:15
+            if(OPp.TransDate>stringtodate("31/12/2025"))then begin
+              if(getmonth(VIr.InvDate)!=getmonth(OPp.TransDate) or getyear(VIr.InvDate)!=getyear(OPp.TransDate))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:49:17
+                lastmonthdate = OPp.TransDate;
+                lastmonthdate.day = 1;
+                lastmonthdate = addday(lastmonthdate,-1);
+                GetFullCurncyRate(VIr.CurncyCode,lastmonthdate,fr,to1,to2,br1,br2);
+                ors = MulRateToBase1(VIr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+                ors2 = MulRateToBase2(VIr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+              end;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:54:15
+            end;
             
             ro = MulRateToBase1(OPrw.PInvCurncy,OPrw.RoundOff,frrate,torate1,torate2,baserate1,baserate2,DefaultCurRoundOff);
             ro2 = MulRateToBase2(OPrw.PInvCurncy,OPrw.RoundOff,frrate,torate1,torate2,baserate1,baserate2,DefaultCurRoundOff);
