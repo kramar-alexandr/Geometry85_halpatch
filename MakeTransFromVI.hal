@@ -40,6 +40,7 @@ external procedure GetFullCurncyRateText(Boolean,var string,val,val,val,val,val)
 external function Boolean TransInFiscal(Date);
 external procedure SetupVATBase(var record SMVc,var Integer);
 external function string 20 FindItemPriceVarianceAcc(string,string,Integer);
+external procedure GetRateForAcRules(string,var string,boolean);// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:14:48
 
 // Edit Start ---------------------------------------------- Edit Start
 	//Wednesday, 4 December 2019 11:53:37

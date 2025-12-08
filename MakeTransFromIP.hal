@@ -224,6 +224,29 @@ BEGIN
   RETURN;
 END;
 
+global procedure GetRateForAcRules(string origaccstr,var string rateacc,boolean gainflag)// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:14:48
+begin
+  record AccRulesVc AccRulesr;
+  record AccVc Accr;
+
+  Accr.AccNumber = origaccstr;
+  if (ReadFirstMain(Accr,1,true)) then begin
+    if(nonblank(Accr.AccRules))then begin
+      AccRulesr.Code = Accr.AccRules;
+      if (ReadFirstMain(AccRulesr,1,true) and AccRulesr.Closed==0) then begin
+        if (gainflag) then begin
+          rateacc = AccRulesr.RateGainAcc;
+        end else begin
+          rateacc = AccRulesr.RateLossAcc;
+        end;
+      end;
+    end;
+  end;
+  LogText(0,"GetRateForAcRules: origaccstr = " & origaccstr & ", gainflag = " & gainflag & ", rateacc = " & rateacc);
+
+  RETURN;
+end;
+
 function
 Integer AddIPRowPayMode(var record TRVc gTRp,var record IPVc IPp,record IVVc IVp,record PMBlock PMRec,Integer pmrow,Integer currow,
                         var val rowsum,var val currowsum,var val TotSum,record AccBlock ARAccb,Boolean dc1,Boolean dc2,Boolean accf,Integer transtocreate,LongInt insrow,Boolean custinfof,Integer objectonbankacc,
@@ -232,7 +255,7 @@ BEGIN
   record CheckVc Checkr;
   row PMBlock pmrw;
   row IPVc IPrw;
-  string 255 otxt,accstr,tstr,taccnumber;
+  string 255 otxt,accstr,tstr,taccnumber,acc;
   val booked,booked2,curbooked;
   Integer res,oldstyle;
   val fr,to1,to2,br1,br2;
@@ -241,6 +264,7 @@ BEGIN
   val brd,brd2;
   val bookedwithcurrate,bookedwithcurrate2;
   Boolean rgdc1,rgdc2;
+
 
   MatRowGet(PMRec,pmrow,pmrw);
   MatRowGet(IPp,currow,IPrw);
@@ -452,19 +476,23 @@ BEGIN
           end;
           if (brd!=0) then begin
             if (brd<0) then begin
-              if (GetAccName(ARAccb.RateGainAcc,tstr,60)==false) then begin
+              acc = ARAccb.RateGainAcc;// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:15:05
+              GetRateForAcRules(accstr,acc,true);// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:15:07
+              if (GetAccName(acc,tstr,60)==false) then begin
                 res = 1917;
                 goto LAddIPRowPayMode;
               end;
-              AddEuroCurncyNomARTrRow(gTRp,ARAccb.RateGainAcc,"","",tstr,brd,brd2,true,rgdc1,totsum,
+              AddEuroCurncyNomARTrRow(gTRp,acc,"","",tstr,brd,brd2,true,rgdc1,totsum,
                                       "",blankval,blankval,blankval,blankval,blankval,
                                       blankval,blankval,"",-1,0,blankval,bd,-1,false,"","","");
             end else begin
-              if (GetAccName(ARAccb.RateLossAcc,tstr,60)==false) then begin
+              acc = ARAccb.RateLossAcc;// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:15:09
+              GetRateForAcRules(accstr,acc,false);// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:15:11
+              if (GetAccName(acc,tstr,60)==false) then begin
                 res = 1918;
                 goto LAddIPRowPayMode;
               end;
-              AddEuroCurncyNomARTrRow(gTRp,ARAccb.RateLossAcc,"","",tstr,brd,brd2,true,rgdc2,totsum,
+              AddEuroCurncyNomARTrRow(gTRp,acc,"","",tstr,brd,brd2,true,rgdc2,totsum,
                                       "",blankval,blankval,blankval,blankval,blankval,
                                       blankval,blankval,"",-1,0,blankval,bd,-1,false,"","","");
             end;
@@ -473,15 +501,6 @@ BEGIN
           rgdc2 = true;
           brd = bookedwithcurrate - booked;
           brd2 = bookedwithcurrate2 - booked2; 
-/*
-strango          
-          if (bookedwithcurrate<0) then begin
-            brd = -brd;
-            brd2 = -brd2;
-            rgdc1 = true;
-          end;
-*/
-
           if (brd!=0) then begin
             if (brd<0) then begin
               accstr = ARAccb.BankRateGainAcc;
@@ -951,7 +970,11 @@ BEGIN
   Boolean NegativeAmountsf,invfound;
   record AccVc Accr;
   val ro,ro2;
-
+  string 20 acc,targetacc;// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:29:54
+  date lastmonthdate;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:49:59
+  val fr,to1,to2,br1,br2;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:50:01
+  
+  
   res = 1085;
   errfield = "SerNr";
   errrownr = -1;
@@ -1228,8 +1251,20 @@ BEGIN
           otxt = IPrw.Objects;
           rs = MulRateToBase1(IPrw.InvCurncy,v,frrate,torate1,torate2,baserate1,baserate2,DefaultCurRoundOff);
           rs2 = MulRateToBase2(IPrw.InvCurncy,v,frrate,torate1,torate2,baserate1,baserate2,DefaultCurRoundOff);
+          
           ors = MulRateToBase1(IVr.CurncyCode,v,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
           ors2 = MulRateToBase2(IVr.CurncyCode,v,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
+          
+          if(getmonth(IVr.InvDate)!=getmonth(IPp.TransDate) or getyear(IVr.InvDate)!=getyear(IPp.TransDate))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:49:17
+            lastmonthdate = IPp.TransDate;
+            lastmonthdate.day = 1;
+            lastmonthdate = addday(lastmonthdate,-1);
+            GetFullCurncyRate(IVr.CurncyCode,lastmonthdate,fr,to1,to2,br1,br2);
+            ors = MulRateToBase1(IVr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+            ors2 = MulRateToBase2(IVr.CurncyCode,v,fr,to1,to2,br1,br2,DefaultCurRoundOff);
+          end;
+          // Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 5 December 2025 at 10:54:15
+          
           ro = MulRateToBase1(IPrw.InvCurncy,IPrw.RoundOff,frrate,torate1,torate2,baserate1,baserate2,DefaultCurRoundOff);
           ro2 = MulRateToBase2(IPrw.InvCurncy,IPrw.RoundOff,frrate,torate1,torate2,baserate1,baserate2,DefaultCurRoundOff);
           if (nonblank(IPrw.B1BankVal)) then begin
@@ -1316,7 +1351,8 @@ BEGIN
               accstr = pmrw.AccNr;
               ftxt = pmrw.Comment;
               otxt = pmrw.Objects;
-          end;          
+          end;   
+          targetacc = accstr;// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:33:19
           if (CheckTTRPerRow("IPVc",accstr,otxt,dc1,taccnumber,1)) then begin end;      
           if (IPp.ARonTR!=0) then begin
             AddEuroCurncyNomARTrRow(gTRp,accstr,otxt,"",ftxt,ors,blankval,accf,dc1,TotSum,
@@ -1343,7 +1379,6 @@ BEGIN
             rateloss = rateloss + rd;
             rateloss2 = rateloss2 + rd2;
           end;
-
           if (rd<0) then begin
             if (GetAccName(ARAccb.RateGainAcc,tstr,60)==false) then begin
               res = 1917;
@@ -1358,7 +1393,9 @@ BEGIN
                 tstr = tstr & IPrw.InvoiceNr;
               end;
             end;
-            AddEuroCurncyTrRow(gTRp,ARAccb.RateGainAcc,IPrw.Objects,"",tstr,rd,ARAccb.BookRateGainPerIPRow==0,dc2,TotSum,
+            acc = ARAccb.RateGainAcc;// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:30:00
+            GetRateForAcRules(targetacc,acc,true);// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:30:02
+            AddEuroCurncyTrRow(gTRp,acc,IPrw.Objects,"",tstr,rd,ARAccb.BookRateGainPerIPRow==0,dc2,TotSum,
                                bascur.BaseCur2,blankval,blankval,blankval,blankval,blankval,rd2,blankval,-1,false,""); //trrwcnt-2);
           end;
           if (rd>0) then begin
@@ -1375,10 +1412,11 @@ BEGIN
                 tstr = tstr & IPrw.InvoiceNr;
               end;
             end;
-            AddEuroCurncyTrRow(gTRp,ARAccb.RateLossAcc,IPrw.Objects,"",tstr,rd,ARAccb.BookRateGainPerIPRow==0,dc2,TotSum,
+            acc = ARAccb.RateLossAcc;// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:30:04
+            GetRateForAcRules(targetacc,acc,false);// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:30:06
+            AddEuroCurncyTrRow(gTRp,acc,IPrw.Objects,"",tstr,rd,ARAccb.BookRateGainPerIPRow==0,dc2,TotSum,
                                bascur.BaseCur2,blankval,blankval,blankval,blankval,blankval,rd2,blankval,-1,false,""); //trrwcnt-2);
           end;          
-
           if (brd<0) then begin
             accstr = ARAccb.BankRateGainAcc;
             if (blank(accstr) and IsStandardProduct) then begin
@@ -1397,7 +1435,9 @@ BEGIN
                 tstr = tstr & IPrw.InvoiceNr;
               end;
             end;
-            AddEuroCurncyTrRow(gTRp,accstr,IPrw.Objects,"",tstr,brd,ARAccb.BookRateGainPerIPRow==0,dc2,TotSum,
+            acc = accstr;// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:33:21
+            GetRateForAcRules(targetacc,acc,true);// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:33:23
+            AddEuroCurncyTrRow(gTRp,acc,IPrw.Objects,"",tstr,brd,ARAccb.BookRateGainPerIPRow==0,dc2,TotSum,
                                bascur.BaseCur2,blankval,blankval,blankval,blankval,blankval,brd2,blankval,-1,false,""); //trrwcnt-2);
           end;
           if (brd>0) then begin
@@ -1418,7 +1458,9 @@ BEGIN
                 tstr = tstr & IPrw.InvoiceNr;
               end;
             end;
-            AddEuroCurncyTrRow(gTRp,accstr,IPrw.Objects,"",tstr,brd,ARAccb.BookRateGainPerIPRow==0,dc2,TotSum,
+            acc = accstr;// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:33:25
+            GetRateForAcRules(targetacc,acc,false);// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:33:27
+            AddEuroCurncyTrRow(gTRp,acc,IPrw.Objects,"",tstr,brd,ARAccb.BookRateGainPerIPRow==0,dc2,TotSum,
                                bascur.BaseCur2,blankval,blankval,blankval,blankval,blankval,brd2,blankval,-1,false,""); //trrwcnt-2);
           end;          
         end;
@@ -1687,25 +1729,7 @@ L80:;
       end;
     end;
   end;
-  trrwcnt = MatRowCnt(gTRp);
-/*  now it is per row to get objects working
-  if (rategain<0) then begin
-    if (GetAccName(ARAccb.RateGainAcc,tstr,60)==false) then begin
-      res = 1917;
-      goto LMakeTransFromIP2;
-    end;
-    AddEuroCurncyTrRow(gTRp,ARAccb.RateGainAcc,"","",tstr,rategain,true,dc2,TotSum,
-                         bascur.BaseCur2,blankval,blankval,blankval,blankval,blankval,rategain2,blankval,-1,false,""); //trrwcnt-2);
-  end;
-  if (rateloss>0) then begin
-    if (GetAccName(ARAccb.RateLossAcc,tstr,60)==false) then begin
-      res = 1917;
-      goto LMakeTransFromIP2;
-    end;
-    AddEuroCurncyTrRow(gTRp,ARAccb.RateLossAcc,"","",tstr,rateloss,true,dc2,TotSum,
-                         bascur.BaseCur2,blankval,blankval,blankval,blankval,blankval,rateloss2,blankval,-1,false,""); //trrwcnt-2);
-  end;
-*/  
+  trrwcnt = MatRowCnt(gTRp); 
   if (prepvatflag==false) then begin
 //  if (booked!=0) and (GetVATLaw!=32) then begin
   if (HasLocalization("RUS")==false) then begin
@@ -1725,18 +1749,6 @@ L80:;
   end;
   if (TotSum!=0) then begin
     rs = TotSum;
-/*
-gain calculated in difrent place
-    if (TotSum>0) then begin
-      if (GetAccName(ARAccb.BankRateGainAcc,tstr,60)) then begin
-        AddEuroTrRow(gTRp,ARAccb.BankRateGainAcc,"","",tstr,rs,baserate1,baserate2,true,false,TotSum,false,"","","");
-      end;
-    end else begin
-      if (GetAccName(ARAccb.BankRateLossAcc,tstr,60)) then begin
-        AddEuroTrRow(gTRp,ARAccb.BankRateLossAcc,"","",tstr,rs,baserate1,baserate2,true,false,TotSum,false,"","","");
-      end;
-    end;
-*/    
     TotSum = Round(gTRp.DiffVal,SetRoundModeD(2));
     if (TotSum!=0) then begin
       if (GetAccName(ARAccb.RateRndOffAcc,tstr,60)==false) then begin
