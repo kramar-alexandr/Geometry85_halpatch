@@ -239,6 +239,7 @@ BEGIN
   AT2Dprr.InventoryNr = ATUnitr.InventoryNr;
   AT2Dprr.TransDate = addyear(currentdate,100);
   readlastkey("DateInventoryNr",AT2Dprr,2,false);
+  endcost = ATUnitr.ResVal;
   if(AT2Dprr.InventoryNr==ATUnitr.InventoryNr)then begin
     if(RepSpec.sEndDate>=AT2Dprr.TransDate)then begin
       endcost = AT2Dprr.ResVal;
