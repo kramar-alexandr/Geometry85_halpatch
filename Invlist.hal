@@ -512,6 +512,7 @@ begin
   string 255 frdebacc,todebacc;
   string 255 frsacc,tosacc;
   record GCSVc GCSr;
+  string 255 frtype,totype;// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 23 March 2026 at 15:59:11
   
   runnr = 1;
   Split2Str2(RepSpec.f6,froffic,tooffic,40);  
@@ -793,8 +794,10 @@ begin
       end;
 // Edit Start ---------------------------------------------- Edit Start
 	//Wednesday, 4 December 2019 14:06:03
-	      if(nonblank(RepSpec.f9))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 April 2018 11:43:09
-      	if (RepSpec.f9!=IVr.DocumentType) then begin testf = false; end;
+	    if(nonblank(RepSpec.f9))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 April 2018 11:43:09
+      	frtype = firstinrange(RepSpec.f9,10);
+      	totype = lastinrange(RepSpec.f9,10);
+      	if (IVr.DocumentType<frtype or IVr.DocumentType>totype) then begin testf = false; end;
       end;
       if(nonblank(RepSpec.f10))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 April 2018 11:43:09
       	if (RepSpec.f10!=IVr.DocumentsFlag) then begin testf = false; end;

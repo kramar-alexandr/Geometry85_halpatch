@@ -166,7 +166,7 @@ begin
   val vatv,t1;
   row VATCodeBlock VATbrw;
 	record INVc INr;// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 05 12 2019 y. at 3:48:54 PM
-
+  string 255 frtype,totype;// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 23 March 2026 at 15:59:11
 
   RecordClear(TotVATr);
   SetupVATBase(TotVATr,vatcnt);          
@@ -297,7 +297,7 @@ begin
     OutString(440,0,UsetStr(6007),false);//430// Edit ************************** BPI Ukraine - KramarAlexandr - 04, 05 12 2019 y. at 3:50:34 PM
 
     if (HasApprovals) then begin
-      OutString(440,0,UsetStr(6007),false);//430
+      //OutString(440,0,UsetStr(6007),false);//430
     end;
     EndFormat;
     Gray_Divider(0,1);
@@ -389,8 +389,10 @@ SetRepCol(5,90);// Edit ************************** Monday, 24 December 2012 16:3
           end;
         end;
       end;
-      if(nonblank(RepSpec.f9))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 20 March 2018 14:38:10
-      	if (RepSpec.f9!=VIr.DocumentType) then begin testf = false; end;
+      if(nonblank(RepSpec.f13))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 20 March 2018 14:38:10
+      	frtype = firstinrange(RepSpec.f13,10);
+      	totype = lastinrange(RepSpec.f13,10);
+      	if (VIr.DocumentType<frtype or VIr.DocumentType>totype) then begin testf = false; end;
       end;
       if(nonblank(RepSpec.f10))then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Tuesday, 20 March 2018 14:38:10
       	if (RepSpec.f10!=VIr.DocumentsFlag) then begin testf = false; end;
@@ -744,9 +746,9 @@ L77:;
   end;
   Gray_Divider(0,1);
   OutStringAdjust(5,0,USetStr(2356),true,M4Val);
-  OutStringAdjust(6,0,USetStr(2328),true,M4Val);
-  OutStringAdjust(7,0,USetStr(2329),true,M4Val);
-  PrintCurncyTotals(acur,av3,av1,av2,curcnt,5,6,7,210,true,RepSpec.PocketPC);
+  OutStringAdjust(250,0,USetStr(2328),true,M4Val);
+  OutStringAdjust(300,0,USetStr(2329),true,M4Val);
+  PrintCurncyTotals(acur,av3,av1,av2,curcnt,5,250,300,415,true,RepSpec.PocketPC);
   EndJob;
 return;
 end;
