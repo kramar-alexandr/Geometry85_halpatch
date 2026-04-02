@@ -51,8 +51,10 @@ BEGIN
   Integer i,rwcnt;
   Integer vcrwcnt;
   roundmode roundlines,rndtotal,roundvat;
-  val vatv,t,t1,quant;
+  val vatv,t,t1,quant,totsum;
   Boolean testf; // 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 14:14:01
+  record IVVc IVp;
+  record BaseCurBlock BaseCurr;
   
   FEIVr.Sum1 = blankval;
   FEIVr.Sum2 = blankval;
@@ -130,7 +132,7 @@ BEGIN
   end;
   GetCurncyRoundoff(FEIVr.CurncyCode,FEIVr.PayDeal,"FIVVc",rndtotal,roundlines,roundvat);
   FEIVr.Sum3 = Round(FEIVr.Sum3,roundvat);
-  // 62s !!!!!!!! выяснить какое округение правильное
+  // 62s !!!!!!!! РІС‹в‚¬СЃРЅРёС‚СЊ РєР°РєРѕРµ РѕРєСЂСѓРіРµРЅРёРµ РїСЂР°РІРёР»СЊРЅРѕРµ
   rndtotal=DefaultCurRoundOff;// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 06 12 2019 y. at 6:30:20 PM
   roundvat=DefaultCurRoundOff;// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 06 12 2019 y. at 6:30:22 PM
   roundlines=DefaultCurRoundOff;// Edit ************************** BPI Ukraine - KramarAlexandr - 05, 06 12 2019 y. at 6:30:25 PM
@@ -161,6 +163,24 @@ BEGIN
   if (nonblank(FEIVr.CurncyCode)) then begin
     FEIVr.BaseSum4 = MulRateToBase1(FEIVr.CurncyCode,FEIVr.Sum4,FEIVr.FrRate,FEIVr.ToRateB1,FEIVr.ToRateB2,FEIVr.BaseRate1,FEIVr.BaseRate2,DefaultCurRoundOff);
   end;
+
+  IVp.SerNr = FEIVr.IVNr;
+  if(readfirstmain(IVp,1,true))then begin
+    totsum = 0;
+    blockload(BaseCurr);
+    if(IVp.CurncyCode!=BaseCurr.BaseCur1 and FEIVr.CurncyCode==BaseCurr.BaseCur1)then begin
+      rwcnt = MatRowCnt(FEIVr);
+      for(i=0;i<rwcnt;i=i+1)begin
+        matrowget(FEIVr,i,FEIVrw);
+        totsum = totsum + FEIVrw.Sum;
+      end;
+      FEIVr.Sum3 = IVp.BaseSum4 - totsum;
+      FEIVr.Sum4 = IVp.BaseSum4;
+      FEIVr.BaseSum4 = IVp.BaseSum4;
+    end;
+  end;
+
+
   RETURN;
 END;
 
