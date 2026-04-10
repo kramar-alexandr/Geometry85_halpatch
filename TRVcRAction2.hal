@@ -85,6 +85,7 @@ begin
   row YearBlock Ybrw;
   row YearBlock Yb2rw;
   record DBLockBlock DBLockRec;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 3 April 2026 at 10:19:47
+  record NLSettingsBlock NLSettingsb;
   
   res = 0;
   BlockLoad(SRb);
@@ -94,6 +95,7 @@ begin
   BlockLoad(APAccb);
   BlockLoad(VITb);
   BlockLoad(DBLockRec);// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 3 April 2026 at 10:19:52
+  BlockLoad(NLSettingsb);// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 10 April 2026 at 15:57:51
   SetTRObjectRows(TRp);
   FindFiscalYearBlockRow(TR2p.TransDate,Yb2rw);
   FindFiscalYearBlockRow(TRp.TransDate,Ybrw);
@@ -265,18 +267,20 @@ begin
                   if (TRp.TransDate>DBLockRec.TRNoPrel) then begin testf = false; end;
                 end;
               end;
-              if (SLAccTest(TRrw.AccNumber,0)) then begin
-                if (TRrw.Typ==0) then begin
-                  if (CYb.usePrel==0 and testf) then begin
-                    if (stat==Rs_insert) then begin
-                      RecordCheckError(1082,TRrw.AccNumber,i,"AccNumber");      
-                      res = -1; 
-                      goto LTRVcRecordCheck;
-                    end else begin
-                      if (i>=orwcnt) then begin
+              if(NLSettingsb.SkipSubLegerCheck==0)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 10 April 2026 at 15:57:23
+                if (SLAccTest(TRrw.AccNumber,0)) then begin
+                  if (TRrw.Typ==0) then begin
+                    if (CYb.usePrel==0 and testf) then begin
+                      if (stat==Rs_insert) then begin
                         RecordCheckError(1082,TRrw.AccNumber,i,"AccNumber");      
                         res = -1; 
                         goto LTRVcRecordCheck;
+                      end else begin
+                        if (i>=orwcnt) then begin
+                          RecordCheckError(1082,TRrw.AccNumber,i,"AccNumber");      
+                          res = -1; 
+                          goto LTRVcRecordCheck;
+                        end;
                       end;
                     end;
                   end;
@@ -293,12 +297,15 @@ begin
             end;        
             if ((IsStandardProduct and HasIntegratedNL and HasObjects) or IsEnterprise) then begin   
               if (CYb.SkipObjectTypeControlforYearEnd==0) or (CYb.SkipObjectTypeControlforYearEnd!=0 and (TRrw.SAFTType<kTransactionFiscalTypeYearEnd or TRrw.SAFTType>kTransactionFiscalTypeYearEndStage2)) then begin
-                errcode = CheckObjs(TRrw.AccNumber,TRrw.Objects,errstr);
-                if (errcode!=0) then begin
-                  errfieldname = "Objects";
-                  RecordCheckError(errcode,errstr,i,"Objects");      
-                  res = -1; 
-                  goto LTRVcRecordCheck;
+                BlockLoad(NLSettingsb);
+                if(NLSettingsb.SkipObjTypeCheck==0)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 10 April 2026 at 15:41:08
+                  errcode = CheckObjs(TRrw.AccNumber,TRrw.Objects,errstr);
+                  if (errcode!=0) then begin
+                    errfieldname = "Objects";
+                    RecordCheckError(errcode,errstr,i,"Objects");      
+                    res = -1; 
+                    goto LTRVcRecordCheck;
+                  end;
                 end;
               end;
             end;
@@ -632,6 +639,10 @@ LTRVcRecordCheck11:;
             end;
           end;
           
+          if(NLSettingsb.SkipSubLegerCheck==1)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 10 April 2026 at 15:57:23
+            testf = false;
+          end;  
+          
           if (testf) then begin
             switch (TRrw.Typ) begin
               case 0:
@@ -679,6 +690,9 @@ LTRVcRecordCheck11:;
                 if (TRp.TransDate>DBLockRec.TRNoPrel) then begin testf = false; end;
               end;
             end;
+            if(NLSettingsb.SkipSubLegerCheck==1)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 10 April 2026 at 15:57:23
+              testf = false;
+            end; 
             if(testf)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 3 April 2026 at 10:21:23
               if (SLAccTest(TRrw.AccNumber,0)) then begin
                 RecordCheckError(1082,TRrw.AccNumber,i,"AccNumber");      
