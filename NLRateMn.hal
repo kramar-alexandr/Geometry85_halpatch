@@ -304,24 +304,6 @@ end;
                       end;
                       ExtractObj(TRrw.Objects,opos,tobj);
                     end;
-                    while (nonblank(tobj)) begin
-                      objkey = TRrw.Curncy & "~" & tobj;
-                      if (blank(vseen[objkey])) then begin
-                        akeys[keycount]=objkey;
-                        acurncy[keycount]=TRrw.Curncy;
-                        aobj[keycount]=tobj;
-                        keycount=keycount+1;
-                        vseen[objkey]="X";
-                        vdiff[objkey]=diffsign*diff;
-                        vdiff2[objkey]=diffsign*diff2;
-                      end else begin
-                        vdiff[objkey]=vdiff[objkey]+diffsign*diff;
-                        vdiff2[objkey]=vdiff2[objkey]+diffsign*diff2;
-                      end;
-                      ExtractObj(TRrw.Objects,opos,tobj);
-                    end;
-                  end;
-                end;
 
               end;
             end;
@@ -347,11 +329,11 @@ LSKIPROW:;
 
 				  setareazerosize(alog);
 				  addstringtoarea(chr(10) & chr(13),alog);
-				  addtexttoarea(Accr.AccNumber & " objkey " & objkey & " vdiff ",alog);
-				  addstringtoarea(valtostring(vdiff[objkey],m45val,"",".",0),alog);
+				  addtexttoarea(Accr.AccNumber & " objkey " & objkey & " diff ",alog);
+				  addstringtoarea(valtostring(diff,m45val,"",".",0),alog);
 				  addstringtoarea(chr(10) & chr(13),alog);
 				  writeareatofile(alog,"hansa.log",1);
-				  //logtext(0,Accr.AccNumber & " objkey " & objkey & " vdiff " & vdiff[objkey]);
+				  //logtext(0,Accr.AccNumber & " objkey " & objkey & " diff " & diff);
 					if(diff>=0)then begin
 						diff2 = MulRateToBase2(bascur.BaseCur1,diff,bv,bv,bv,baserate1,baserate2,DefaultCurRoundOff);
 						AddEuroCurncyNomARTrRow(gTRp,Accr.AccNumber,aobj[ki],"",Accr.Comment,diff,diff2,true,false,totsum,acurncy[ki],bv,bv,bv,baserate1,baserate2,0,bv,"",-1,0,bv,nild,-1,false,"","","");
@@ -369,18 +351,7 @@ LSKIPROW:;
 				end;
 			end;
 		end;
-					end else begin
-						vdiff[objkey] = -vdiff[objkey];
-						vdiff2[objkey] = -vdiff2[objkey];
-						AddEuroCurncyNomARTrRow(gTRp,Accr.AccNumber,aobj[ki],"",Accr.Comment,vdiff[objkey],vdiff2[objkey],true,true,totsum,acurncy[ki],bv,bv,bv,baserate1,baserate2,0,bv,"",-1,0,bv,nild,-1,false,"","","");
-						if (GetAccName(RateGainAcc,tstr,60)) then begin
-							AddEuroTrRow(gTRp,RateGainAcc,"","",tstr,vdiff[objkey],baserate1,baserate2,true,false,totsum,false,"","","");
-						end;
-					end;
-				end;
-			end;
 
-		end;
   end;
 
 	// Edit End ---------------------------------------------- Edit End
