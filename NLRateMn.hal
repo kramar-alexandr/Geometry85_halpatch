@@ -402,7 +402,7 @@ end;
       rwcnt = MatRowCnt(NLRater);
       for (i=0;i<rwcnt;i=i+1) begin
         MatRowGet(NLRater,i,NLRaterw);
-        FindAccountRateDiffrence(NLRaterw.AccNumber,NLRaterw.Type,bascur.BaseCur1,bascur.BaseCur2,RepSpec.d1,NLRater.Limit,NLRater.NrSeries,gTRp,grevTRp,flushcnt,RateGainAcc,RateLossAcc,baserate1,baserate2,RepSpec.flags[0]!=0,NLRater.ByObjects!=0);
+        FindAccountRateDiffrence(NLRaterw.AccNumber,NLRaterw.Type,bascur.BaseCur1,bascur.BaseCur2,RepSpec.d1,NLRater.Limit,NLRater.NrSeries,gTRp,grevTRp,flushcnt,RateGainAcc,RateLossAcc,baserate1,baserate2,RepSpec.flags[0]!=0,false);
       end;
     end;
   end;
