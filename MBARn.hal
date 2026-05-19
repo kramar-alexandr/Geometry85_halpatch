@@ -12,6 +12,10 @@ external procedure ListPerTrans(record RcVc);
 external procedure GetAccDCBalance(string,string,Date,record ObjBalVc,Integer,Integer,Integer,string,var val,var val,Integer);
 external procedure AnalyticalGroup(record RcVc);
 external procedure ClearAcums();
+external function Boolean FindStringInString(string,string);
+external procedure ExtractObj(string,var Integer,var string);
+
+
 // Edit Start ---------------------------------------------- Edit Start
 	//Wednesday, 4 December 2019 11:48:14
 	// 62s
@@ -489,7 +493,7 @@ END;
 
 procedure MBACode(var record RcVc RepSpec,Integer lmod)
 BEGIN  
-  Integer i;
+  Integer i,pos;
   Integer subaccCnt;
   record AccVc Accr;
   record ObjBalVc ObjBalr;
@@ -501,12 +505,13 @@ BEGIN
   val sfwd,sfwc,spd,spc,sad,sac,sedb,secb,sstde,sstcr,slade,slacr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:51:17
   val tfwd,tfwc,tpd,tpc,tad,tac,tedb,tecb,tstde,tstcr,tlade,tlacr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:51:18
   val ufwd,ufwc,upd,upc,uad,uac,uedb,uecb,ustde,ustcr,ulade,ulacr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:51:18
-  Boolean first;
+  Boolean first,isset,testf;
   string 1 lastgroup;
   string 10 lastsub,newsub;
   string 255 tstr,gstr,blankstr;
   Date fwddate,sbd;
   Date curYearstartdate,curYearenddate;
+  vector boolean accset;
 //  record ARSVc ARSr;
 /*lmod : report = 1, document = 0*/
   string 20 sDate;
@@ -518,8 +523,22 @@ BEGIN
   gstr = " '";
   lastsub = "";
   if (RepSpec.FirstVer>10) then begin RepSpec.FirstVer = 3; end;
+  
+  
   RepSpec.FirstAcc = FirstInRange(RepSpec.AccStr,10);
   RepSpec.LastAcc = LastInRange(RepSpec.AccStr,10);
+  isset = FindStringInString(RepSpec.AccStr,",");
+  if(isset)then begin
+    RepSpec.FirstAcc = "";
+    RepSpec.LastAcc = "";
+    pos = 0;
+    ExtractObj(RepSpec.AccStr,pos,tstr);
+    while(nonblank(tstr))begin
+      accset[tstr] = true;
+      ExtractObj(RepSpec.AccStr,pos,tstr);
+    end;
+  end;
+  
   mbarws = CountRecords("AccVc");
   fwddate = RepSpec.sStartDate;
   if (nonblankdate(RepSpec.d2)) then begin
@@ -555,7 +574,7 @@ BEGIN
       SetRepCol(7,450);      
     end else begin
       StartReportJob(USetStr(3461));
-      PrintMBAHeader(RepSpec);
+        PrintMBAHeader(RepSpec);
       EndHeader;
     end;
     SetRepCol(2,50);
@@ -575,61 +594,69 @@ BEGIN
   for (i=0; i<mbarws; i=i+1) begin
     ClearRow(SMr,SMrw,i);
     if (LoopMain(Accr,1,true)) then begin end;//m4_ReadLogicalMain(AccVc,i+1,Accr);
-    if (nonblank(RepSpec.FirstAcc)) then begin
-      if (Accr.AccNumber<RepSpec.FirstAcc) then begin goto L22; end;
-    end;  
-    if (nonblank(RepSpec.LastAcc)) then begin
-      if (Accr.AccNumber>RepSpec.LastAcc) then begin goto L22; end;
-    end;  
-    SMrw.AccNumber = Accr.AccNumber;
-    
-    ObjBalr.AccNumber = Accr.AccNumber;
-    ObjBalr.Object = RepSpec.ObjStr;
-    if (ReadFirstMain(ObjBalr,2,true)) then begin
-      if ((blank(RepSpec.ObjType)) or (nonblank(RepSpec.ObjStr))) then begin
-        sbd = AddDay(fwddate,-1);
-       GetAccDCBalance(Accr.AccNumber,RepSpec.ObjStr,sbd,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
-        SMrw.DebVal = SMrw.DebVal + dv;//StartDeb
-        SMrw.CredVal = SMrw.CredVal - cv; //StartCred
-
-        sbd = AddDay(RepSpec.sStartDate,-1);
-        GetAccDCBalance(Accr.AccNumber,RepSpec.ObjStr,sbd,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
-        SMrw.DebVal2 = SMrw.DebVal2 + dv; //PerDeb
-        SMrw.CredVal2 = SMrw.CredVal2 - cv; //PerCred
-
-        GetAccDCBalance(Accr.AccNumber,RepSpec.ObjStr,RepSpec.sEndDate,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
-        SMrw.CurDebVal = SMrw.CurDebVal + dv; //AccDeb
-        SMrw.CurCredVal = SMrw.CurCredVal - cv; //AccCred
-      end else begin
-        sbd = AddDay(fwddate,-1);
-        GetAccObjTypeDCBalance(Accr.AccNumber,RepSpec.ObjType,sbd,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
-        SMrw.DebVal = SMrw.DebVal + dv;//StartDeb
-        SMrw.CredVal = SMrw.CredVal - cv; //StartCred
-
-        sbd = AddDay(RepSpec.sStartDate,-1);
-        GetAccObjTypeDCBalance(Accr.AccNumber,RepSpec.ObjType,sbd,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
-        SMrw.DebVal2 = SMrw.DebVal2 + dv; //PerDeb
-        SMrw.CredVal2 = SMrw.CredVal2 - cv; //PerCred
-
-        GetAccObjTypeDCBalance(Accr.AccNumber,RepSpec.ObjType,RepSpec.sEndDate,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
-        SMrw.CurDebVal = SMrw.CurDebVal + dv; //AccDeb
-        SMrw.CurCredVal = SMrw.CurCredVal - cv; //AccCred
-      end;      
-      SMrw.DebVal2 = SMrw.CurDebVal - SMrw.DebVal2;
-      SMrw.CredVal2 = SMrw.CurCredVal - SMrw.CredVal2;
-
-      SMrw.CurDebVal = SMrw.CurDebVal - SMrw.DebVal;
-      SMrw.CurCredVal = SMrw.CurCredVal - SMrw.CredVal;
-
-      if ((Accr.AccType==3) or (Accr.AccType==4)) then begin
-        if (fwddate==curYearstartdate) then begin
-          SMrw.DebVal = 0;
-          SMrw.CredVal = 0;
-        end;
-      end; 
+    testf = true;
+    if(isset==false)then begin
+      if (nonblank(RepSpec.FirstAcc)) then begin
+        if (Accr.AccNumber<RepSpec.FirstAcc) then begin goto L22; end;
+      end;  
+      if (nonblank(RepSpec.LastAcc)) then begin
+        if (Accr.AccNumber>RepSpec.LastAcc) then begin goto L22; end;
+      end;  
+    end else begin
+      if(accset[Accr.AccNumber]==false)then begin
+        testf = false;
+      end;
     end;
+    if(testf)then begin 
+      SMrw.AccNumber = Accr.AccNumber;
+      ObjBalr.AccNumber = Accr.AccNumber;
+      ObjBalr.Object = RepSpec.ObjStr;
+      if (ReadFirstMain(ObjBalr,2,true)) then begin
+        if ((blank(RepSpec.ObjType)) or (nonblank(RepSpec.ObjStr))) then begin
+          sbd = AddDay(fwddate,-1);
+          GetAccDCBalance(Accr.AccNumber,RepSpec.ObjStr,sbd,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+          SMrw.DebVal = SMrw.DebVal + dv;//StartDeb
+          SMrw.CredVal = SMrw.CredVal - cv; //StartCred
+  
+          sbd = AddDay(RepSpec.sStartDate,-1);
+          GetAccDCBalance(Accr.AccNumber,RepSpec.ObjStr,sbd,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+          SMrw.DebVal2 = SMrw.DebVal2 + dv; //PerDeb
+          SMrw.CredVal2 = SMrw.CredVal2 - cv; //PerCred
+  
+          GetAccDCBalance(Accr.AccNumber,RepSpec.ObjStr,RepSpec.sEndDate,ObjBalr,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+          SMrw.CurDebVal = SMrw.CurDebVal + dv; //AccDeb
+          SMrw.CurCredVal = SMrw.CurCredVal - cv; //AccCred
+        end else begin
+          sbd = AddDay(fwddate,-1);
+          GetAccObjTypeDCBalance(Accr.AccNumber,RepSpec.ObjType,sbd,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+          SMrw.DebVal = SMrw.DebVal + dv;//StartDeb
+          SMrw.CredVal = SMrw.CredVal - cv; //StartCred
+  
+          sbd = AddDay(RepSpec.sStartDate,-1);
+          GetAccObjTypeDCBalance(Accr.AccNumber,RepSpec.ObjType,sbd,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+          SMrw.DebVal2 = SMrw.DebVal2 + dv; //PerDeb
+          SMrw.CredVal2 = SMrw.CredVal2 - cv; //PerCred
+  
+          GetAccObjTypeDCBalance(Accr.AccNumber,RepSpec.ObjType,RepSpec.sEndDate,RepSpec.SimVerf,RepSpec.basecurncy,0,RepSpec.CurncyCode,dv,cv,RepSpec.flags[6]);
+          SMrw.CurDebVal = SMrw.CurDebVal + dv; //AccDeb
+          SMrw.CurCredVal = SMrw.CurCredVal - cv; //AccCred
+        end;      
+        SMrw.DebVal2 = SMrw.CurDebVal - SMrw.DebVal2;
+        SMrw.CredVal2 = SMrw.CurCredVal - SMrw.CredVal2;
+  
+        SMrw.CurDebVal = SMrw.CurDebVal - SMrw.DebVal;
+        SMrw.CurCredVal = SMrw.CurCredVal - SMrw.CredVal;
+  
+        if ((Accr.AccType==3) or (Accr.AccType==4)) then begin
+          if (fwddate==curYearstartdate) then begin
+            SMrw.DebVal = 0;
+            SMrw.CredVal = 0;
+          end;
+        end; 
+      end;
 L22:;
-    MatRowPut(SMr,i,SMrw);
+      MatRowPut(SMr,i,SMrw);
+    end;
   end;  
   if (lmod==1) then begin
     PrintMBAHeader1(RepSpec);
@@ -689,7 +716,9 @@ L22:;
         if ((RepSpec.flags[10]==0) or (RepSpec.flags[0]==1))  then begin        
           if (RepSpec.flags[1]==0) then begin
             if (lmod==1) then begin
-              Gray_Divider(2,1);
+              if(isset==false)then begin 
+                Gray_Divider(2,1);
+              end;
             end;  
           end;    
           tstr = USetStr(3248);
@@ -697,13 +726,17 @@ L22:;
           tstr = tstr & lastgroup;
           tstr = tstr & "'";
           if (tpd!=0) or (tpc!=0) or (tad!=0) or (tac!=0) or (tfwd!=0) or (tfwc!=0) then begin
-            MBALine(RepSpec,tstr,blankstr,tfwd,tfwc,tpd,tpc,tad,tac,tedb,tecb,lmod,"",tstde,tstcr,tstde+tpd,tstcr+tpc);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:02
+            if(isset==false)then begin 
+              MBALine(RepSpec,tstr,blankstr,tfwd,tfwc,tpd,tpc,tad,tac,tedb,tecb,lmod,"",tstde,tstcr,tstde+tpd,tstcr+tpc);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:02
+            end;
           end;
         end;  
         if (RepSpec.flags[1]==0) then begin
           if (lmod==1) then begin
-            StartFormat(10);
-            EndFormat;
+            if(isset==false)then begin 
+              StartFormat(10);
+              EndFormat;
+            end;
           end;  
         end;
         tfwd = 0;
@@ -778,7 +811,7 @@ L22:;
 
 	// Edit End ---------------------------------------------- Edit End
 	    if (RepSpec.flags[1]==0) then begin
-      GetAccountDescription2(Accr.AccNumber,RepSpec.Language,accname);        
+      GetAccountDescription2(SMrw.AccNumber,RepSpec.Language,accname);        
       if (RepSpec.flags[14]!=0) then begin
         accname = Left(accname,15);
       end;      
@@ -813,8 +846,10 @@ L44:;
     tstr = USetStr(3248);
     tstr = tstr & gstr;
     tstr = tstr & lastgroup;    
-    tstr = tstr & "'";    
-    MBALine(RepSpec,tstr,blankstr,tfwd,tfwc,tpd,tpc,tad,tac,tedb,tecb,lmod,"",tstde,tstcr,tstde+tpd,tstcr+tpc);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:42
+    tstr = tstr & "'";   
+    if(isset==false)then begin 
+      MBALine(RepSpec,tstr,blankstr,tfwd,tfwc,tpd,tpc,tad,tac,tedb,tecb,lmod,"",tstde,tstcr,tstde+tpd,tstcr+tpc);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:52:42
+    end;
   end;  
   if (RepSpec.flags[1]==0) then begin
     if (lmod==1) then begin
