@@ -58,6 +58,7 @@ external procedure LstRegDat(var string);
 external procedure HTAccs(string,string,Integer, var string);
 external procedure FindAccSD(Date,var Date,var Boolean);
 external function Boolean FindStringInString(string,string);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 20 May 2026 at 10:34:34
+external procedure ExtractObj(string,var Integer,var string);
 
 
 global
@@ -125,7 +126,7 @@ L22MainLoopNext:;
       goto L22MainLoopNext;
     end;
   end;
-  
+
   if (mhrvc[arrcnt]=="AccVc") then begin
     if (nonblank(mhrfromstr[arrcnt])) then begin
       if (Accr.AccNumber<mhrfromstr[arrcnt]) then begin
@@ -149,7 +150,7 @@ L22MainLoopNext:;
           mhrfoundf[arrcnt] = false;
         end;
       end;
-      if (nonblank(mhrtostr[arrcnt])) then begin      
+      if (nonblank(mhrtostr[arrcnt])) then begin
         if (Objr.Code>mhrtostr[arrcnt]) then begin
           mhrfoundf[arrcnt] = false;
         end;
@@ -1320,7 +1321,9 @@ BEGIN
   Integer oldcomp;
   transaction boolean isset;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 20 May 2026 at 10:34:38
   transaction string 100 setstr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 20 May 2026 at 11:01:11
-  
+  string 20 setMinElem,setMaxElem,setElem;
+  Integer setPos;
+
   RepSpec = specRepSpec;
   oldcomp = CurrentCompany;
 
@@ -1332,6 +1335,17 @@ BEGIN
   if (FindStringInString(specRepSpec.f4,",")) then begin
     isset = true;
     setstr = specRepSpec.f4;
+    setPos = 0;
+    ExtractObj(specRepSpec.f4,setPos,setElem);
+    while (nonblank(setElem)) begin
+      if (blank(setMinElem) or (setElem<setMinElem)) then begin
+        setMinElem = setElem;
+      end;
+      if (blank(setMaxElem) or (setElem>setMaxElem)) then begin
+        setMaxElem = setElem;
+      end;
+      ExtractObj(specRepSpec.f4,setPos,setElem);
+    end;
   end;
   
 // Pageheader 
@@ -1358,6 +1372,9 @@ BEGIN
     StartFormat(15);
     OutString(0,0,USetStr(3190),false);
     EndFormat;
+  end;
+  if (isset) then begin
+    RepSpec.f4 = setMinElem & ":" & setMaxElem;
   end;
   ClearAcums;
   if (RepSpec.Media==mtPrinter) then begin
