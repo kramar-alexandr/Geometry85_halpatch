@@ -567,7 +567,7 @@ BEGIN
   Integer vcrwcnt,vc2rwcnt;
   val prepayval;
   Boolean objvef;
-  string 255 rwotxt;
+  string 255 rwotxt,rwotxtshort;
   string 20 viraccno;
   string 20 varianceacc;
   Boolean simneeded;
@@ -937,11 +937,13 @@ LkInvoiceRowTypeNormal_MakeTrans:;
 */      
         simneeded = false;
         viraccno = VIrw.AccNumber;
+        rwotxtshort = rwotxt;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 June 2026 at 14:08:14
         if (nonblank(VIrw.PeriodCode)) then begin
           ASPr.Code = VIrw.PeriodCode;
           if (ReadFirstMain(ASPr,1,true)) then begin
             viraccno = ASPr.PrelAcc;
             simneeded = true;
+            rwotxtshort = VIp.Objects;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 June 2026 at 14:08:12
           end;
         end;
         if (VIp.OKFlag==0) then begin simneeded = false; end;
@@ -964,7 +966,7 @@ LkInvoiceRowTypeNormal_MakeTrans:;
         if (blank(ftxt)) then begin
           ftxt = tstr;
         end;
-        if (CheckTTRPerRow("VIVc",viraccno,rwotxt,dc1,taccnumber,0)) then begin end;
+        if (CheckTTRPerRow("VIVc",viraccno,rwotxtshort,dc1,taccnumber,0)) then begin end;
         //UnpackRowFieldMatrix(VIrw,"TaxMatrix",TMr);// Edit ************************** BPI Ukraine - KramarAlexandr - 01, 27 01 2020 y. at 11:26:12 AM
         vatcodes = TaxTemplateVATCodeOnTRRows(TMr,VIrw.VATCode);
         if (vt==kVATTypeReversed) then begin rvrsvatcode = vatcodes; vatcodes = ""; end;
@@ -973,7 +975,7 @@ LkInvoiceRowTypeNormal_MakeTrans:;
             vatcodes = "";
           end;
         end;
-        AddEuroCurncyTrRow2(gTRp,viraccno,rwotxt,vatcodes,rvrsvatcode,ftxt,
+        AddEuroCurncyTrRow2(gTRp,viraccno,rwotxtshort,vatcodes,rvrsvatcode,ftxt,
                            rs,false,dc1,totsum,VIp.CurncyCode,frrate,torate1,torate2,baserate1,baserate2,VIrw.Sum,nilv,-1,VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales,taccnumber);
         if (ARAccb.BookPriceVar!=0) then begin
           if (VIrw.VarianceAmount!=0) then begin              
@@ -1019,7 +1021,7 @@ LkInvoiceRowTypeNormal_MakeTrans:;
           end;
         end;
         if (simneeded) then begin
-          AddVIPeriodSMRow(gSMp,VIp,viraccno,VIrw.AccNumber,ASPr,rwotxt,VIrw.VATCode,frrate,torate1,torate2,baserate1,baserate2,rs,VIrw.Sum,false,dc1,dc2);
+          AddVIPeriodSMRow(gSMp,VIp,viraccno,VIrw.AccNumber,ASPr,rwotxtshort,VIrw.VATCode,frrate,torate1,torate2,baserate1,baserate2,rs,VIrw.Sum,false,dc1,dc2);
         end;
       end;
   end;
