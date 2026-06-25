@@ -30,6 +30,7 @@ external procedure AddEuroTrRow(record TRVc,string,string,string,string,val,val,
 external procedure AddEuroCurncyTrRow(record TRVc,string,string,string,string,val,Boolean,Boolean,var val,string,val,val,val,val,val,val,val,LongInt,Boolean,string);
 external procedure Base1ToBase2(var val,Date,var val);
 external procedure GetRateForAcRules(string,var string,boolean);// Edit ************************** BPI Ukraine - KramarAlexandr - 2025-11-27 at 09:14:48
+external function roundmode SetRoundModeD(Integer);
 
 global
 procedure GetVATCodePrelVATAccPurch(string vatcode,var string vatacc)
@@ -493,8 +494,11 @@ BEGIN
         tstr = Left(tstr,len(tstr)-1);
       end;
       MulM4ProcVal(StringToVal(tstr,M45Val),base1valp,t);
+      t = round(t,SetRoundModeD(2));
       MulM4ProcVal(StringToVal(tstr,M45Val),virwsump,tcur);
-      RoundRowSum(bcur.BaseCur1,VIp.PayDeal,"VIVc",tcur); 
+      //RoundRowSum(bcur.BaseCur1,VIp.PayDeal,"VIVc",tcur); 
+      
+      tcur = round(tcur,SetRoundModeD(2));
       if (VIp.InvType==kInvoiceTypeCredit or VIp.InvType==kInvoiceTypeCreditSpecialSales) then begin
         totsumcur = totsumcur - tcur;
       end else begin
@@ -503,7 +507,8 @@ BEGIN
     end;
     if (nonblank(ASPrw.VATCode)) then begin
       locvatcod = ASPrw.VATCode;
-      RoundRowSum(bcur.BaseCur1,VIp.PayDeal,"VIVc",t);
+      //RoundRowSum(bcur.BaseCur1,VIp.PayDeal,"VIVc",t);
+      t = round(t,SetRoundModeD(2));
     end;
     if (GetAccName(accno,tstr,60)==false) then begin end;
     AddEuroCurncySmRow(gSMp,pdat,accno,rwotxt[0],locvatcod,tstr,t,accflag,dc1,totsum,VIp.CurncyCode,frrate,torate1,torate2,baserate1,baserate2,tcur,blankval);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 June 2026 at 14:49:57
