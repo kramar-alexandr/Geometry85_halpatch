@@ -25,7 +25,7 @@ external function Integer AddVIPrePayRow(record TRVc,record VIVc,record CUVc,Int
                        val,val,Boolean,Boolean,val,record APAccBlock,record VATCodeBlock);
 external procedure VIGetVATCodeAccNumbers(string,record APAccBlock,string,Integer,var string,var string);
 external procedure VIGetVATCodeAccNumbers2(string,record APAccBlock,string,Integer,Integer,var string,var string);
-external procedure AddVIPeriodSMRow(record SMVc,record VIVc,string,string,record AutSimPerVc,string,string,
+external procedure AddVIPeriodSMRow(record SMVc,record VIVc,string,string,record AutSimPerVc,array string,string,
                            val,val,val,val,val,val,val,
                            Boolean,Boolean,Boolean);
 external procedure AddVATBase(var record SMVc,string,val,val,Integer,Integer,Integer);
@@ -586,7 +586,7 @@ BEGIN
   record CYBlock CYb;
   string 255 apacc,apotxt;
 	record OperTypeVc OpTr;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 11:53:48
-
+  array string 100 arwotxtshort;
     
   nilv = blankval;
   totsum = BlankVal;
@@ -938,12 +938,14 @@ LkInvoiceRowTypeNormal_MakeTrans:;
         simneeded = false;
         viraccno = VIrw.AccNumber;
         rwotxtshort = rwotxt;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 June 2026 at 14:08:14
+        arwotxtshort[0] = rwotxt;
         if (nonblank(VIrw.PeriodCode)) then begin
           ASPr.Code = VIrw.PeriodCode;
           if (ReadFirstMain(ASPr,1,true)) then begin
             viraccno = ASPr.PrelAcc;
             simneeded = true;
             rwotxtshort = VIp.Objects;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 June 2026 at 14:08:12
+            arwotxtshort[1] = VIp.Objects;// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 June 2026 at 14:48:42
           end;
         end;
         if (VIp.OKFlag==0) then begin simneeded = false; end;
@@ -1021,7 +1023,7 @@ LkInvoiceRowTypeNormal_MakeTrans:;
           end;
         end;
         if (simneeded) then begin
-          AddVIPeriodSMRow(gSMp,VIp,viraccno,VIrw.AccNumber,ASPr,rwotxtshort,VIrw.VATCode,frrate,torate1,torate2,baserate1,baserate2,rs,VIrw.Sum,false,dc1,dc2);
+          AddVIPeriodSMRow(gSMp,VIp,viraccno,VIrw.AccNumber,ASPr,arwotxtshort,VIrw.VATCode,frrate,torate1,torate2,baserate1,baserate2,rs,VIrw.Sum,false,dc1,dc2);
         end;
       end;
   end;

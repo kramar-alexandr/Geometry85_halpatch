@@ -438,7 +438,7 @@ LAddVIPrePayRow:;
 END;
 
 global
-procedure AddVIPeriodSMRow(record SMVc gSMp,record VIVc VIp,string viraccno,string accno,record AutSimPerVc ASPp,string rwotxt,string vatcod,
+procedure AddVIPeriodSMRow(record SMVc gSMp,record VIVc VIp,string viraccno,string accno,record AutSimPerVc ASPp,array string rwotxt,string vatcod,
                            val frrate,val torate1,val torate2,val baserate1,val baserate2,val base1valp,val virwsump,
                            Boolean accflag,Boolean dc1,Boolean dc2)
 BEGIN
@@ -506,9 +506,9 @@ BEGIN
       RoundRowSum(bcur.BaseCur1,VIp.PayDeal,"VIVc",t);
     end;
     if (GetAccName(accno,tstr,60)==false) then begin end;
-    AddEuroCurncySmRow(gSMp,pdat,accno,rwotxt,locvatcod,tstr,t,accflag,dc1,totsum,VIp.CurncyCode,frrate,torate1,torate2,baserate1,baserate2,tcur,blankval);
+    AddEuroCurncySmRow(gSMp,pdat,accno,rwotxt[0],locvatcod,tstr,t,accflag,dc1,totsum,VIp.CurncyCode,frrate,torate1,torate2,baserate1,baserate2,tcur,blankval);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 June 2026 at 14:49:57
     if (GetAccName(viraccno,tstr,60)==false) then begin end;
-    AddEuroCurncySmRow(gSMp,pdat,viraccno,rwotxt,locvatcod,tstr,t,accflag,dc2,totsum2,VIp.CurncyCode,frrate,torate1,torate2,baserate1,baserate2,tcur,blankval);
+    AddEuroCurncySmRow(gSMp,pdat,viraccno,rwotxt[1],locvatcod,tstr,t,accflag,dc2,totsum2,VIp.CurncyCode,frrate,torate1,torate2,baserate1,baserate2,tcur,blankval);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 24 June 2026 at 14:49:58
   end;
   RETURN;
 END;
