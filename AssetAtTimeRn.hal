@@ -6,10 +6,119 @@ external procedure HTDepartments(string,string,var string);
 external procedure OneAT2UnitDeprCalculation(Integer,Integer,Integer,Boolean,Date,Date,string,var val,var val,var val,var val,var string,val,val,Boolean);
 //external function Integer DaysInMonth(Integer,Integer);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 15:44:43
 external function Boolean CheckifAT2UnitSold(string,Date);
+external function Boolean GetLastDprStartValInFiscalYear(Date,Date,Integer,string,val,var val,var val);
+
 // Edit Start ---------------------------------------------- Edit Start
 	//Wednesday, 4 December 2019 15:44:47
 	// 62
-SetLangMode(LangUkrainian,"UKR",0);
+SetLangMode(LangUkrainian,"UKR",2);
+
+procedure GetDepreciationPrcWithRows(Date startdate,Date td,string modcode,var val resp)
+begin
+  record DprModVc DMr;
+  row DprModVc DMrw;
+  Integer i,rwcnt;
+  val t;
+  Date ysd,yed;
+  
+  ysd = startdate;
+  resp = blankval;
+  DMr.Code = modcode;
+  if (ReadFirstMain(DMr,1,true)) then begin
+    if (DMr.LifecycleYears>0) then begin
+      t = DMr.LifecycleYears;
+      resp = 100/t;
+      rwcnt = MatRowCnt(DMr);
+      for (i=0;i<rwcnt;i=i+1) begin
+        MatRowGet(DMr,i,DMrw);
+        yed = AddMonth(ysd,12);
+        yed = AddDay(yed,-1);
+        if (DateInRange(td,ysd,yed)) then begin
+          resp = DMrw.YearPerc;
+          goto LGetDepreciationPrcWithRows;
+        end;
+        ysd = AddDay(yed,1);
+      end;
+    end else begin
+      resp = DMr.DeprPerc;
+    end;
+  end;
+LGetDepreciationPrcWithRows:;  
+  return;
+end;
+
+
+procedure CalcMothlyDepreciations(var record RcVc RepSpec,record AT2UnitVc ATUnitr,Date sStartDate,Date sEndDate)
+BEGIN
+  Date td,sdate,edate,startdate;
+  record AT2DprVc LastDprr;
+  val dprbef,dprv,dprprc2,t,svp,revval,revdprbef,revdprv,lastrevval;
+  string 255 tstr;
+  Boolean TrHs;
+  val qty,totdprv,totrevdprv;
+  val dprprc1;
+  
+  qty = ATUnitr.Quantity;
+  if (qty==0) then begin qty = 1; end;
+  
+
+  if (RepSpec.flags[1]==0) then begin
+    startdate = ATUnitr.StartingDate1;
+  end else begin
+    startdate = ATUnitr.StartingDate2;
+  end;
+  td = sStartDate;
+  while (td<=sEndDate) begin
+    if (RepSpec.flags[1]==0) then begin
+      GetDepreciationPrcWithRows(startdate,td,ATUnitr.Model1,dprprc1);
+    end else begin
+      GetDepreciationPrcWithRows(startdate,td,ATUnitr.Model2,dprprc1);
+    end;
+    sdate = AddMonth(td,-GetMonth(td)+1);
+    sdate = AddDay(sdate,-GetDay(sdate)+1);
+    edate = td;
+    edate = AddDay(edate,-GetDay(edate) + DaysInMonth(GetYear(edate),GetMonth(edate)));
+    if (sdate<td) then begin
+      sdate = td;
+    end;
+    dprbef = 0;
+    dprv = 0;
+    revdprbef = 0;
+    revdprv = 0;
+    t = blankval;
+    if (GetLastDprStartValInFiscalYear(sdate,edate,RepSpec.flags[1],ATUnitr.InventoryNr,ATUnitr.PurchVal,svp,t)) then begin end;
+    OneAT2UnitDeprCalculation(RepSpec.Comparison,RepSpec.flags[3],RepSpec.flags[1],false,sdate,edate,ATUnitr.InventoryNr,dprbef,dprv,t,t,tstr,svp,qty*ATUnitr.ResVal,false);
+    if (dprv>0) then begin
+       RepSpec.f10 = td.year & " " & USetStr(2780+GetMonth(td));// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 24 July 2026 at 13:14:35
+       revval = blankval;
+       TrHs = true; 
+       dprprc2 = -1;
+       LastDprr.InventoryNr = ATUnitr.InventoryNr;
+       LastDprr.TransDate = edate;
+       if (ReadLastKey("DateInventoryNr",LastDprr,2,false)) then begin
+         if (LastDprr.InventoryNr==ATUnitr.InventoryNr) then begin
+           if (LastDprr.TransDate>=sdate) then begin
+             if (LastDprr.TransDate<=edate) then begin
+               revval = LastDprr.StartVal;
+               GetDepreciationPrcWithRows(startdate,LastDprr.TransDate,ATUnitr.Model1,dprprc2);
+             end;
+           end;
+         end;
+       end;
+       if(revval!=0) then begin
+         lastrevval = revval;
+       end;
+       totdprv = totdprv + dprv;
+       if (lastrevval!=0) then begin
+         OneAT2UnitDeprCalculation(RepSpec.Comparison,RepSpec.flags[3],RepSpec.flags[1],false,sdate,edate,ATUnitr.InventoryNr,dprbef,dprv,revdprbef,revdprv,tstr,revval-ATUnitr.PurchVal,qty*ATUnitr.ResVal,false);
+         totrevdprv = totrevdprv + qty*revdprv;
+       end;
+    end;
+    td = AddMonth(td,1);
+    td = AddDay(td,-GetDay(td)+1);
+  end;
+  RETURN;
+END; 
 
 function Boolean CheckAssetCatMatchArray(string category,string AT2Class,string fcl,string tcl)
 BEGIN
@@ -126,6 +235,7 @@ begin
   string 5 fcl,tcl;// 62// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 15:44:50
   vector string 20 atmov,atuser;
   integer i,rwcnt;
+  record RcVc RepSpec2;// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 24 July 2026 at 13:22:39
   
   while(loopmain(AT2Taker,1,true))begin
     rwcnt = matrowcnt(AT2Taker);
@@ -187,8 +297,8 @@ begin
       end;
       
       if (testf) then begin
-        FindAssetDepartmentOnDate(ATr,RepSpec.d1,tstr);
-        if (Depr.Code!=tstr) then begin testf = false; end;
+        //FindAssetDepartmentOnDate(ATr,RepSpec.d1,tstr);// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 24 July 2026 at 13:43:25
+        //if (Depr.Code!=tstr) then begin testf = false; end;
       end;
       if (testf) then begin
         purchval = LastDpr(ATr.InventoryNr,RepSpec.sEndDate);
@@ -206,16 +316,17 @@ begin
           OutString(35,0,USetStr(13117),false);
           OutString(35,0,USetStr(13710),false);
           OutString(35,0,"",false);
-          OutString(40,0,"‘åð´éíèé Ü",false);
-          OutString(60,0,"Ü Šîíòðàêòó",false);
-          OutString(60,0,"Šëàñ €",false);
+          OutString(40,0,"Ð¡ÐµÑ€Ñ–Ð¹Ð½Ð¸Ð¹ â„–",false);
+          OutString(60,0,"â„– ÐšÐ¾Ð½Ñ‚Ñ€Ð°ÐºÑ‚Ñƒ",false);
+          OutString(60,0,"ÐšÐ»Ð°Ñ ÐÐ",false);
           OutString(80,0,USetStr(13703),false);
           OutString(280,0,USetStr(13704),true);
           OutString(340,0,USetStr(13705),true);
           OutString(390,0,USetStr(13103),true);
           
           OutString(410,0,USetStr(13706),true);
-          OutString(1,0,USetStr(13707),true);
+          OutString(440,0,USetStr(13707),true);// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 24 July 2026 at 13:01:34
+          OutString(1,0,"Ð”Ð°Ñ‚Ð° ÐžÐÐ",true);// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 24 July 2026 at 13:01:35
           EndFormat;  
           firstf = false;
           Gray_Divider(0,1);
@@ -238,7 +349,14 @@ begin
         OutString(390,"DblAT2TakeVc",atmov[ATr.InventoryNr],true);
         
         OutVal(410,0,nbv,M45Val,true);
-        OutString(1,0,ATr.PurchaseDate,true);
+        OutString(440,0,ATr.PurchaseDate,true);
+        recordnew(RepSpec2);
+        ReportDefaults(RepSpec2,"AT2DeprPlanRClass");
+        RepSpec2.d1 = RepSpec.d1;
+        RepSpec2.sStartDate = stringtodate("01/01/1999");
+        RepSpec2.sEndDate = stringtodate("21/12/2100");
+        CalcMothlyDepreciations(RepSpec2,ATr,stringtodate("01/01/1999"),stringtodate("31/12/2099"));
+        OutString(1,0,RepSpec2.f10,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 24 July 2026 at 13:01:28
         EndFormat;    
         tpurch = tpurch + ATr.Quantity*purchval;
         tdepr = tdepr + dprv;
