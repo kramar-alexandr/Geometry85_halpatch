@@ -297,8 +297,8 @@ begin
       end;
       
       if (testf) then begin
-        //FindAssetDepartmentOnDate(ATr,RepSpec.d1,tstr);// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 24 July 2026 at 13:43:25
-        //if (Depr.Code!=tstr) then begin testf = false; end;
+        FindAssetDepartmentOnDate(ATr,RepSpec.d1,tstr);// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 24 July 2026 at 13:43:25
+        if (Depr.Code!=tstr) then begin testf = false; end;
       end;
       if (testf) then begin
         purchval = LastDpr(ATr.InventoryNr,RepSpec.sEndDate);
