@@ -353,9 +353,9 @@ begin
         recordnew(RepSpec2);
         ReportDefaults(RepSpec2,"AT2DeprPlanRClass");
         RepSpec2.d1 = RepSpec.d1;
-        RepSpec2.sStartDate = stringtodate("01/01/1999");
-        RepSpec2.sEndDate = stringtodate("31/12/2099");
-        CalcMothlyDepreciations(RepSpec2,ATr,stringtodate("01/01/1999"),stringtodate("31/12/2099"));
+        RepSpec2.sStartDate = stringtodate("01-01-1999");
+        RepSpec2.sEndDate = stringtodate("31-12-2099");
+        CalcMothlyDepreciations(RepSpec2,ATr,stringtodate("01-01-1999"),stringtodate("31-12-2099"));
         OutString(1,0,RepSpec2.f10,true);// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 24 July 2026 at 13:01:28
         EndFormat;    
         tpurch = tpurch + ATr.Quantity*purchval;
