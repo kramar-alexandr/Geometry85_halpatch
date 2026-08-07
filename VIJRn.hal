@@ -398,6 +398,11 @@ SetRepCol(5,90);// Edit ************************** Monday, 24 December 2012 16:3
       	if (RepSpec.f10!=VIr.DocumentsFlag) then begin testf = false; end;
       end;
       
+      if(nonblank(RepSpec.f14) and RepSpec.f14!=VIr.CurncyCode)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Friday, 7 August 2026 at 16:24:32
+      	testf = false;
+      end;
+      
+      
       // Edit Start ---------------------------------------------- Edit Start
 	//Wednesday, 4 September 2019 14:09:54
 	
