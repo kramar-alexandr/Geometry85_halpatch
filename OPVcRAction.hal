@@ -826,14 +826,16 @@ L11:;
                 end;
               end;
             end;
-            if (APb.ForceUniquePP!=0) then begin
-              if (OPrw.RecVal>0) then begin
-                if (PrepaymentNumberUsed(OPp.SerNr,OPrw.PrepayNr)) then begin
-                  if (disperrf) then begin
-                    RecordCheckError(20057,"",i,"PrepayNr");      
+            if(transf)then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 27 August 2026 at 13:06:59
+              if (APb.ForceUniquePP!=0) then begin
+                if (OPrw.RecVal>0) then begin
+                  if (PrepaymentNumberUsed(OPp.SerNr,OPrw.PrepayNr)) then begin
+                    if (disperrf) then begin
+                      RecordCheckError(20057,"",i,"PrepayNr");      
+                    end;
+                    res = 20057; 
+                    goto LOPVcRecordCheck;
                   end;
-                  res = 20057; 
-                  goto LOPVcRecordCheck;
                 end;
               end;
             end;
