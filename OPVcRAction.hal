@@ -849,13 +849,13 @@ L11:;
                   temp = OPPr.PPVal;
                 end;
                 temp = temp + OPrw.RecVal;
-                if (temp!=0) and (OPrw.RecVal>0) then begin
+                /*if (temp!=0) and (OPrw.RecVal>0) then begin
                   if (disperrf) then begin
                     RecordCheckError(20057,"",i,"PrepayNr");      
                   end;
                   res = 20057; 
                   goto LOPVcRecordCheck;
-                end;
+                end;*/
               end;
               if (APHistr.VECode!=OPrw.VECode) then begin
                 if (disperrf) then begin
@@ -938,13 +938,13 @@ L11:;
                   res = 1215; 
                   goto LOPVcRecordCheck;
                 end;                
-                if (APb.ForceUniquePP!=0) then begin
+                /*if (APb.ForceUniquePP!=0) then begin
                   if (disperrf) then begin
                     RecordCheckError(20057,"",i,"PrepayNr");      
                   end;
                   res = 20057; 
                   goto LOPVcRecordCheck;
-                end;                            
+                end;  */                          
               end;
             end;
           end;
