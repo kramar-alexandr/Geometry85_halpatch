@@ -471,6 +471,46 @@ begin
   return;
 end;
 
+// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 7 October 2026
+// Дата останньої оплати акту/накладної по історії розрахунків IPrsVc (без самого акту і кредит-нот).
+// Якщо в історії оплат немає (передоплата / оплата одразу), а в ARVc боргу по акту немає -> дата самого акту.
+function Date GetLastPayDate(record IVVc IVr)
+begin
+  record IPrsVc IPrsr;
+  record ARVc ARr;
+  Boolean TrHs,foundf;
+  Date res;
+
+  foundf = false;
+  if (IVr.OKFlag==0) then begin goto LGetLastPayDate; end;
+  TrHs = true;
+  IPrsr.IVNr = IVr.SerNr;
+  while (LoopKey("IVKey",IPrsr,1,TrHs)) begin
+    if (IPrsr.IVNr!=IVr.SerNr) then begin TrHs = false; end;
+    if (TrHs) then begin
+      if (IPrsr.TransType!=kIPrsTransTypeInvoice) then begin
+        if ((foundf==false) or (IPrsr.TransDate>res)) then begin
+          res = IPrsr.TransDate;
+          foundf = true;
+        end;
+      end;
+    end;
+  end;
+  if (foundf==false) then begin
+    ARr.InvoiceNr = IVr.SerNr;
+    if (ReadFirstMain(ARr,1,true)) then begin
+      if (ARr.RVal==0) then begin
+        res = IVr.InvDate;
+      end;
+    end else begin
+      res = IVr.InvDate;
+    end;
+  end;
+LGetLastPayDate:;
+  GetLastPayDate = res;
+  return;
+end;
+
 global
 procedure InvoiceRn(record RcVc RepSpec)
 begin
@@ -614,7 +654,12 @@ begin
       StartFormat(15);
       OutString(0,0,USetStr(2352),false);//0
       OutString(60,0,USetStr(2353),false);//60
-      OutString(130,0,USetStr(2354),false);//110
+      if (RepSpec.flags[24]!=0) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 7 October 2026
+        OutString(115,0,"Дата оплати",false);
+        OutString(175,0,USetStr(2354),false);
+      end else begin
+        OutString(130,0,USetStr(2354),false);//110
+      end;
       OutString(6,0,"Тип",false);//110// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 14:05:57
       OutString(7,0,"Док.",false);//110// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 14:05:57
       OutString(285,0,USetStr(2358),false);//280
@@ -641,7 +686,12 @@ begin
       StartFormat(15);
       OutString(0,0,USetStr(2352),false);//0
       OutString(60,0,USetStr(2353),false);//60
-      OutString(115,0,USetStr(2354),false);//110
+      if (RepSpec.flags[24]!=0) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 7 October 2026
+        OutString(115,0,"Дата оплати",false);
+        OutString(175,0,USetStr(2354),false);
+      end else begin
+        OutString(115,0,USetStr(2354),false);//110
+      end;
       OutString(280,0,USetStr(2358),false);
       if (RepSpec.flags[15]!=0) then begin
         OutString(360,0,USetStr(2328),true);
@@ -1096,7 +1146,12 @@ begin
               OutStringOvst(0,"DblCustPS2",CreateInvoiceNumber(IVr.SerNr,IVr.OfficialSerNr),false,IVr.Invalid);
             end;
             OutDate(60,0,IVr.InvDate,false);
-            OutStringCut(130,280,0,IVr.Addr0,false,0);
+            if (RepSpec.flags[24]!=0) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 7 October 2026
+              OutDate(115,0,GetLastPayDate(IVr),false);
+              OutStringCut(175,280,0,IVr.Addr0,false,0);
+            end else begin
+              OutStringCut(130,280,0,IVr.Addr0,false,0);
+            end;
             OutString(6,0,IVr.DocumentType,false);//200// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 1 October 2018 18:46:04
       			OutString(7,0,IVr.DocumentsFlag,false);//200// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 1 October 2018 18:46:05
 
@@ -1149,7 +1204,12 @@ begin
             StartFormat(15);
             OutString(0,"DblCustPS2",CreateInvoiceNumber(IVr.SerNr,IVr.OfficialSerNr),false);
             OutDate(60,0,IVr.InvDate,false);
-            OutStringCut(115,275,0,IVr.Addr0,false,0);
+            if (RepSpec.flags[24]!=0) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 7 October 2026
+              OutDate(115,0,GetLastPayDate(IVr),false);
+              OutStringCut(175,275,0,IVr.Addr0,false,0);
+            end else begin
+              OutStringCut(115,275,0,IVr.Addr0,false,0);
+            end;
             tstr = "";
             if (IVr.InvType==1) then begin
               tstr = USetStr(2361);
