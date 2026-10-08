@@ -686,6 +686,9 @@ begin
         OutString(400,0,USetStr(2328),true);
         OutString(460,0,USetStr(2329),true);
       end;
+      if ((xlsf) and (RepSpec.ArtMode==0)) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026: валюта останньою колонкою в Excel
+        OutString(470,0,"Валюта",false);
+      end;
       EndFormat;
     end else begin
       StartFormat(15)
@@ -722,6 +725,9 @@ begin
       end else begin
         OutString(400,0,USetStr(2328),true);
         OutString(460,0,USetStr(2329),true);
+      end;
+      if (xlsf) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026: валюта останньою колонкою в Excel
+        OutString(470,0,"Валюта",false);
       end;
       EndFormat;
     end else begin
@@ -1202,9 +1208,7 @@ begin
               OutVal(400,0,ivnvat,M4Val,true);
               OutVal(460,0,iv,M4Val,true);
             end;
-            if (xlsf==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
-              OutString(470,0,IVr.CurncyCode,false);
-            end;
+            OutString(470,0,IVr.CurncyCode,false);
             EndFormat;
             if ((RepSpec.flags[16]!=0) and (xlsofficf==false)) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
               if (nonblank(IVr.OfficialSerNr)) then begin
@@ -1266,9 +1270,7 @@ begin
               OutVal(400,0,ivnvat,M4Val,true);
               OutVal(460,0,iv,M4Val,true);
             end;
-            if (xlsf==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
-              OutString(465,0,IVr.CurncyCode,false);
-            end;
+             OutString(465,0,IVr.CurncyCode,false);
             EndFormat;
             if (xlsf==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026: рядок з осн. валютою і розділювач - не в Excel
               StartFormat(15);
