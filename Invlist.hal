@@ -553,6 +553,8 @@ begin
   string 255 frsacc,tosacc;
   record GCSVc GCSr;
   string 255 frtype,totype;// Edit ************************** BPI Ukraine - KramarAlexandr - Monday, 23 March 2026 at 15:59:11
+  Boolean xlsofficf;// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026: офіц. № окремою колонкою в Excel
+  Boolean xlsf;// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026: в Excel лише колонки шапки, одним рядком
   
   runnr = 1;
   Split2Str2(RepSpec.f6,froffic,tooffic,40);  
@@ -649,10 +651,23 @@ begin
   SetRepCol(2,430);
   SetRepCol(6,240);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 14:05:54
   SetRepCol(7,260);// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 4 December 2019 14:05:54
+  xlsofficf = false;// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+  xlsf = false;
+  if ((RepSpec.Media==mtExcel) and (RepSpec.PocketPC==0)) then begin
+    xlsf = true;
+  end;
+  if ((RepSpec.flags[16]!=0) and (RepSpec.Media==mtExcel) and (RepSpec.PocketPC==0)) then begin
+    if ((RepSpec.ArtMode==0) or (RepSpec.ArtMode==4)) then begin
+      xlsofficf = true;
+    end;
+  end;
   if ((RepSpec.ArtMode==0) or (RepSpec.ArtMode==3)) then begin
     if (RepSpec.PocketPC == 0) then begin
       StartFormat(15);
       OutString(0,0,USetStr(2352),false);//0
+      if (xlsofficf) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+        OutString(30,0,"Офіц. №",false);
+      end;
       OutString(60,0,USetStr(2353),false);//60
       if (RepSpec.flags[24]!=0) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 7 October 2026
         OutString(115,0,"Дата оплати",false);
@@ -685,12 +700,19 @@ begin
     if (RepSpec.PocketPC == 0) then begin
       StartFormat(15);
       OutString(0,0,USetStr(2352),false);//0
+      if (xlsofficf) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+        OutString(30,0,"Офіц. №",false);
+      end;
       OutString(60,0,USetStr(2353),false);//60
       if (RepSpec.flags[24]!=0) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 7 October 2026
         OutString(115,0,"Дата оплати",false);
         OutString(175,0,USetStr(2354),false);
       end else begin
         OutString(115,0,USetStr(2354),false);//110
+      end;
+      if (xlsf) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+        OutString(6,0,"Тип",false);
+        OutString(7,0,"Док.",false);
       end;
       OutString(280,0,USetStr(2358),false);
       if (RepSpec.flags[15]!=0) then begin
@@ -1145,6 +1167,9 @@ begin
             end else begin
               OutStringOvst(0,"DblCustPS2",CreateInvoiceNumber(IVr.SerNr,IVr.OfficialSerNr),false,IVr.Invalid);
             end;
+            if (xlsofficf) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+              OutStringOvst(30,0,IVr.OfficialSerNr,false,IVr.Invalid);
+            end;
             OutDate(60,0,IVr.InvDate,false);
             if (RepSpec.flags[24]!=0) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 7 October 2026
               OutDate(115,0,GetLastPayDate(IVr),false);
@@ -1177,9 +1202,11 @@ begin
               OutVal(400,0,ivnvat,M4Val,true);
               OutVal(460,0,iv,M4Val,true);
             end;
-            OutString(470,0,IVr.CurncyCode,false);
+            if (xlsf==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+              OutString(470,0,IVr.CurncyCode,false);
+            end;
             EndFormat;
-            if (RepSpec.flags[16]!=0) then begin
+            if ((RepSpec.flags[16]!=0) and (xlsofficf==false)) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
               if (nonblank(IVr.OfficialSerNr)) then begin
                 StartFormat(15);
                  OutStringOvst(12,0,IVr.OfficialSerNr,false,IVr.Invalid);
@@ -1203,12 +1230,19 @@ begin
           if (RepSpec.ArtMode==4) then begin
             StartFormat(15);
             OutString(0,"DblCustPS2",CreateInvoiceNumber(IVr.SerNr,IVr.OfficialSerNr),false);
+            if (xlsofficf) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+              OutString(30,0,IVr.OfficialSerNr,false);
+            end;
             OutDate(60,0,IVr.InvDate,false);
             if (RepSpec.flags[24]!=0) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Wednesday, 7 October 2026
               OutDate(115,0,GetLastPayDate(IVr),false);
               OutStringCut(175,275,0,IVr.Addr0,false,0);
             end else begin
               OutStringCut(115,275,0,IVr.Addr0,false,0);
+            end;
+            if (xlsf) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+              OutString(6,0,IVr.DocumentType,false);
+              OutString(7,0,IVr.DocumentsFlag,false);
             end;
             tstr = "";
             if (IVr.InvType==1) then begin
@@ -1232,29 +1266,33 @@ begin
               OutVal(400,0,ivnvat,M4Val,true);
               OutVal(460,0,iv,M4Val,true);
             end;
-             OutString(465,0,IVr.CurncyCode,false);
-            EndFormat;
-            StartFormat(15);
-            if (RepSpec.flags[16]!=0) then begin
-              OutString(12,0,IVr.OfficialSerNr,false);
-            end;
-            OutString(130,0,IVr.CurncyCode,false);
-            tstr = GetRateText(IVr.CurncyCode,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2);
-            OutString(160,0,tstr,false);
-            ivnvat = MulRateToBase1(IVr.CurncyCode,ivnvat,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
-            if (RepSpec.flags[15]!=0) then begin
-              OutVal(360,0,ivnvat,M4Val,true);
-              OutVal(420,0,bc1iv,M4Val,true);
-              OutString(465,0,bascur.BaseCur1,false);
-            end;
-            if (RepSpec.flags[15]==0) then begin
-              OutVal(400,0,ivnvat,M4Val,true);
-              OutVal(460,0,bc1iv,M4Val,true);
-              OutString(465,0,bascur.BaseCur1,false);
+            if (xlsf==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+              OutString(465,0,IVr.CurncyCode,false);
             end;
             EndFormat;
-            StartFormat(10);
-            EndFormat;
+            if (xlsf==false) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026: рядок з осн. валютою і розділювач - не в Excel
+              StartFormat(15);
+              if ((RepSpec.flags[16]!=0) and (xlsofficf==false)) then begin// Edit ************************** BPI Ukraine - KramarAlexandr - Thursday, 8 October 2026
+                OutString(12,0,IVr.OfficialSerNr,false);
+              end;
+              OutString(130,0,IVr.CurncyCode,false);
+              tstr = GetRateText(IVr.CurncyCode,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2);
+              OutString(160,0,tstr,false);
+              ivnvat = MulRateToBase1(IVr.CurncyCode,ivnvat,IVr.FrRate,IVr.ToRateB1,IVr.ToRateB2,IVr.BaseRate1,IVr.BaseRate2,DefaultCurRoundOff);
+              if (RepSpec.flags[15]!=0) then begin
+                OutVal(360,0,ivnvat,M4Val,true);
+                OutVal(420,0,bc1iv,M4Val,true);
+                OutString(465,0,bascur.BaseCur1,false);
+              end;
+              if (RepSpec.flags[15]==0) then begin
+                OutVal(400,0,ivnvat,M4Val,true);
+                OutVal(460,0,bc1iv,M4Val,true);
+                OutString(465,0,bascur.BaseCur1,false);
+              end;
+              EndFormat;
+              StartFormat(10);
+              EndFormat;
+            end;
           end;
         if (RepSpec.ArtMode==3) then begin
           StartFormat(15);
